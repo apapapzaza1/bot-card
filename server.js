@@ -74,7 +74,7 @@ const view = (r, i) => {
   return { i, me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null };
 };
 const bc = r => r.p.forEach((p, i) => {
-  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
+  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', clock: r.cfg.clock, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
@@ -107,7 +107,7 @@ function hit(r, d, atk) {
 
 function act(r, i, m) {
   const g = r.g, me = r.p[i], op = r.p[1 - i], mine = g.turn === i;
-  if (g.over) E('เกมจบแล้ว');
+  if (g.over && m.t !== 'chat') E('เกมจบแล้ว');
   const mainOnly = () => { if (!mine || g.phase !== 'main') E('ทำได้เฉพาะ Main Phase ของเรา'); };
   const own = u => { const f = find(r, u); if (!f || f.i !== i) E('ไม่ใช่การ์ดของเรา'); return f; };
   const pays = () => (m.pay || []).map(u => { const f = own(u); if (f.z !== 'hand') E('ต้องจ่ายด้วยการ์ดในมือ'); return f.c; });
@@ -168,12 +168,41 @@ function act(r, i, m) {
     case 'pw': { const f = find(r, m.u); if (!f) E('ไม่พบ'); f.c.pw += m.d > 0 ? 1 : -1; log(r, '[แก้ไข] ' + me.name + ' ปรับ Power ' + (m.d > 0 ? '+1' : '-1')); break; }
     case 'tire': { const f = find(r, m.u); if (!f) E('ไม่พบ'); f.c.tired = !f.c.tired; break; }
     case 'drawn': draw(r, me, 1); log(r, '[แก้ไข] ' + me.name + ' จั่ว 1'); break;
+    case 'chat': log(r, '💬 ' + me.name + ': ' + String(m.x || '').slice(0, 200)); break;
     default: E('คำสั่งไม่รู้จัก');
   }
 }
 
+function begin(r) {
+  r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; });
+  r.g = { turn: Math.floor(Math.random() * 2), phase: 'mull', n: 0, used: {}, land: null, log: ['เริ่มเกม! เลือกเปลี่ยนมือหรือเก็บทั้งหมด'], over: null };
+  log(r, r.p[r.g.turn].name + ' ได้เริ่มก่อน');
+}
+async function rematch(r, i) {
+  r.p[i].rm = 1; if (!r.rmT) r.rmT = Date.now();
+  if (r.p.every(x => x.rm)) {
+    for (const x of r.p) { const d = await pickDeck(x.last, x.name); x.deck = shuf(d.main.map(inst)); x.life = d.life.map(id => ({ ...inst(id), up: 0 })); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; }
+    r.rmT = 0; begin(r);
+  } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
+  bc(r);
+}
+setInterval(() => {
+  const now = Date.now();
+  for (const c in rooms) {
+    const r = rooms[c], g = r.g;
+    if (!g) { if (r.exp && now > r.exp) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ err: 'ห้องหมดอายุ' }))); delete rooms[c]; } continue; }
+    if (g.over) { g.oa = g.oa || now; if ((r.rmT && now - r.rmT > 10000) || now - g.oa > 6e5) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ t: 'rmx' }))); delete rooms[c]; } continue; }
+    r.p.forEach((p, k) => { if (p.dc && now - p.dc > 12e4) { g.over = p.name + ' หลุดการเชื่อมต่อเกิน 2 นาที แพ้'; g.win = 1 - k; } });
+    if (!g.over && r.cfg.clock && g.phase !== 'mull') {
+      const p = r.p[g.turn]; p.t -= 1000; if (p.t <= 0) { g.over = p.name + ' หมดเวลา แพ้'; g.win = 1 - g.turn; }
+      r.p.forEach(x => x.ws && x.ws.readyState === 1 && x.ws.send(JSON.stringify({ t: 'clk', a: r.p.map(y => y.t) })));
+    }
+    if (g.over) { bc(r); settle(r).catch(() => { }); }
+  }
+}, 1000);
 wss.on('connection', ws => {
   let r, i;
+  ws.on('close', () => { if (r && r.p[i] && r.p[i].ws === ws) { r.p[i].dc = Date.now(); if (r.g && !r.g.over) { log(r, '⚠ ' + r.p[i].name + ' หลุดการเชื่อมต่อ (รอ 2 นาที)'); bc(r); } } });
   const err = s => ws.send(JSON.stringify({ err: String(s) }));
   ws.on('message', async raw => {
     try {
@@ -193,6 +222,11 @@ wss.on('connection', ws => {
         ws.user = n; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: prof(n, d) })); return;
       }
       if (!ws.user) E('ต้องล็อกอินก่อน');
+      if (m.t === 'mkcode') {
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน'); const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ด 3-20 ตัว A-Z 0-9');
+        const T = (await dbGet('sys:codes')) || {}; T[c] = { gems: Math.max(0, +m.gems | 0), art: Math.min(50, Math.max(0, +m.art | 0)) };
+        await dbPut('sys:codes', T); ws.send(JSON.stringify({ note: 'สร้างโค้ด ' + c + ' แล้ว' })); return;
+      }
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
@@ -229,29 +263,26 @@ wss.on('connection', ws => {
       }
       if (m.t === 'code') {
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
-        if (!['BOTFANMADE', 'SOCOOL'].includes(c)) E('โค้ดไม่ถูกต้อง'); if (d.codes.includes(c)) E('ใช้โค้ดนี้ไปแล้ว'); d.codes.push(c);
-        let ps = [];
-        if (c === 'BOTFANMADE') d.gems += 5555;
-        else { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR', 'CBR', 'SCR'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < 5; k++) { const x = pick(A); add(d, x); p.push(x); } ps = [p]; }
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: c === 'BOTFANMADE' ? 'ได้รับ 5555 Gem' : '' })); return;
+        const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, ...((await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดไม่ถูกต้อง'); if (d.codes.includes(c)) E('ใช้โค้ดนี้ไปแล้ว'); d.codes.push(c);
+        let ps = []; d.gems += X.gems || 0;
+        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR', 'CBR', 'SCR'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: X.gems ? 'ได้รับ ' + X.gems + ' Gem' : '' })); return;
       }
       if (m.t === 'join') {
         const code = String(m.room || '').toUpperCase().slice(0, 8), name = ws.user;
         if (!code) E('ใส่รหัสห้อง');
-        r = rooms[code] = rooms[code] || { p: [], g: null };
+        r = rooms[code];
+        if (!r) { if (!m.create) E('ไม่พบห้อง หรือรหัสหมดอายุแล้ว'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5, 10, 20].includes(+m.clock) ? +m.clock : 0 } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], life: [] }); }
-        r.p[i].ws = ws; bc(r);
+        r.p[i].ws = ws; if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมาแล้ว'); } bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user), p = r.p[i];
-        p.deck = shuf(d.main.map(inst)); p.life = d.life.map(id => ({ ...inst(id), up: 0 })); p.hand = [];
-        if (r.p.length === 2 && r.p.every(x => x.deck)) {
-          r.p.forEach(x => { x.deck.forEach(c => c); draw({ g: {} }, x, 5); });
-          r.g = { turn: Math.floor(Math.random() * 2), phase: 'mull', n: 0, used: {}, land: null, log: ['เริ่มเกม! เลือกเปลี่ยนมือหรือเก็บทั้งหมด'], over: null };
-          log(r, r.p[r.g.turn].name + ' ได้เริ่มก่อน');
-        }
+        p.last = m; p.deck = shuf(d.main.map(inst)); p.life = d.life.map(id => ({ ...inst(id), up: 0 })); p.hand = [];
+        if (r.p.length === 2 && r.p.every(x => x.deck)) begin(r);
         bc(r);
+      } else if (m.t === 'rm' && r && r.g && r.g.over) { await rematch(r, i);
       } else if (r && r.g) { act(r, i, m); bc(r); settle(r).catch(() => { }); }
     } catch (e) { err(e && e.message ? 'ผิดพลาด' : e); }
   });
