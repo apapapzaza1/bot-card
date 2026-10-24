@@ -30,10 +30,10 @@ function pack(set, gar) { // สมมติฐาน: 3 Common + 1 Rare + 1 ช
   return [g('C'), g('C'), g('C'), g('R'), g(w())];
 }
 function preDeck(s) { const x = ST[s]; return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id) }; }
-async function pickDeck(m, user) {
-  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0); }
+async function pickDeck(m, user, ban) {
+  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban); }
   if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return preDeck(m.pre); }
-  return mkDeck(m.text || '', m.rand, m.skip);
+  return mkDeck(m.text || '', m.rand, m.skip, ban);
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
   for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const d = await dbGet(w.user); d.gems += k === g.win ? 150 : 50; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d) })); } }
@@ -44,7 +44,13 @@ const inst = id => ({ u: UID++, id, pw: 0, tired: false, gear: [] });
 const ZN = ['hand', 'hell', 'av', 'mg', 'co'];
 const E = s => { throw s; };
 
-function mkDeck(text, rand, skip) {
+const BAN = JSON.parse(fs.readFileSync(path.join(__dirname, 'banlist.json'), 'utf8'));
+function checkBan(main) {
+  const cnt = {}; main.forEach(i => { const n = B[i].n; cnt[n] = (cnt[n] || 0) + 1; if (B[i].o === 'ลำเอียง') E('ห้ามใช้การ์ดลำเอียง: ' + n); });
+  for (const n in cnt) { if (BAN.ban.includes(n)) E('การ์ดบาป ห้ามใส่: ' + n); if (BAN.lim[n] && cnt[n] > BAN.lim[n]) E('การ์ดบาป จำกัด ' + BAN.lim[n] + ' ใบ: ' + n); }
+  for (const [a, b] of BAN.pairs) if (cnt[a] && cnt[b]) E('ห้ามใส่คู่กัน: ' + a + ' + ' + b);
+}
+function mkDeck(text, rand, skip, ban) {
   let main = [], life = [];
   if (rand) {
     const col = shuf(['แดง', 'ฟ้า', 'เขียว', 'ม่วง'])[0], cnt = {};
@@ -65,6 +71,7 @@ function mkDeck(text, rand, skip) {
       const cnt = {}; main.forEach(i => cnt[B[i].n] = (cnt[B[i].n] || 0) + 1);
       for (const i of main) if (cnt[B[i].n] > (B[i].lim || (B[i].o === 'Only #1' ? 1 : 4))) E('การ์ดซ้ำเกินกำหนด: ' + B[i].n);
       if (main.filter(i => B[i].o === 'Only #1').length !== 1) E('ต้องมี Only#1 พอดี 1 ใบ');
+      if (ban) checkBan(main);
     }
   }
   return { main, life };
@@ -75,7 +82,7 @@ const view = (r, i) => {
   return { i, me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, pend: g.pend ? { mine: g.pend.who === i, k: g.pend.k, until: g.pend.until } : null };
 };
 const bc = r => r.p.forEach((p, i) => {
-  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', clock: r.cfg.clock, react: r.cfg.react, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
+  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
@@ -109,7 +116,7 @@ function hit(r, d, atk) {
 function act(r, i, m) {
   const g = r.g, me = r.p[i], op = r.p[1 - i], mine = g.turn === i;
   if (g.over && m.t !== 'chat') E('เกมจบแล้ว');
-  if (g.pend && !['chat', 'pass'].includes(m.t) && !(i === g.pend.who && ['cast', 'move', 'pw', 'tire', 'token', 'drawn', 'discard'].includes(m.t))) E('รอการตอบโต้ (React) ก่อน');
+  if (g.pend && !['chat', 'pass'].includes(m.t) && !(i === g.pend.who && ['dview', 'dmove', 'dpos', 'dshuf', 'cast', 'move', 'pw', 'tire', 'token', 'drawn', 'discard'].includes(m.t))) E('รอการตอบโต้ (React) ก่อน');
   const mainOnly = () => { if (!mine || g.phase !== 'main') E('ทำได้เฉพาะ Main Phase ของเรา'); };
   const own = u => { const f = find(r, u); if (!f || f.i !== i) E('ไม่ใช่การ์ดของเรา'); return f; };
   const pays = () => (m.pay || []).map(u => { const f = own(u); if (f.z !== 'hand') E('ต้องจ่ายด้วยการ์ดในมือ'); return f.c; });
@@ -166,6 +173,14 @@ function act(r, i, m) {
     case 'pw': { const f = find(r, m.u); if (!f) E('ไม่พบ'); f.c.pw += m.d > 0 ? 1 : -1; log(r, '[แก้ไข] ' + me.name + ' ปรับ Power ' + (m.d > 0 ? '+1' : '-1')); break; }
     case 'tire': { const f = find(r, m.u); if (!f) E('ไม่พบ'); f.c.tired = !f.c.tired; break; }
     case 'drawn': draw(r, me, 1); log(r, '[แก้ไข] ' + me.name + ' จั่ว 1'); break;
+    case 'dview': { const n = +m.n | 0, L = (n > 0 ? me.deck.slice(-n) : me.deck.slice()).reverse(); me.ws && me.ws.send(JSON.stringify({ t: 'dv', cards: L.map(c => ({ u: c.u, id: c.id })) })); log(r, me.name + ' ดูเด็ค' + (n > 0 ? ' (' + n + ' ใบบนสุด)' : ' (ทั้งเด็ค)')); break; }
+    case 'dmove': {
+      const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบการ์ดในเด็ค'); if (!['hand', 'hell', 'av', 'mg', 'co'].includes(m.to)) E('โซนไม่ถูกต้อง');
+      const [c] = me.deck.splice(k, 1); me[m.to].push(c); log(r, me.name + ' ย้าย ' + B[c.id].n + ' จากเด็ค → ' + m.to);
+      if (!me.deck.length && !g.over) { g.over = me.name + ' เด็คหมด แพ้!'; g.win = 1 - i; } break;
+    }
+    case 'dpos': { const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบการ์ดในเด็ค'); const [c] = me.deck.splice(k, 1); m.top ? me.deck.push(c) : me.deck.unshift(c); log(r, me.name + ' วางการ์ดไว้' + (m.top ? 'บนสุด' : 'ใต้') + 'เด็ค'); break; }
+    case 'dshuf': shuf(me.deck); log(r, me.name + ' สับเด็ค 🔀'); break;
     case 'chat': log(r, '💬 ' + me.name + ': ' + String(m.x || '').slice(0, 200)); break;
     default: E('คำสั่งไม่รู้จัก');
   }
@@ -195,7 +210,7 @@ function begin(r) {
 async function rematch(r, i) {
   r.p[i].rm = 1; if (!r.rmT) r.rmT = Date.now();
   if (r.p.every(x => x.rm)) {
-    for (const x of r.p) { const d = await pickDeck(x.last, x.name); x.deck = shuf(d.main.map(inst)); x.life = d.life.map(id => ({ ...inst(id), up: 0 })); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; }
+    for (const x of r.p) { const d = await pickDeck(x.last, x.name, r.cfg.ban); x.deck = shuf(d.main.map(inst)); x.life = d.life.map(id => ({ ...inst(id), up: 0 })); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; }
     r.rmT = 0; begin(r);
   } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
   bc(r);
@@ -287,13 +302,13 @@ wss.on('connection', ws => {
         const code = String(m.room || '').toUpperCase().slice(0, 8), name = ws.user;
         if (!code) E('ใส่รหัสห้อง');
         r = rooms[code];
-        if (!r) { if (!m.create) E('ไม่พบห้อง หรือรหัสหมดอายุแล้ว'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5, 10, 20].includes(+m.clock) ? +m.clock : 0, react: [10, 20, 30].includes(+m.react) ? +m.react : 0 } }; }
+        if (!r) { if (!m.create) E('ไม่พบห้อง หรือรหัสหมดอายุแล้ว'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5, 10, 20].includes(+m.clock) ? +m.clock : 0, react: [10, 20, 30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], life: [] }); }
         r.p[i].ws = ws; if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมาแล้ว'); } bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
-        const d = await pickDeck(m, ws.user), p = r.p[i];
+        const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
         p.last = m; p.deck = shuf(d.main.map(inst)); p.life = d.life.map(id => ({ ...inst(id), up: 0 })); p.hand = [];
         if (r.p.length === 2 && r.p.every(x => x.deck)) begin(r);
         bc(r);
