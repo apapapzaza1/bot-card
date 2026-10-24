@@ -17,17 +17,23 @@ const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await
 const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
 const sign = n => { const p = n + '|' + (Date.now() + 30 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
 const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'base64').toString(); if (crypto.createHmac('sha256', SEC).update(p).digest('hex') !== s) return; const [n, e] = p.split('|'); return +e > Date.now() ? n : null; } catch (e) { } };
-const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN });
+const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0 });
+const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
+const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01', 'BT02', 'BT03', 'BT04', 'BT05', 'BT06', 'BT07', 'BT08', 'BT09', 'BT10', 'BT11'];
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
-function pack(set) { // สมมติฐาน: 3 Common + 1 Rare + 1 ช่องลุ้น (ปรับอัตราได้ที่นี่)
+function pack(set, gar) { // สมมติฐาน: 3 Common + 1 Rare + 1 ช่องลุ้น (ปรับอัตราได้ที่นี่)
   const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
-  const by = r => R.filter(x => x.r === r), w = () => { const x = Math.random(); return x < .5 ? 'R' : x < .8 ? 'SR' : x < .93 ? 'UR' : 'SCR'; };
+  const by = r => R.filter(x => x.r === r), w = () => { const x = Math.random(); return gar ? (x < .7 ? 'UR' : 'SCR') : x < .62 ? 'R' : x < .9 ? 'SR' : x < .98 ? 'UR' : 'SCR'; };
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g('R'), g(w())];
 }
-function preDeck(s) { const p = CARDS.filter(c => c.id.startsWith(s + '-')), n = p.filter(c => c.t !== 'Life'), main = []; for (let k = 0; main.length < 50; k++) main.push(n[k % n.length].id); return { main, life: p.filter(c => c.t === 'Life').map(c => c.id) }; }
+function preDeck(s) { const x = ST[s]; return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id) }; }
+async function pickDeck(m, user) {
+  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0); }
+  return /^SD0[1-3]$/.test(m.pre) ? preDeck(m.pre) : mkDeck(m.text || '', m.rand, m.skip);
+}
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
   for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const d = await dbGet(w.user); d.gems += k === g.win ? 150 : 50; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d) })); } }
 const wss = new WebSocketServer({ server: srv });
@@ -180,17 +186,45 @@ wss.on('connection', ws => {
           if (m.t === 'reg') {
             if (d) E('ชื่อนี้ถูกใช้แล้ว'); if (pw.length < 4) E('รหัสผ่านอย่างน้อย 4 ตัว');
             const s = crypto.randomBytes(8).toString('hex'); d = { s, h: hash(pw, s), gems: 0, cards: {}, codes: [] };
-            ['SD01', 'SD02', 'SD03'].forEach(x => CARDS.filter(c => c.id.startsWith(x + '-')).forEach(c => { for (let k = 0; k < 3; k++) add(d, { id: c.id, r: c.v[0] }); }));
+            ['SD01', 'SD02', 'SD03'].forEach(x => giveSt(d, x));
             await dbPut(n, d);
           } else if (!d || d.h !== hash(pw, d.s)) E('ชื่อหรือรหัสผ่านไม่ถูกต้อง');
         }
         ws.user = n; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: prof(n, d) })); return;
       }
       if (!ws.user) E('ต้องล็อกอินก่อน');
+      const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
+      if (m.t === 'buyst') {
+        const d = await dbGet(ws.user); d.bought = d.bought || [];
+        if (!ST[m.set] || /^SD0[1-3]$/.test(m.set)) E('ไม่มีสินค้า'); if (d.bought.includes(m.set)) E('ซื้อแล้ว'); if (d.gems < 1500) E('Gem ไม่พอ');
+        d.gems -= 1500; d.bought.push(m.set); giveSt(d, m.set);
+        await dbPut(ws.user, d); me_(d); return;
+      }
+      if (m.t === 'savedeck') {
+        const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
+        const main = (m.main || []).map(String), life = (m.life || []).map(String), cnt = {};
+        [...main, ...life].forEach(i => { if (!B[i]) E('ไม่พบการ์ด ' + i); cnt[i] = (cnt[i] || 0) + 1; });
+        for (const i in cnt) if (cnt[i] > (own[i] || 0)) E('การ์ดไม่พอ: ' + B[i].n);
+        if (life.some(i => B[i].t !== 'Life') || main.some(i => B[i].t === 'Life')) E('ประเภทการ์ดไม่ถูกต้อง');
+        mkDeck([...main, ...life].map(i => i + ' x1').join(' '), 0, !!m.draft);
+        const nm = String(m.name || 'เด็คใหม่').slice(0, 20); d.decks = d.decks || {};
+        if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20 ชุด'); d.decks[nm] = { main, life };
+        await dbPut(ws.user, d); me_(d); return;
+      }
+      if (m.t === 'fadd') {
+        const t = String(m.name || '').trim().toLowerCase(); if (t === ws.user) E('เพิ่มตัวเองไม่ได้');
+        const o = await dbGet(t), d = await dbGet(ws.user); if (!o) E('ไม่พบผู้ใช้'); if ((d.fr || []).includes(t)) E('เป็นเพื่อนกันแล้ว');
+        o.rq = o.rq || []; if (!o.rq.includes(ws.user)) o.rq.push(ws.user); await dbPut(t, o); me_(d); ws.send(JSON.stringify({ note: 'ส่งคำขอแล้ว' })); return;
+      }
+      if (m.t === 'facc') {
+        const t = String(m.name), d = await dbGet(ws.user), o = await dbGet(t); d.rq = d.rq || []; if (!o || !d.rq.includes(t)) E('ไม่พบคำขอ');
+        d.rq = d.rq.filter(x => x !== t); if (m.ok) { d.fr = [...new Set([...(d.fr || []), t])]; o.fr = [...new Set([...(o.fr || []), ws.user])]; await dbPut(t, o); }
+        await dbPut(ws.user, d); me_(d); return;
+      }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; for (let k = 0; k < n; k++) { const p = pack(m.set); p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= 20); if (['UR', 'SCR'].includes(p[4].r)) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
       if (m.t === 'code') {
@@ -210,7 +244,7 @@ wss.on('connection', ws => {
         r.p[i].ws = ws; bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
-        const d = /^SD0[1-3]$/.test(m.pre) ? preDeck(m.pre) : mkDeck(m.text || '', m.rand, m.skip), p = r.p[i];
+        const d = await pickDeck(m, ws.user), p = r.p[i];
         p.deck = shuf(d.main.map(inst)); p.life = d.life.map(id => ({ ...inst(id), up: 0 })); p.hand = [];
         if (r.p.length === 2 && r.p.every(x => x.deck)) {
           r.p.forEach(x => { x.deck.forEach(c => c); draw({ g: {} }, x, 5); });
