@@ -72,10 +72,10 @@ function mkDeck(text, rand, skip) {
 
 const view = (r, i) => {
   const g = r.g, pub = p => ({ name: p.name, av: p.av, mg: p.mg, co: p.co, hell: p.hell, deck: p.deck.length, hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null };
+  return { i, me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, pend: g.pend ? { mine: g.pend.who === i, k: g.pend.k, until: g.pend.until } : null };
 };
 const bc = r => r.p.forEach((p, i) => {
-  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', clock: r.cfg.clock, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
+  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', clock: r.cfg.clock, react: r.cfg.react, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
@@ -109,6 +109,7 @@ function hit(r, d, atk) {
 function act(r, i, m) {
   const g = r.g, me = r.p[i], op = r.p[1 - i], mine = g.turn === i;
   if (g.over && m.t !== 'chat') E('เกมจบแล้ว');
+  if (g.pend && !['chat', 'pass'].includes(m.t) && !(i === g.pend.who && ['cast', 'move', 'pw', 'tire', 'token', 'drawn', 'discard'].includes(m.t))) E('รอการตอบโต้ (React) ก่อน');
   const mainOnly = () => { if (!mine || g.phase !== 'main') E('ทำได้เฉพาะ Main Phase ของเรา'); };
   const own = u => { const f = find(r, u); if (!f || f.i !== i) E('ไม่ใช่การ์ดของเรา'); return f; };
   const pays = () => (m.pay || []).map(u => { const f = own(u); if (f.z !== 'hand') E('ต้องจ่ายด้วยการ์ดในมือ'); return f.c; });
@@ -134,7 +135,7 @@ function act(r, i, m) {
       if (!av && me.co.some(x => B[x.id].n === c.n)) E('Construct ชื่อซ้ำ');
       const ps = pays(); payOK(c, ps);
       ps.forEach(p => { take(r, p.u); me.hell.push(p); }); take(r, m.u); me[av ? 'av' : 'co'].push(f.c);
-      ev(r, c.id); log(r, me.name + (av ? ' อัญเชิญ ' : ' ก่อสร้าง ') + c.n + ' — ' + c.e); break;
+      ev(r, c.id); log(r, me.name + (av ? ' อัญเชิญ ' : ' ก่อสร้าง ') + c.n + ' — ' + c.e); open(r, { who: 1 - i, k: 'ev' }); break;
     }
     case 'cast': {
       const f = own(m.u), c = B[f.c.id]; if (f.z !== 'hand' || c.t !== 'Magic') E('ไม่ใช่ Magic ในมือ');
@@ -143,23 +144,19 @@ function act(r, i, m) {
       if (c.st === 'Modification') { const t = find(r, m.tg); if (!t || t.z !== 'av') { me.hand.push(f.c); g.used[c.st] = 0; E('ต้องเลือก Avatar เป้าหมาย'); } t.c.gear.push(f.c); }
       else if (c.st === 'Land') { if (g.land) r.p[g.land.o].hell.push(g.land.c); g.land = { c: f.c, o: i }; }
       else me.hell.push(f.c);
-      ev(r, c.id); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + ' — ' + c.e); break;
+      ev(r, c.id); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + ' — ' + c.e); if (c.st !== 'React') open(r, { who: 1 - i, k: 'ev' }); break;
     }
     case 'atk': {
       if (!mine || g.phase !== 'battle') E('โจมตีได้เฉพาะ Battle Phase ของเรา');
-      const a = own(m.u); if (a.z !== 'av' || a.c.tired) E('Avatar นี้โจมตีไม่ได้'); a.c.tired = true;
-      const an = a.c.tk ? a.c.tk.n : B[a.c.id].n;
-      if (m.tg === 'life') {
-        if (op.av.length && !(B[a.c.id] || {}).e?.includes('เตะไข่')) { a.c.tired = false; E('ต้องกำจัด Avatar ศัตรูก่อน'); }
-        log(r, an + ' โจมตี LIFE'); if (pw(a.c) > 0) hit(r, op, me); else log(r, 'Power 0 ไม่สร้างความเสียหาย');
-      } else {
-        const d = op.av.find(x => x.u === m.tg); if (!d) { a.c.tired = false; E('ไม่พบเป้าหมาย'); }
-        const pa = pw(a.c), pd = pw(d), dn = d.tk ? d.tk.n : B[d.id].n;
-        log(r, an + ' (' + pa + ') สู้ ' + dn + ' (' + pd + ')');
-        if (pa === pd) { if (pa > 0) { kill(r, i, a.c.u); kill(r, 1 - i, d.u); log(r, 'ตายทั้งคู่'); } }
-        else kill(r, pa > pd ? 1 - i : i, pa > pd ? d.u : a.c.u);
-      } break;
+      const a = own(m.u); if (a.z !== 'av' || a.c.tired) E('Avatar นี้โจมตีไม่ได้');
+      if (m.tg === 'life') { if (op.av.length && !(((B[a.c.id] || {}).e) || '').includes('เตะไข่')) E('ต้องกำจัด Avatar ศัตรูก่อน'); }
+      else if (!op.av.some(x => x.u === m.tg)) E('ไม่พบเป้าหมาย');
+      a.c.tired = true; log(r, (a.c.tk ? a.c.tk.n : B[a.c.id].n) + ' ประกาศโจมตี ' + (m.tg === 'life' ? 'LIFE' : 'Avatar'));
+      open(r, { who: 1 - i, k: 'atk', ai: i, u: m.u, tg: m.tg }); break;
     }
+    case 'oe': { if (g.phase !== 'dice' || i !== 0) E('ตอนนี้เลือกคู่/คี่ไม่ได้'); const d = 1 + Math.floor(Math.random() * 6); g.dw = (d % 2 === 1) === (m.v === 'odd') ? 0 : 1; log(r, me.name + ' เลือก' + (m.v === 'odd' ? 'คี่' : 'คู่') + ' · ทอยได้ ' + d + ' · ' + r.p[g.dw].name + ' ชนะ เลือกลำดับได้'); g.phase = 'pick'; break; }
+    case 'first': { if (g.phase !== 'pick' || i !== g.dw) E('ไม่ใช่สิทธิ์ของคุณ'); g.turn = m.v ? i : 1 - i; log(r, r.p[g.turn].name + ' ได้เริ่มก่อน'); g.phase = 'mull'; break; }
+    case 'pass': { if (!g.pend || g.pend.who !== i) E('ไม่มีหน้าต่าง React'); passReact(r); break; }
     case 'token': if (me.av.length >= 6) E('เต็ม 6'); me.av.push({ ...inst('TK'), tk: { n: String(m.n || 'Token').slice(0, 30), p: +m.p || 0 } }); log(r, me.name + ' สร้าง Token'); break;
     case 'move': { // เครื่องมือแก้ไข (เฟสนี้: ทำได้เลย + บันทึกให้อีกฝ่ายเห็น)
       const f = find(r, m.u); if (!f) E('ไม่พบการ์ด'); if (!ZN.includes(m.to)) E('โซนไม่ถูกต้อง');
@@ -174,10 +171,26 @@ function act(r, i, m) {
   }
 }
 
+const open = (r, p) => { p.until = r.cfg.react ? Date.now() + r.cfg.react * 1000 : 0; r.g.pend = p; };
+function resolveAtk(r, p) {
+  const me = r.p[p.ai], op = r.p[1 - p.ai], f = find(r, p.u);
+  if (!f || f.i !== p.ai || f.z !== 'av') return log(r, 'การโจมตีถูกยกเลิก');
+  const a = f.c, an = a.tk ? a.tk.n : B[a.id].n;
+  if (p.tg === 'life') {
+    if (op.av.length && !(((B[a.id] || {}).e) || '').includes('เตะไข่')) return log(r, 'โจมตี LIFE ไม่ได้ (ศัตรูยังมี Avatar)');
+    log(r, an + ' โจมตี LIFE'); if (pw(a) > 0) hit(r, op, me); else log(r, 'Power 0 ไม่สร้างความเสียหาย');
+  } else {
+    const d = op.av.find(x => x.u === p.tg); if (!d) return log(r, 'เป้าหมายหายไป การโจมตีล้มเหลว');
+    const pa = pw(a), pd = pw(d), dn = d.tk ? d.tk.n : B[d.id].n;
+    log(r, an + ' (' + pa + ') สู้ ' + dn + ' (' + pd + ')');
+    if (pa === pd) { if (pa > 0) { kill(r, p.ai, a.u); kill(r, 1 - p.ai, d.u); log(r, 'ตายทั้งคู่'); } }
+    else kill(r, pa > pd ? 1 - p.ai : p.ai, pa > pd ? d.u : a.u);
+  }
+}
+function passReact(r) { const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') resolveAtk(r, p); }
 function begin(r) {
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; });
-  r.g = { turn: Math.floor(Math.random() * 2), phase: 'mull', n: 0, used: {}, land: null, log: ['เริ่มเกม! เลือกเปลี่ยนมือหรือเก็บทั้งหมด'], over: null };
-  log(r, r.p[r.g.turn].name + ' ได้เริ่มก่อน');
+  r.g = { turn: 0, phase: 'dice', pend: null, n: 0, used: {}, land: null, log: ['เริ่มเกม! เจ้าห้องเลือกคี่หรือคู่'], over: null };
 }
 async function rematch(r, i) {
   r.p[i].rm = 1; if (!r.rmT) r.rmT = Date.now();
@@ -194,7 +207,8 @@ setInterval(() => {
     if (!g) { if (r.exp && now > r.exp) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ err: 'ห้องหมดอายุ' }))); delete rooms[c]; } continue; }
     if (g.over) { g.oa = g.oa || now; if ((r.rmT && now - r.rmT > 10000) || now - g.oa > 6e5) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ t: 'rmx' }))); delete rooms[c]; } continue; }
     r.p.forEach((p, k) => { if (p.dc && now - p.dc > 12e4) { g.over = p.name + ' หลุดการเชื่อมต่อเกิน 2 นาที แพ้'; g.win = 1 - k; } });
-    if (!g.over && r.cfg.clock && g.phase !== 'mull') {
+    if (g.pend && g.pend.until && now > g.pend.until) { passReact(r); bc(r); settle(r).catch(() => { }); }
+    if (!g.over && r.cfg.clock && ['main', 'battle', 'end'].includes(g.phase)) {
       const p = r.p[g.turn]; p.t -= 1000; if (p.t <= 0) { g.over = p.name + ' หมดเวลา แพ้'; g.win = 1 - g.turn; }
       r.p.forEach(x => x.ws && x.ws.readyState === 1 && x.ws.send(JSON.stringify({ t: 'clk', a: r.p.map(y => y.t) })));
     }
@@ -273,7 +287,7 @@ wss.on('connection', ws => {
         const code = String(m.room || '').toUpperCase().slice(0, 8), name = ws.user;
         if (!code) E('ใส่รหัสห้อง');
         r = rooms[code];
-        if (!r) { if (!m.create) E('ไม่พบห้อง หรือรหัสหมดอายุแล้ว'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5, 10, 20].includes(+m.clock) ? +m.clock : 0 } }; }
+        if (!r) { if (!m.create) E('ไม่พบห้อง หรือรหัสหมดอายุแล้ว'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5, 10, 20].includes(+m.clock) ? +m.clock : 0, react: [10, 20, 30].includes(+m.react) ? +m.react : 0 } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], life: [] }); }
         r.p[i].ws = ws; if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมาแล้ว'); } bc(r);
