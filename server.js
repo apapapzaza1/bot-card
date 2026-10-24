@@ -2,11 +2,34 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
+const MT = { '.json': 'application/json', '.html': 'text/html;charset=utf-8', '.mp4': 'video/mp4', '.webm': 'video/webm', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.mp3': 'audio/mpeg' };
 const srv = http.createServer((q, r) => {
-  const j = q.url.split('?')[0] === '/cards.json';
-  r.writeHead(200, { 'Content-Type': j ? 'application/json' : 'text/html;charset=utf-8' });
-  fs.createReadStream(path.join(__dirname, j ? 'cards.json' : 'index.html')).pipe(r);
+  let f = path.basename(q.url.split('?')[0]) || 'index.html';
+  if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(__dirname, f))) f = 'index.html';
+  r.writeHead(200, { 'Content-Type': MT[path.extname(f)] });
+  fs.createReadStream(path.join(__dirname, f)).pipe(r);
 });
+const crypto = require('crypto');
+const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY, SEC = process.env.SECRET || crypto.randomBytes(16).toString('hex'), ADMIN = (process.env.ADMIN_USER || '').toLowerCase();
+const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, mem = {};
+const dbGet = async n => { if (!SB) return mem[n]; const a = await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=d`, { headers: H })).json(); return a[0] && a[0].d; };
+const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await fetch(`${SB}/rest/v1/users`, { method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ name: n, d }) }); if (!r.ok) throw 'บันทึกข้อมูลไม่สำเร็จ'; };
+const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
+const sign = n => { const p = n + '|' + (Date.now() + 30 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
+const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'base64').toString(); if (crypto.createHmac('sha256', SEC).update(p).digest('hex') !== s) return; const [n, e] = p.split('|'); return +e > Date.now() ? n : null; } catch (e) { } };
+const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN });
+const SETS = ['BT01', 'BT02', 'BT03', 'BT04', 'BT05', 'BT06', 'BT07', 'BT08', 'BT09', 'BT10', 'BT11'];
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
+function pack(set) { // สมมติฐาน: 3 Common + 1 Rare + 1 ช่องลุ้น (ปรับอัตราได้ที่นี่)
+  const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
+  const by = r => R.filter(x => x.r === r), w = () => { const x = Math.random(); return x < .5 ? 'R' : x < .8 ? 'SR' : x < .93 ? 'UR' : 'SCR'; };
+  const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
+  return [g('C'), g('C'), g('C'), g('R'), g(w())];
+}
+function preDeck(s) { const p = CARDS.filter(c => c.id.startsWith(s + '-')), n = p.filter(c => c.t !== 'Life'), main = []; for (let k = 0; main.length < 50; k++) main.push(n[k % n.length].id); return { main, life: p.filter(c => c.t === 'Life').map(c => c.id) }; }
+async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const d = await dbGet(w.user); d.gems += k === g.win ? 150 : 50; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d) })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -49,7 +72,7 @@ const bc = r => r.p.forEach((p, i) => {
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
-const draw = (r, p, n) => { for (let k = 0; k < n && p.deck.length; k++) p.hand.push(p.deck.pop()); if (!p.deck.length && !r.g.over) r.g.over = p.name + ' เด็คหมด แพ้!'; };
+const draw = (r, p, n) => { for (let k = 0; k < n && p.deck.length; k++) p.hand.push(p.deck.pop()); if (!p.deck.length && !r.g.over) { r.g.over = p.name + ' เด็คหมด แพ้!'; r.g.win = r.p ? 1 - r.p.indexOf(p) : null; } };
 const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
 const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); r.p[f.i][f.z].splice(f.k, 1); return f; };
@@ -70,7 +93,7 @@ function startTurn(r) {
 }
 function hit(r, d, atk) {
   const k = d.life.findIndex(l => !l.up);
-  if (k < 0) { r.g.over = atk.name + ' ชนะ! ' + d.name + ' ถูกโจมตีขณะสาหัส'; return; }
+  if (k < 0) { r.g.over = atk.name + ' ชนะ! ' + d.name + ' ถูกโจมตีขณะสาหัส'; r.g.win = r.p.indexOf(atk); return; }
   d.life[k].up = 1; const c = B[d.life[k].id];
   log(r, d.name + ' LIFE หงาย: ' + c.n + ' — ' + c.e);
   if (d.life.every(l => l.up)) log(r, d.name + ' เข้าสถานะสาหัส!');
@@ -146,11 +169,40 @@ function act(r, i, m) {
 wss.on('connection', ws => {
   let r, i;
   const err = s => ws.send(JSON.stringify({ err: String(s) }));
-  ws.on('message', raw => {
+  ws.on('message', async raw => {
     try {
       const m = JSON.parse(raw);
+      if (m.t === 'reg' || m.t === 'login' || m.t === 'tok') {
+        let n = String(m.name || '').trim().toLowerCase().slice(0, 16), d;
+        if (m.t === 'tok') { n = unsign(String(m.tok)); if (!n) E('เซสชันหมดอายุ'); d = await dbGet(n); if (!d) E('ไม่พบบัญชี'); }
+        else {
+          if (!/^[a-z0-9_\u0E00-\u0E7F]{3,16}$/.test(n)) E('ชื่อ 3-16 ตัว (a-z 0-9 _ หรือไทย)'); d = await dbGet(n); const pw = String(m.pw || '');
+          if (m.t === 'reg') {
+            if (d) E('ชื่อนี้ถูกใช้แล้ว'); if (pw.length < 4) E('รหัสผ่านอย่างน้อย 4 ตัว');
+            const s = crypto.randomBytes(8).toString('hex'); d = { s, h: hash(pw, s), gems: 0, cards: {}, codes: [] };
+            ['SD01', 'SD02', 'SD03'].forEach(x => CARDS.filter(c => c.id.startsWith(x + '-')).forEach(c => { for (let k = 0; k < 3; k++) add(d, { id: c.id, r: c.v[0] }); }));
+            await dbPut(n, d);
+          } else if (!d || d.h !== hash(pw, d.s)) E('ชื่อหรือรหัสผ่านไม่ถูกต้อง');
+        }
+        ws.user = n; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: prof(n, d) })); return;
+      }
+      if (!ws.user) E('ต้องล็อกอินก่อน');
+      if (m.t === 'open') {
+        const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
+        if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
+        const ps = []; for (let k = 0; k < n; k++) { const p = pack(m.set); p.forEach(x => add(d, x)); ps.push(p); }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
+      }
+      if (m.t === 'code') {
+        const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
+        if (!['BOTFANMADE', 'SOCOOL'].includes(c)) E('โค้ดไม่ถูกต้อง'); if (d.codes.includes(c)) E('ใช้โค้ดนี้ไปแล้ว'); d.codes.push(c);
+        let ps = [];
+        if (c === 'BOTFANMADE') d.gems += 5555;
+        else { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR', 'CBR', 'SCR'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < 5; k++) { const x = pick(A); add(d, x); p.push(x); } ps = [p]; }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: c === 'BOTFANMADE' ? 'ได้รับ 5555 Gem' : '' })); return;
+      }
       if (m.t === 'join') {
-        const code = String(m.room || '').toUpperCase().slice(0, 8), name = String(m.name || '').slice(0, 20) || 'ผู้เล่น';
+        const code = String(m.room || '').toUpperCase().slice(0, 8), name = ws.user;
         if (!code) E('ใส่รหัสห้อง');
         r = rooms[code] = rooms[code] || { p: [], g: null };
         i = r.p.findIndex(p => p.name === name);
@@ -158,7 +210,7 @@ wss.on('connection', ws => {
         r.p[i].ws = ws; bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
-        const d = mkDeck(m.text || '', m.rand, m.skip), p = r.p[i];
+        const d = /^SD0[1-3]$/.test(m.pre) ? preDeck(m.pre) : mkDeck(m.text || '', m.rand, m.skip), p = r.p[i];
         p.deck = shuf(d.main.map(inst)); p.life = d.life.map(id => ({ ...inst(id), up: 0 })); p.hand = [];
         if (r.p.length === 2 && r.p.every(x => x.deck)) {
           r.p.forEach(x => { x.deck.forEach(c => c); draw({ g: {} }, x, 5); });
@@ -166,7 +218,7 @@ wss.on('connection', ws => {
           log(r, r.p[r.g.turn].name + ' ได้เริ่มก่อน');
         }
         bc(r);
-      } else if (r && r.g) { act(r, i, m); bc(r); }
+      } else if (r && r.g) { act(r, i, m); bc(r); settle(r).catch(() => { }); }
     } catch (e) { err(e && e.message ? 'ผิดพลาด' : e); }
   });
 });
