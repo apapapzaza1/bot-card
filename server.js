@@ -176,9 +176,14 @@ function act(r, i, m) {
   switch (m.t) {
     case 'mull': {
       if (g.phase !== 'mull' || me.m) E('เปลี่ยนมือไม่ได้');
-      const us = m.us || [], cs = us.map(u => take(r, u).c);
-      cs.forEach(c => me.deck.unshift(c)); draw(r, me, cs.length); shuf(me.deck); me.m = true;
-      if (r.p.every(p => p.m)) { g.phase = 'x'; startTurn(r); } break;
+      me.m = true;
+      const us = [...new Set((m.us||[]).map(Number))];
+      const cs = us.map(u => { const f = own(u); if (f.z !== 'hand') E('ไม่ใช่การ์ดในมือ'); return take(r, u).c; });
+      cs.forEach(c => me.deck.push(c));
+      shuf(me.deck);
+      draw(r, me, cs.length);
+      if (r.p.every(p => p.m)) { g.phase='x'; startTurn(r); }
+      break;
     }
     case 'next':
       if (!mine) E('ไม่ใช่เทิร์นเรา');
