@@ -230,7 +230,7 @@ if(S.phase=='dice')return S.i==0?(A('คี่',()=>send({t:'oe',v:'odd'})),A('�
 if(S.phase=='pick')return S.dw==S.i?(A('เริ่มก่อน',()=>send({t:'first',v:1})),A('เริ่มทีหลัง',()=>send({t:'first',v:0}))):A('รอผู้ชนะการทอยเลือกลำดับ…',()=>{});
 if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
 if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s)':''),()=>send({t:'pass'}));
-if(S.phase=='mull'){A('เปลี่ยนที่เลือก ('+pay.length+')',()=>send({t:'mull',us:pay}));return A('เก็บทั้งหมด',()=>send({t:'mull',us:[]}))}
+if(S.phase=='mull'){A('เปลี่ยนที่เลือก ('+pay.length+')',()=>{send({t:'mull',us:pay});pay=[]});return A('เก็บทั้งหมด',()=>{send({t:'mull',us:[]});pay=[]})}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7){const ex=S.me.hand.length-7;return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') · มือเกิน 7 ใบ',()=>pay.length?send({t:'discardm',us:pay}):alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ'))}
 const f=sel&&find(sel),c=f&&info(f.x);
 if(mode=='pay')A('ยืนยันจ่าย ('+pay.length+')',()=>send({t:c.t=='Avatar'?'summon':'build',u:sel,pay}));
