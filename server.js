@@ -6,7 +6,7 @@ const MT = { '.json': 'application/json', '.html': 'text/html;charset=utf-8', '.
 const srv = http.createServer((q, r) => {
   let f = path.basename(q.url.split('?')[0]) || 'index.html';
   if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(__dirname, f))) f = 'index.html';
-  r.writeHead(200, { 'Content-Type': MT[path.extname(f)] });
+  r.writeHead(200, path.extname(f) === '.webp' ? { 'Content-Type': MT['.webp'], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
   fs.createReadStream(path.join(__dirname, f)).pipe(r);
 });
 const crypto = require('crypto');
