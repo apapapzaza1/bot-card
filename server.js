@@ -246,7 +246,6 @@ function payOK(c, pay, me) {
   const gs = pay.map(x => { const d = B[x.id]; if (me && me.noCost && me.noCost.includes(d.n)) E('ใช้เป็น Cost ไม่ได้: ' + d.n); if (!d.g) E('การ์ด Gem 0 ใช้จ่ายไม่ได้'); if (d.gc && d.gc !== c.col) E('สี Gem ไม่ตรง: ' + d.n); return d.g; });
   const sum = gs.reduce((a, b) => a + b, 0);
   if (sum < c.c) E('Gem ไม่พอ (' + sum + '/' + c.c + ')');
-  if (gs.some(g => sum - g >= c.c)) E('จ่ายเกินจำเป็น');
 }
 function startTurn(r) {
   const g = r.g, p = r.p[g.turn]; g.used = [{}, {}];
@@ -272,7 +271,7 @@ function act(r, i, m) {
   else if (g.pend && !['chat','pass'].includes(m.t) && !(i === g.pend.who && ['dview','dmove','dpos','dshuf','cast','discard'].includes(m.t))) E('รอ React ก่อน');
   const mainOnly = () => { if (!mine || g.phase !== 'main') E('เฉพาะ Main Phase'); };
   const own = u => { const f = find(r, u); if (!f || f.i !== i) E('ไม่ใช่การ์ดของเรา'); return f; };
-  const pays = () => (m.pay || []).map(u => { const f = own(u); if (f.z !== 'hand') E('ต้องจ่ายด้วยการ์ดในมือ'); return f.c; });
+  const pays = () => (m.pay || []).map(u => { if (u === m.u) E('ใช้การ์ดใบนี้เป็น Cost ของตัวเองไม่ได้'); const f = own(u); if (f.z !== 'hand') E('ต้องจ่ายด้วยการ์ดในมือ'); return f.c; });
   switch (m.t) {
     case 'mull': {
       if (g.phase !== 'mull' || me.m) E('เปลี่ยนมือไม่ได้');
