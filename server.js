@@ -228,11 +228,8 @@ function act(r, i, m) {
     case 'oe': { if (g.phase !== 'dice' || i !== 0) E('ตอนนี้ไม่ได้'); const d = 1 + Math.floor(Math.random() * 6); g.dw = (d % 2 === 1) === (m.v === 'odd') ? 0 : 1; log(r, me.name + ' ทอย ' + d + ' · ' + r.p[g.dw].name + ' ชนะ'); g.phase = 'pick'; break; }
     case 'first': { if (g.phase !== 'pick' || i !== g.dw) E('ไม่ใช่สิทธิ์'); g.turn = m.v ? i : 1 - i; log(r, r.p[g.turn].name + ' เริ่มก่อน'); g.phase = 'mull'; break; }
     case 'pass': { if (!g.pend || g.pend.who !== i) E('ไม่มี React'); passReact(r); break; }
-    case 'token': if (me.av.length >= 6) E('เต็ม 6'); me.av.push({ ...inst('TK'), tk: { n: String(m.n || 'Token').slice(0, 30), p: +m.p || 0 } }); log(r, me.name + ' สร้าง Token'); break;
-    case 'move': { const f = find(r, m.u); if (!f) E('ไม่พบ'); if (!ZN.includes(m.to)) E('โซนผิด'); take(r, m.u); if (f.c.tk) { if (m.to === 'av') r.p[f.i].av.push(f.c); } else { f.c.tired = false; r.p[f.i][m.to].push(f.c); } log(r, '[แก้ไข] ย้าย ' + (f.c.tk ? 'Token' : B[f.c.id].n) + ' → ' + m.to); break; }
-    case 'pw': { const f = find(r, m.u); if (!f) E('ไม่พบ'); f.c.pw += m.d > 0 ? 1 : -1; log(r, '[แก้ไข] ปรับ Power'); break; }
-    case 'tire': { const f = find(r, m.u); if (!f) E('ไม่พบ'); f.c.tired = !f.c.tired; break; }
-    case 'drawn': { if (!me.deck.length) E('เด็คหมด'); const b4 = me.hand.length; draw(r, me, 1); g.dr = { n: ++DRN, who: i, c: me.hand.length - b4 }; log(r, '[แก้ไข] จั่ว 1'); break; }
+    case 'token': case 'move': case 'pw': case 'tire': case 'drawn':
+      E('คำสั่งนี้ถูกปิด'); break;
     case 'discardm': { const us = [...new Set((m.us || []).map(Number))].slice(0, 20); if (!us.length) E('ยังไม่เลือก'); us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ'); break; }
     case 'dview': { const n = +m.n | 0, L = (n > 0 ? me.deck.slice(-n) : me.deck.slice()).reverse(); me.ws && me.ws.send(JSON.stringify({ t: 'dv', cards: L.map(c => ({ u: c.u, id: c.id })) })); log(r, me.name + ' ดูเด็ค'); break; }
     case 'dmove': { const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบ'); if (!['hand','hell','av','mg','co'].includes(m.to)) E('โซนผิด'); const [c] = me.deck.splice(k, 1); me[m.to].push(c); log(r, me.name + ' ย้ายจากเด็ค → ' + m.to); if (!me.deck.length && !g.over) { g.over = me.name + ' เด็คหมด'; g.win = 1 - i; } break; }
