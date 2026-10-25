@@ -242,7 +242,7 @@ else{if(f.z=='av'&&S.phase=='battle'&&S.mine&&!S.pend){const e=A(f.x.tired?'💤
 if(f.z=='av'){A('นอน/ตื่น',()=>send({t:'tire',u:sel}));A('+1',()=>send({t:'pw',u:sel,d:1}));A('-1',()=>send({t:'pw',u:sel,d:-1}))}
 A('→นรก',()=>send({t:'move',u:sel,to:'hell'}));A('→มือ',()=>send({t:'move',u:sel,to:'hand'}))}}
 if(S.mine)A(S.phase=='main'?'→ Battle':S.phase=='battle'?'→ End':'จบเทิร์น',()=>send({t:'next'}));
-A('+Token',()=>{const n=prompt('ชื่อ Token'),p=prompt('Power');n&&send({t:'token',n,p})});A('จั่ว',()=>send({t:'drawn'}));A('เด็ค',()=>{const n=prompt('ดูกี่ใบบนสุด? (0 = ค้นทั้งเด็ค)','0');n!==null&&send({t:'dview',n})});A('แชท',()=>{const x=prompt('ข้อความ');x&&send({t:'chat',x})});A('⚙',st)}
+A('เด็ค',()=>{const n=prompt('ดูกี่ใบบนสุด? (0 = ค้นทั้งเด็ค)','0');n!==null&&send({t:'dview',n})});A('แชท',()=>{const x=prompt('ข้อความ');x&&send({t:'chat',x})});A('⚙',st)}
 $('auth').hidden=!!cfg.tok;$('ld').hidden=!cfg.tok;setInterval(()=>{if(!S)return;if(S.pend&&S.pend.mine&&S.pend.until){bar();rxT()}const q=$('erq');if(q&&RMQ>Date.now())q.textContent=' ('+Math.ceil((RMQ-Date.now())/1e3)+'s)'},1000);
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
