@@ -3,11 +3,33 @@ const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
 const MT = { '.json': 'application/json', '.html': 'text/html;charset=utf-8', '.mp4': 'video/mp4', '.webm': 'video/webm', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png', '.mp3': 'audio/mpeg' };
+const IMG = path.join(require('os').tmpdir(), 'bot-img');
+// แตก imgs*.zip (รูปการ์ด) ตอนเซิร์ฟเวอร์เริ่ม — อัปแค่ไฟล์ zip ขึ้น GitHub ได้เลย
+(function unzipImgs() {
+  try {
+    fs.mkdirSync(IMG, { recursive: true });
+    for (const zf of fs.readdirSync(__dirname).filter(n => /^imgs.*\.zip$/i.test(n))) {
+      const b = fs.readFileSync(path.join(__dirname, zf)); let e = b.length - 22;
+      while (e >= 0 && b.readUInt32LE(e) !== 0x06054b50) e--;
+      if (e < 0) continue;
+      let n = b.readUInt16LE(e + 10), p = b.readUInt32LE(e + 16), ok = 0;
+      while (n-- > 0 && b.readUInt32LE(p) === 0x02014b50) {
+        const m = b.readUInt16LE(p + 10), cs = b.readUInt32LE(p + 20), nl = b.readUInt16LE(p + 28), xl = b.readUInt16LE(p + 30), cl = b.readUInt16LE(p + 32), lo = b.readUInt32LE(p + 42);
+        const name = path.basename(b.toString('utf8', p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
+        if (!/\.(webp|json|png)$/i.test(name)) continue;
+        const d = lo + 30 + b.readUInt16LE(lo + 26) + b.readUInt16LE(lo + 28), raw = b.subarray(d, d + cs);
+        fs.writeFileSync(path.join(IMG, name), m === 8 ? require('zlib').inflateRawSync(raw) : raw); ok++;
+      }
+      console.log('unzip', zf, ok, 'files');
+    }
+  } catch (err) { console.log('unzip error', err.message); }
+})();
 const srv = http.createServer((q, r) => {
-  let f = path.basename(q.url.split('?')[0]) || 'index.html';
-  if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(__dirname, f))) f = 'index.html';
+  let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
+  if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
+  if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
   r.writeHead(200, path.extname(f) === '.webp' ? { 'Content-Type': MT['.webp'], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
-  fs.createReadStream(path.join(__dirname, f)).pipe(r);
+  fs.createReadStream(path.join(dir, f)).pipe(r);
 });
 const crypto = require('crypto');
 const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY, SEC = process.env.SECRET || crypto.createHash('sha256').update('bot:' + (process.env.SUPABASE_KEY || 'dev')).digest('hex'), ADMIN = (process.env.ADMIN_USER || '').toLowerCase();
