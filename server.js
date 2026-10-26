@@ -39,7 +39,7 @@ const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await
 const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
 const sign = n => { const p = n + '|' + (Date.now() + 90 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
 const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'base64').toString(); if (crypto.createHmac('sha256', SEC).update(p).digest('hex') !== s) return; const [n, e] = p.split('|'); return +e > Date.now() ? n : null; } catch (e) { } };
-const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [] });
+const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {} });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
@@ -230,7 +230,7 @@ const view = (r, i) => {
   return { i, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const bc = r => r.p.forEach((p, i) => {
-  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
+  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
@@ -449,13 +449,22 @@ wss.on('connection', ws => {
         d.gems -= 1500; d.bought.push(m.set); giveSt(d, m.set);
         await dbPut(ws.user, d); me_(d); return;
       }
+      if (m.t === 'deldeck') { const d = await dbGet(ws.user); if (!d.decks || !d.decks[m.name]) E('ไม่พบเด็ค'); delete d.decks[m.name]; await dbPut(ws.user, d); me_(d); return; }
+      if (m.t === 'buyskin' || m.t === 'eqskin') {
+        const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300 } };
+        const pr = SK[m.k] && SK[m.k][m.id]; if (pr == null) E('ไม่มีสินค้า');
+        const d = await dbGet(ws.user), key = m.k + ':' + m.id; d.skins = d.skins || []; d.eq = d.eq || {};
+        if (m.t === 'buyskin') { if (pr === 0 || d.skins.includes(key)) E('มีแล้ว'); if (d.gems < pr) E('Gem ไม่พอ'); d.gems -= pr; d.skins.push(key); d.eq[m.k] = m.id; }
+        else { if (pr > 0 && !d.skins.includes(key)) E('ยังไม่ได้ซื้อ'); d.eq[m.k] = m.id; }
+        await dbPut(ws.user, d); me_(d); return;
+      }
       if (m.t === 'savedeck') {
         const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
         const main = (m.main || []).map(String), life = (m.life || []).map(String), cnt = {};
         [...main, ...life].forEach(i => { if (!B[i]) E('ไม่พบ ' + i); cnt[i] = (cnt[i] || 0) + 1; });
         for (const i in cnt) if (cnt[i] > (own[i] || 0)) E('การ์ดไม่พอ: ' + B[i].n);
         if (life.some(i => B[i].t !== 'Life') || main.some(i => B[i].t === 'Life')) E('ประเภทผิด');
-        mkDeck([...main, ...life].map(i => i + ' x1').join(' '), 0, !!m.draft);
+        mkDeck([...main, ...life].map(i => i + ' x1').join(' '), 0, false);
         const nm = String(m.name || 'เด็คใหม่').slice(0, 20); d.decks = d.decks || {};
         if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); d.decks[nm] = { main, life };
         await dbPut(ws.user, d); me_(d); return;
@@ -495,8 +504,17 @@ wss.on('connection', ws => {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
         p.last = m; p.deck = shuf(d.main.map(inst)); p.life = shuf(d.life.map(id => ({ ...inst(id), up: 0 }))); p.hand = [];
-        if (r.p.length === 2 && r.p.every(x => x.deck)) begin(r);
         bc(r);
+      } else if (m.t === 'rcfg') {
+        if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องตั้งกติกาได้');
+        if (m.clock != null) r.cfg.clock = [5, 10, 20].includes(+m.clock) ? +m.clock : 0;
+        if (m.react != null) r.cfg.react = [10, 20, 30].includes(+m.react) ? +m.react : 0;
+        if (m.ban != null) { const nb = String(m.ban) !== '0'; if (nb !== r.cfg.ban) r.p.forEach(x => { x.deck = null; }); r.cfg.ban = nb; }
+        bc(r);
+      } else if (m.t === 'start') {
+        if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องเริ่มเกมได้');
+        if (r.p.length < 2 || !r.p.every(x => x.deck)) E('ผู้เล่นยังไม่พร้อม');
+        begin(r); bc(r);
       } else if (m.t === 'rm' && r && r.g && r.g.over) { await rematch(r, i);
       } else if (r && r.g) { act(r, i, m); bc(r); settle(r).catch(() => { }); }
     } catch (e) { err(e && e.message ? 'ผิดพลาด' : e); }
