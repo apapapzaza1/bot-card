@@ -46,8 +46,24 @@ footer{position:fixed;right:6px;bottom:2px;font-size:9px;opacity:.5;pointer-even
 .lc{width:46px;flex:none;display:flex;flex-direction:column;align-items:center;padding:14px 2px 4px;--w:34px;position:relative}.lc .c{margin-top:-24px}.lc>.c:first-child{margin-top:0}
 .pc{width:50px;flex:none;display:flex;flex-direction:column;gap:4px;justify-content:space-between;align-items:center}
 .pl{position:relative;width:44px;aspect-ratio:5/7;border:2px solid #222;background:#fff;color:#4a3f45;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:.95;cursor:pointer}.pl .c{--w:42px;margin:0}.pl b{position:absolute;right:1px;bottom:1px;background:#000d;color:#fff;border-radius:6px;padding:0 4px;font-size:11px}.pl small{opacity:.8;text-align:center;font-weight:700}
-#pvw{position:fixed;left:50%;top:6vh;transform:translateX(-50%);width:min(58vw,240px);z-index:7;background:var(--cb);border:2px solid var(--ce);border-radius:12px;padding:6px;box-shadow:0 6px 30px #000b}#pvw .zt2{max-height:24vh;overflow:auto;font-size:13px;margin-top:4px;color:var(--fg)}#pvw .zi{width:100%}
+#pvw{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);transform-origin:50% 50%;width:min(58vw,240px);z-index:7;background:var(--cb);border:2px solid var(--ce);border-radius:12px;padding:6px;box-shadow:0 6px 30px #000b}#pvw .zt2{max-height:24vh;overflow:auto;font-size:13px;margin-top:4px;color:var(--fg)}#pvw .zi{width:100%}
 #akp{position:fixed;left:2vw;right:2vw;top:2vh;z-index:8;background:var(--cb);color:var(--fg);border:2px solid #3b9eff;border-radius:12px;padding:8px;box-shadow:0 6px 30px #000c}#akp h4{margin:0 0 6px;font-size:14px}.akr{display:flex;gap:8px;overflow-x:auto;padding:2px}.akc{flex:none;text-align:center;font-size:10px;border:2px solid transparent;border-radius:8px;padding:2px}.akc.sel{border-color:#3b9eff;background:#3b9eff33}.akc .c{--w:78px;margin:0 auto}
+@keyframes grow{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+#pvw.grow{animation:grow .24s cubic-bezier(.2,1.15,.35,1)}
+@keyframes zin{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+#zm .zw,#zm .big,#zm>img{animation:zin .24s cubic-bezier(.2,1.15,.35,1)}
+#dcv{position:fixed;inset:0;z-index:13;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 38%,#1d2f6bdd,#05060ff2);backdrop-filter:blur(7px);color:#fff;text-align:center;padding:16px}
+#dcv[hidden]{display:none}#dcv h2{margin:0;font-size:22px;letter-spacing:1px;text-shadow:0 0 18px #6af}
+.dcb{display:flex;gap:18px}.dcb button{min-width:128px;padding:22px 10px;font-size:34px;font-weight:800;border-radius:20px;border:2px solid #9cf;background:linear-gradient(160deg,#26418f,#101a40);color:#fff;box-shadow:0 0 24px #4a8cff88,inset 0 0 18px #fff2;opacity:0;animation:dpop .55s cubic-bezier(.2,1.3,.4,1) forwards}
+.dcb button:nth-child(1){animation-delay:.15s}.dcb button:nth-child(2){animation-delay:.6s}.dcb button:disabled{filter:grayscale(.5);opacity:.55}
+@keyframes dpop{0%{opacity:0;transform:translateY(40px) scale(.5) rotate(-6deg)}70%{opacity:1}100%{opacity:1;transform:none}}
+.dcb.ok button:hover{box-shadow:0 0 36px #8cf}
+.scn{width:120px;height:120px;perspective:600px;margin:10px}.cb{position:relative;width:120px;height:120px;transform-style:preserve-3d;transform:rotateX(-25deg) rotateY(30deg)}
+.cb .f{position:absolute;inset:0;background:linear-gradient(145deg,#fff,#d9e2ff);border-radius:20px;border:2px solid #9ab;box-shadow:inset 0 0 18px #7aa8;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:14px;gap:4px}
+.cb .f i{border-radius:50%;background:#16204a;box-shadow:inset 0 3px 4px #000a;margin:2px}.cb .f i.o{visibility:hidden}
+.f1{transform:translateZ(60px)}.f2{transform:rotateY(90deg) translateZ(60px)}.f3{transform:rotateX(90deg) translateZ(60px)}.f4{transform:rotateX(-90deg) translateZ(60px)}.f5{transform:rotateY(-90deg) translateZ(60px)}.f6{transform:rotateY(180deg) translateZ(60px)}
+.dcr{opacity:0;animation:dpop .5s ease forwards;animation-delay:1.7s;font-size:20px;line-height:1.5}.dcr b{font-size:30px;color:#ffd24a;text-shadow:0 0 14px #fa0}
+.sh2{animation:shad 1.5s ease-out forwards;width:90px;height:14px;border-radius:50%;background:#0008;filter:blur(6px);margin-top:-8px}@keyframes shad{0%{transform:scale(.4);opacity:.2}60%{transform:scale(1.3);opacity:.5}100%{transform:scale(1);opacity:.6}}
 .c.pk2{outline:2px solid #3b9eff}
 #ptr[hidden]{display:none}#ptr{position:fixed;right:4px;top:20vh;z-index:6;display:flex;flex-direction:column;gap:4px;align-items:center;background:#000a;border:2px solid #3b9eff;border-radius:10px;padding:4px;--w:46px;color:#fff}#ptr small{font-size:10px;text-align:center}#ptr .c{margin:0}
 .fly2{position:fixed;left:0;top:34%;z-index:12;pointer-events:none;--w:110px;animation:fy .75s ease-in-out forwards}.fly2 .c{margin:0}@keyframes fy{0%{transform:translateX(-30vw);opacity:0}35%{transform:translateX(calc(50vw - 55px));opacity:1}65%{transform:translateX(calc(50vw - 55px));opacity:1}100%{transform:translateX(112vw);opacity:0}}
@@ -130,11 +146,11 @@ input,textarea{-webkit-user-select:text;user-select:text;font-size:16px}
 <div id="bt"><button class="lg" onclick="roomPg()">👥 เพื่อน / สร้างห้อง <span id="bf"></span></button><button class="lg" onclick="decks()">🃏 จัดเด็ค</button><button class="lg" onclick="shop()">🛒 ร้านค้า</button><button class="lg" onclick="st()">⚙ ตั้งค่า</button></div></div></div>
 <div id="room" class="scr" hidden><h3 id="lb"></h3><div id="dk" hidden><b>เลือกเด็คของคุณ</b><div id="sv"></div><textarea id="dx" rows="4" placeholder="หรือวางรายการเด็ค เช่น BT01-001 x4 (รวม LIFE 5 ใบ)"></textarea><label><input type="checkbox" id="sk" style="width:auto"> ข้ามการตรวจเด็ค</label><br><button onclick="send({t:'deck',text:dx.value,skip:sk.checked})">ใช้เด็คที่วาง</button><button onclick="send({t:'deck',rand:1})">เด็คสุ่มทดสอบ</button></div><p><button onclick="location.reload()">← ออกจากห้อง</button></p></div>
 <div id="game" hidden><div id="lg"></div><div id="mid"></div><div id="dt"></div><div id="ls"></div><div id="hand"></div><div id="bar"></div></div>
-<div id="ptr" hidden></div><div id="rt" hidden></div><div id="pkr" hidden></div><div id="zm" hidden></div><div id="pvw" hidden></div><div id="akp" hidden></div><div id="md" hidden></div><div id="rx" hidden></div><div id="bt2" hidden></div><div id="ts" hidden></div><div id="end" hidden></div>
+<div id="dcv" hidden></div><div id="ptr" hidden></div><div id="rt" hidden></div><div id="pkr" hidden></div><div id="zm" hidden></div><div id="pvw" hidden></div><div id="akp" hidden></div><div id="md" hidden></div><div id="rx" hidden></div><div id="bt2" hidden></div><div id="ts" hidden></div><div id="end" hidden></div>
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KC={แดง:'#e5484d',ฟ้า:'#3b9eff',เขียว:'#3dd68c',ม่วง:'#a78bfa'},PH={dice:'ทอยเต๋า',pick:'เลือกลำดับ',mull:'เปลี่ยนมือ',main:'Main Phase',battle:'Battle Phase',end:'End Phase',x:''};
-let ws,S,ME,cur,C={},sel=null,mode=null,atk=null,pay=[],akSel=[],supl=[],lastAk='',prev={},lastEv=0,lastMine=null,lastLog=0,rxSel=null,lastBt=-1,lastDr=0,handSeen=null,NEW=new Set(),endHide=false,GAIN=0,RMQ=0,MYRM=0,lp=null,lpd=0,cfg={img:1,bg:'pasulol',bgv:'',tok:'',th:'dark',cs:'crayon',snd:1,mus:1,fs:16,wl:1};
+let dcSeen=0,rollEnd=0,dcKey='',ws,S,ME,cur,C={},sel=null,mode=null,atk=null,pay=[],akSel=[],supl=[],lastAk='',prev={},lastEv=0,lastMine=null,lastLog=0,rxSel=null,lastBt=-1,lastDr=0,handSeen=null,NEW=new Set(),endHide=false,GAIN=0,RMQ=0,MYRM=0,lp=null,lpd=0,cfg={img:1,bg:'pasulol',bgv:'',tok:'',th:'dark',cs:'crayon',snd:1,mus:1,fs:16,wl:1};
 try{Object.assign(cfg,JSON.parse(localStorage.cfg||'{}'))}catch(e){}
 const vid=()=>{const o=$('bg')&&$('bg').querySelector('video');o&&o.remove();if(cfg.bgv&&$('bg'))$('bg').insertAdjacentHTML('afterbegin',`<video autoplay muted loop playsinline src="${esc(cfg.bgv)}"></video>`)};
 const ap=()=>{document.documentElement.dataset.th=cfg.th;document.documentElement.dataset.cs=cfg.cs;document.documentElement.style.setProperty('--fs',cfg.fs+'px');document.body.dataset.bg=cfg.bg;vid();try{localStorage.cfg=JSON.stringify(cfg)}catch(e){}};ap();
@@ -202,6 +218,7 @@ const step=()=>{if(k>=flat.length)return done();show(k++);pkT=setTimeout(step,dl
 e.onclick=ev=>{const d=ev.target.closest('.c[data-id]');if(d&&k>=flat.length)return zoom(d.dataset.id,0);if(k<flat.length){clearTimeout(pkT);while(k<flat.length)show(k++);done()}};
 step()}
 const find=u=>{for(const w of['me','op'])for(const z of['hand','av','mg','co','hell','life'])for(const x of S[w][z]||[])if(x.u===u)return{x,z,o:w=='op'};if(S.land&&S.land.c.u===u)return{x:S.land.c,z:'land',o:S.land.o!=S.i}};
+const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
 const supOK=x=>!x.tired&&!x.tk&&/สามัคคี/.test(info(x).e||'')&&x.u!=atk;
 const can=(x,z,o)=>(S.ask&&S.ask.mine&&S.ask.opts.includes(x.u))||(mode=='atk'&&o&&(z=='av'||z=='co'))||(mode=='atk'&&!o&&z=='av'&&supOK(x))||(mode=='pay'&&z=='hand'&&x.u!=sel);
 const cd=(x,z,o)=>{const c=info(x),a=x.tk?'':art(x.id),p=c.p!=null?(x.cp!=null?x.cp:c.p+(x.pw||0)):'';return`<div class="c${a?' im':''}${x.tired?' z':''}${sel==x.u?' sel':''}${z=='hand'&&NEW.has(x.u)?' nw':''}${pay.includes(x.u)||akSel.includes(x.u)||supl.includes(x.u)?' pay':''}${can(x,z,o)?' can':''}" data-u="${x.u}" data-z="${z}" data-o="${o?1:0}" style="--k:${KC[c.col]||'#999'};${a}">${a?'':`<b>${esc(c.n)}</b><i>${c.t=='Magic'?'':c.c??''}${c.g?'◆'+c.g:''}</i>`}${p!==''?`<s class="p ${p>c.p?'up':p<c.p?'dn':''}" data-k="${x.u}">${p}</s>`:''}${gb(x,z)}</div>`};
@@ -222,7 +239,7 @@ document.querySelectorAll('.p').forEach(s=>{const u=s.dataset.k,v=+s.textContent
 if(S.mine&&lastMine===false)sfx('turn');lastMine=S.mine;
 if(S.log.length>lastLog&&/LIFE หงาย|สู้|ตาย/.test(S.log.slice(lastLog).join()))sfx('hit');lastLog=S.log.length;
 if(S.ev&&S.ev.n!=lastEv){lastEv=S.ev.n;zoom(S.ev.id,2400);sfx('play')}
-if(sel&&!find(sel))sel=null;akUI();if(!sel||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI()}
+if(sel&&!find(sel))sel=null;diceUI();akUI();if((!sel&&S.phase!='mull')||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI()}
 let tt;const toast=t=>{const e=$('ts');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,1600)};
 function drt(){const d=S.dr;if(!d||d.n==lastDr)return;lastDr=d.n;if(d.c>0){toast((d.who==S.i?'คุณ':'ศัตรู')+'จั่ว '+d.c+' ใบ');sfx('draw')}}
 function rx(){const e=$('rx'),p=S.pend,R=S.me.hand.filter(x=>{const c=info(x);return c.t=='Magic'&&c.st=='React'});
@@ -246,8 +263,22 @@ e.className=w===true?'win':w===false?'lose':'';e.hidden=false;
 e.innerHTML=`<div class="eb${first?' pop':''}"><div class="et">${w===true?'🏆':w===false?'💀':'🤝'}</div><h1>${w===true?'ชนะ!':w===false?'พ่ายแพ้':'เกมจบ'}</h1><div>${esc(S.over)}</div>${GAIN?`<div class="gm">💎 +${GAIN}</div>`:''}<div class="es"><div>เทิร์นที่เล่น<br><b>${S.tn}</b></div><div>เด็คคงเหลือ<br><b>${m.deck}</b></div><div>LIFE ของเรา<br><b>${lf(m)}/5</b></div><div>LIFE ศัตรู<br><b>${lf(o)}/5</b></div></div>${RMQ>Date.now()?`<div style="color:#fc3">${esc(o.name)} ขอเล่นซ้ำ<span id="erq"></span></div>`:''}<button class="pri" ${MYRM?'disabled':''} onclick="if(!MYRM){MYRM=1;send({t:'rm'});endUI()}">${MYRM?'⏳ รออีกฝ่ายตอบรับ…':'🔁 เล่นซ้ำ'}</button><button onclick="endHide=true;endUI()">👁 ดูกระดาน</button><button onclick="location.reload()">🏠 กลับหน้าหลัก</button><details><summary>บันทึกเกม</summary><div class="el">${S.log.slice(-25).map(esc).join('<hr>')}</div></details></div>`}
 function detail(){const f=sel&&find(sel);$('dt').innerHTML=f?(art(f.x.id)?`<div class="zi" style="${art(f.x.id)};width:100%"></div>`:'')+bigHtml(info(f.x)):'แตะการ์ดเพื่ออ่านเอฟเฟกต์'}
 const bigHtml=c=>`<b>${esc(c.n)}</b><br>${c.t||''} ${c.st||''} ${c.s||''}<br>${c.t=='Magic'?'':'Cost '+(c.c??'-')+' '}${c.g?'Gem '+c.g+' ':''}${c.p!=null?'Power '+c.p:''}<hr>${esc(c.e||'')}`;
-function pv(id){const c=C[id];if(!c)return hidePv();const a=art(id);$('pvw').innerHTML=(a?`<div class="zi" style="${a}"></div>`:'')+`<div class="zt2">${bigHtml(c)}</div>`;$('pvw').hidden=false}
+function pv(id){const c=C[id];if(!c)return hidePv();const a=art(id);$('pvw').innerHTML=(a?`<div class="zi" style="${a}"></div>`:'')+`<div class="zt2">${bigHtml(c)}</div>`;{const e=$('pvw');e.hidden=false;e.classList.remove('grow');void e.offsetWidth;e.classList.add('grow')}}
 const hidePv=()=>{$('pvw').hidden=true};$('pvw').onclick=hidePv;
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const FACE=n=>`<div class="f f${n}">${[0,1,2,3,4,5,6,7,8].map(k=>`<i class="${PIPS[n].includes(k)?'':'o'}"></i>`).join('')}</div>`;
+const ROT={1:[0,0],2:[0,-90],3:[-90,0],4:[90,0],5:[0,90],6:[0,180]};
+function diceUI(){const e=$('dcv');if(!S){e.hidden=true;return}
+const rolling=S.dc&&Date.now()<rollEnd;let key=null;
+if(S.dc&&S.dc.n!==dcSeen){dcSeen=S.dc.n;rollEnd=Date.now()+2700;setTimeout(()=>S&&diceUI(),2750)}
+const roll=S.dc&&Date.now()<rollEnd&&(S.phase=='pick'||S.phase=='mull'||S.phase=='dice');
+if(roll)key='roll'+S.dc.n;else if(S.phase=='dice')key='choose';else if(S.phase=='pick')key='pick'+(S.dw==S.i?1:0);
+if(!key){e.hidden=true;dcKey='';e.innerHTML='';return}
+e.hidden=false;if(key==dcKey)return;dcKey=key;const nm=i=>i==S.i?'คุณ':S.op.name;
+if(key=='choose'){const my=S.i==0;e.innerHTML=`<h2>🎲 ทอยเต๋าเลือกลำดับ</h2><div>${my?'เลือกคู่หรือคี่':esc(S.op.name)+' กำลังเลือกคู่/คี่…'}</div><div class="dcb${my?' ok':''}"><button ${my?'':'disabled'} data-oe="even">คู่</button><button ${my?'':'disabled'} data-oe="odd">คี่</button></div>`}
+else if(key.startsWith('roll')){const d=S.dc,[rx,ry]=ROT[d.d];e.innerHTML=`<h2>🎲 ทอยเต๋า</h2><div>${esc(S.i==0?'คุณ':S.op.name)} เลือก <b>${d.v=='odd'?'คี่':'คู่'}</b></div><div class="scn"><div class="cb" id="cbx">${[1,2,3,4,5,6].map(FACE).join('')}</div></div><div class="sh2"></div><div class="dcr">ออก <b>${d.d}</b> = ${d.d%2?'คี่':'คู่'}<br>${esc(nm(d.w))}${d.w==S.i?'':''} ชนะการทอย</div>`;
+const cb=$('cbx');requestAnimationFrame(()=>requestAnimationFrame(()=>{cb.style.transition='transform 1.6s cubic-bezier(.15,.85,.25,1)';cb.style.transform=`rotateX(${rx+1080-25}deg) rotateY(${ry+1440+20}deg)`}));sfx('turn')}
+else{const my=key=='pick1';e.innerHTML=`<h2>🏆 ${my?'คุณชนะการทอย':esc(S.op.name)+' ชนะการทอย'}</h2><div>${my?'เลือกลำดับการเล่น':'รอเลือกลำดับ…'}</div><div class="dcb${my?' ok':''}"><button ${my?'':'disabled'} data-fp="1" style="font-size:24px">เริ่มก่อน</button><button ${my?'':'disabled'} data-fp="0" style="font-size:24px">เริ่มทีหลัง</button></div>`}}
 function flyCard(u){const f=find(u);if(!f)return;const d=document.createElement('div');d.className='fly2';d.innerHTML=cd(f.x,'x',0);document.body.append(d);setTimeout(()=>d.remove(),800);sfx('draw')}
 function ptrUI(){const e=$('ptr');if(mode!='pay'||!S){e.hidden=true;return}const f=find(sel),c=f&&info(f.x),g=pay.reduce((a,u)=>{const q=find(u);return a+(q&&info(q.x).g||0)},0);e.innerHTML=`<small>จ่าย Cost<br><b>${g}/${c?c.c:'-'}</b></small>`+pay.map(u=>{const q=find(u);return q?cd(q.x,'ptray',0):''}).join('')+'<small>แตะเพื่อเอาออก</small>';e.hidden=false}
 function akUI(){const e=$('akp'),a=S&&S.ask;const key=a&&a.mine?a.text+a.opts.join():'';if(key!==lastAk){lastAk=key;akSel=[]}
@@ -258,6 +289,7 @@ $('zm').onclick=()=>$('zm').hidden=true;
 $('hand').addEventListener('pointermove',e=>{const cs=[...$('hand').children],r=$('hand').getBoundingClientRect(),i=Math.min(cs.length-1,Math.max(0,Math.floor((e.clientX-r.left)/r.width*cs.length)));cs.forEach((c,k)=>c.classList.toggle('h',k==i))});
 $('hand').addEventListener('pointerleave',()=>[...$('hand').children].forEach(c=>c.classList.remove('h')));
 document.addEventListener('click',e=>{if(lpd){lpd=0;return}const h=e.target.closest('[data-h]');if(h&&S)return hell(+h.dataset.h);
+const oe=e.target.closest('[data-oe]');if(oe&&S&&S.phase=='dice')return send({t:'oe',v:oe.dataset.oe});const fp=e.target.closest('[data-fp]');if(fp&&S&&S.phase=='pick')return send({t:'first',v:+fp.dataset.fp});
 const dkp=e.target.closest('[data-dk]');if(dkp&&S)return dkView(+dkp.dataset.dk);
 const ac=e.target.closest('[data-ak]');if(ac&&S&&S.ask&&S.ask.mine){const u=+ac.dataset.ak;if(S.ask.n==1)akSel=[u];else akSel.includes(u)?akSel.splice(akSel.indexOf(u),1):akSel.push(u);return render()}
 const lf=e.target.closest('[data-lf]');if(lf&&S&&mode=='atk')return send({t:'atk',u:atk,tg:'life',sup:supl});
@@ -265,7 +297,7 @@ const c=e.target.closest('.c[data-u]');if(!c||!S)return;const u=+c.dataset.u,z=c
 if(c.closest('#md')){const f=find(u);return f&&zoom(f.x.id,0)}
 if(c.closest('#rx')){rxSel=u;return rx()}
 if(S.ask&&S.ask.mine){if(S.ask.opts.includes(u)){if(S.ask.n==1)akSel=[u];else akSel.includes(u)?akSel.splice(akSel.indexOf(u),1):akSel.push(u);return render()}return}
-if(S.phase=='mull'){pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
+if(S.phase=='mull'){const f0=find(u);f0&&pv(f0.x.id);if(!mullOK())return;pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7&&z=='hand'){pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
 if(mode=='pay'&&z=='ptray'){pay.splice(pay.indexOf(u),1);return render()}
 if(mode=='pay'&&z=='hand'){if(u==sel){const f0=find(u);return f0&&pv(f0.x.id)}if(pay.includes(u))pay.splice(pay.indexOf(u),1);else{pay.push(u);flyCard(u)}return render()}
@@ -280,15 +312,14 @@ function st(){const s=(k,t,v)=>`<label>${t} <select onchange="cfg.${k}=isNaN(thi
 $('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button><br>${s('th','ธีม',{dark:'มืด',light:'สว่าง'})}${s('bg','พื้นหลังล็อบบี้',{pasulol:'ผู้รู้ความจริง',neon:'นีออน',stars:'ดวงดาว'})}<label>วิดีโอพื้นหลัง (ชื่อไฟล์ เช่น bg1.mp4) <input value="${esc(cfg.bgv)}" onchange="cfg.bgv=this.value;ap()"></label><br>${s('img','รูปการ์ด',{1:'เปิด',0:'ปิด (ประหยัดเน็ต)'})}${s('cs','ลายการ์ด',{crayon:'กรอบสีเทียน',plain:'เรียบ'})}${s('snd','เสียงเอฟเฟกต์',{1:'เปิด',0:'ปิด'})}${s('mus','เพลงพื้นหลัง',{1:'เปิด',0:'ปิด'})}${s('wl','กันจอดับ',{1:'เปิด',0:'ปิด'})}${s('fs','ขนาดตัวอักษร',{14:'เล็ก',16:'กลาง',19:'ใหญ่'})}</div>`;$('md').hidden=false}
 function bar(){const b=$('bar');b.innerHTML='';const A=(t,f)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;b.append(e);return e};
 if(S.over){A('📊 ผลการแข่ง',()=>{endHide=false;endUI()});A(MYRM?'⏳ รออีกฝ่าย…':'เล่นซ้ำ',()=>{if(!MYRM){MYRM=1;send({t:'rm'});endUI()}});return A('กลับหน้าหลัก',()=>location.reload())}
-if(S.phase=='dice')return S.i==0?(A('คี่',()=>send({t:'oe',v:'odd'})),A('คู่',()=>send({t:'oe',v:'even'}))):A('รอเจ้าห้องเลือกคู่/คี่…',()=>{});
-if(S.phase=='pick')return S.dw==S.i?(A('เริ่มก่อน',()=>send({t:'first',v:1})),A('เริ่มทีหลัง',()=>send({t:'first',v:0}))):A('รอผู้ชนะการทอยเลือกลำดับ…',()=>{});
+if(S.phase=='dice'||S.phase=='pick')return;
 if(S.ask){const a=S.ask;if(!a.mine)return A('⏳ รอฝ่ายตรงข้ามเลือก…',()=>{});
 if(a.yn){A('✔ ใช่',()=>send({t:'pick',yes:1}));return A('✖ ไม่',()=>send({t:'pick',yes:0}))}
 const ok=akSel.length>=a.min&&akSel.length<=a.n;const bt=A('ยืนยัน ('+akSel.length+'/'+(a.min==a.n?a.n:a.min+'-'+a.n)+')',()=>send({t:'pick',us:akSel}));bt.disabled=!ok;bt.className='atkb';
 return a.cancel?A('ยกเลิก',()=>send({t:'pick',cancel:1})):bt}
 if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
 if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s)':''),()=>send({t:'pass'}));
-if(S.phase=='mull'){A('เปลี่ยนที่เลือก ('+pay.length+')',()=>{send({t:'mull',us:pay});pay=[]});return A('เก็บทั้งหมด',()=>{send({t:'mull',us:[]});pay=[]})}
+if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (ดูการ์ดบนมือเพื่อตัดสินใจได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';b.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7){const ex=S.me.hand.length-7;return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') · มือเกิน 7 ใบ',()=>pay.length?send({t:'discardm',us:pay}):alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ'))}
 const f=sel&&find(sel),c=f&&info(f.x);
 if(mode=='pay')A('ยืนยันจ่าย ('+pay.length+')',()=>send({t:c.t=='Avatar'?'summon':'build',u:sel,pay}));
