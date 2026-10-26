@@ -26,8 +26,8 @@ input,textarea{font:inherit;background:var(--pn);color:var(--fg);border:1px soli
 .c.z{transform:rotate(90deg) scale(.82);opacity:.6;margin:0 8px}.c.bk{background:repeating-linear-gradient(45deg,#333,#333 6px,#444 6px,#444 12px)}
 .c.sel{outline:3px solid #6cf}.c.pay{outline:3px solid #fc3}.c.can{outline:3px solid #f33;animation:bl 1s infinite}@keyframes bl{50%{outline-color:#f336}}
 #hand{display:flex;justify-content:center;padding:28px 8px 2px;min-height:calc(var(--w)*1.4 + 34px);touch-action:pan-y}
-#hand .c{margin-left:calc(var(--w)*-.4)}#hand .c:first-child{margin-left:0}#hand .c.h{transform:translateY(-26px) scale(1.25);z-index:5}
-#bar{display:flex;flex-wrap:wrap;justify-content:center;padding:2px 4px calc(4px + env(safe-area-inset-bottom))}
+#hand{--w:min(25vw,100px)}#hand .c{margin-left:var(--ml,calc(var(--w)*-.4))}#hand .c:first-child{margin-left:0}#hand .c.h{transform:translateY(-26px) scale(1.25);z-index:5}
+#bar{display:flex;align-items:flex-end;gap:8px;padding:4px 8px calc(6px + env(safe-area-inset-bottom))}#bar .bm{flex:1;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px}#bar .br2{flex:none;width:min(32vw,150px);display:flex;flex-direction:column;gap:6px}#bar button{margin:0;padding:14px 12px;font-size:1.15em;font-weight:700;min-height:56px;border-radius:12px}#bar .endb{background:#d32f2f;color:#fff;border:2px solid #ff8a80;font-size:1.25em;min-height:68px;box-shadow:0 4px 0 #7f1d1d}#bar .endb:active{transform:translateY(3px);box-shadow:0 1px 0 #7f1d1d}#bar .srb{background:#2a0a0a;color:#ff9b9b;border:2px solid #d32f2f;min-height:44px;font-size:.95em;padding:8px}
 #zm{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:14}#zm[hidden],#md[hidden],.scr[hidden],#game[hidden]{display:none}
 .big{width:min(70vw,300px);aspect-ratio:5/7;font-size:15px;background:var(--cb);border:3px solid var(--ce);border-radius:12px;padding:14px;overflow:auto;box-shadow:0 0 40px #fc38;color:var(--fg)}
 #md{position:fixed;inset:0;background:var(--bg);z-index:8;overflow:auto;padding:14px}#md .in{background:var(--pn);border-radius:12px;padding:12px;max-width:700px;margin:auto}
@@ -35,7 +35,7 @@ input,textarea{font:inherit;background:var(--pn);color:var(--fg);border:1px soli
 [data-bg=stars] #bg{background:radial-gradient(#fff 1px,transparent 1px) 0 0/40px 40px,#05060f;animation:st 40s linear infinite}@keyframes st{to{background-position:0 400px}}
 [data-bg]:not([data-bg=pasulol]) #bg i,[data-bg]:not([data-bg=pasulol]) #bg svg{display:none}#bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.ing #bg{opacity:.3}
 #top{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-bottom:8px}.pk{--w:min(19vw,120px);animation:fly .9s both;box-shadow:0 0 0 1px #fff4}@keyframes fly{from{transform:translate(var(--dx),var(--dy)) rotate(200deg) scale(.2);opacity:0}}
-.rSR{box-shadow:0 0 16px #6cf!important}.rUR{box-shadow:0 0 18px #fc3!important}.rSCR,.rCBR,.rPR{box-shadow:0 0 22px #f6f!important}
+.rR{box-shadow:0 0 8px #9d9}.pkf.rR{animation:flp .35s both}.pkf.rSR{animation:flp .35s both,gS 1.6s ease-in-out .35s infinite}.pkf.rUR{animation:flp .35s both,gU 1.1s ease-in-out .35s infinite}.pkf.rSCR,.pkf.rCBR,.pkf.rPR{animation:flp .35s both,gX 1.8s linear .35s infinite}@keyframes gS{0%,100%{box-shadow:0 0 10px #6cf}50%{box-shadow:0 0 26px 4px #6cf}}@keyframes gU{0%,100%{box-shadow:0 0 14px #fc3,0 0 30px #fa0}50%{box-shadow:0 0 34px 6px #ffd24a,0 0 60px 10px #f80}}@keyframes gX{0%,100%{box-shadow:0 0 26px 4px #f6f,0 0 50px #f6f}33%{box-shadow:0 0 26px 4px #6ff,0 0 50px #6ff}66%{box-shadow:0 0 26px 4px #ff6,0 0 50px #ff6}}
 .rw{display:flex;gap:4px;align-items:center;padding:2px 0;border-bottom:1px solid #fff2;font-size:.85em}.rw a{flex:1;text-decoration:underline;cursor:pointer}
 #lobby{max-width:900px}#hm{display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap;min-height:60vh}#tt{flex:1;min-width:220px;text-align:center}#tt h1{font-size:2.4em;line-height:1.1;letter-spacing:2px;text-shadow:0 0 22px #a6f}#bt{flex:1;min-width:250px;display:flex;flex-direction:column;gap:10px}.lg{padding:18px;font-size:1.15em;border-radius:12px;text-align:left;width:100%}
 footer{position:fixed;right:6px;bottom:2px;font-size:9px;opacity:.5;pointer-events:none}
@@ -47,7 +47,7 @@ footer{position:fixed;right:6px;bottom:2px;font-size:9px;opacity:.5;pointer-even
 .pc{width:50px;flex:none;display:flex;flex-direction:column;gap:4px;justify-content:space-between;align-items:center}
 .pl{position:relative;width:44px;aspect-ratio:5/7;border:2px solid #222;background:#fff;color:#4a3f45;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:.95;cursor:pointer}.pl .c{--w:42px;margin:0}.pl b{position:absolute;right:1px;bottom:1px;background:#000d;color:#fff;border-radius:6px;padding:0 4px;font-size:11px}.pl small{opacity:.8;text-align:center;font-weight:700}
 #pvw{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);transform-origin:50% 50%;width:min(58vw,240px);z-index:7;background:var(--cb);border:2px solid var(--ce);border-radius:12px;padding:6px;box-shadow:0 6px 30px #000b}#pvw .zt2{max-height:24vh;overflow:auto;font-size:13px;margin-top:4px;color:var(--fg)}#pvw .zi{width:100%}
-#akp{position:fixed;left:2vw;right:2vw;top:2vh;z-index:8;background:var(--cb);color:var(--fg);border:2px solid #3b9eff;border-radius:12px;padding:8px;box-shadow:0 6px 30px #000c}#akp h4{margin:0 0 6px;font-size:14px}.akr{display:flex;gap:8px;overflow-x:auto;padding:2px}.akc{flex:none;text-align:center;font-size:10px;border:2px solid transparent;border-radius:8px;padding:2px}.akc.sel{border-color:#3b9eff;background:#3b9eff33}.akc .c{--w:78px;margin:0 auto}
+#akp{position:fixed;left:50%;transform:translateX(-50%);max-width:94vw;top:calc(6px + env(safe-area-inset-top));z-index:8;background:#000d;color:#fff;border:2px solid #3b9eff;border-radius:999px;padding:4px 16px;box-shadow:0 4px 18px #000a;pointer-events:none}#akp:has(.akr){pointer-events:auto;border-radius:14px}#akp h4{margin:0;font-size:14px;text-align:center}#akp .akr{margin-top:4px}.akr{display:flex;gap:8px;overflow-x:auto;padding:2px}.akc{flex:none;text-align:center;font-size:10px;border:2px solid transparent;border-radius:8px;padding:2px}.akc.sel{border-color:#3b9eff;background:#3b9eff33}.akc .c{--w:56px;margin:0 auto}
 @keyframes grow{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 #pvw.grow{animation:grow .24s cubic-bezier(.2,1.15,.35,1)}
 @keyframes zin{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -159,10 +159,10 @@ body[data-bg=line] .lgb{background:#fff;color:#111;border:3px solid #111;box-sha
 .bsw{width:110px;aspect-ratio:3/2;border-radius:10px;border:2px solid #222;background:#8f8f8f;position:relative;flex:none}.bsw::after{content:'';position:absolute;inset:14% 12%;border:2px solid #222;border-radius:6px;background:#fff}
 .bsw[data-board=slate]{background:#3a4254}.bsw[data-board=slate]::after{background:#e9edf5}.bsw[data-board=wood]{background:#8a5a2b repeating-linear-gradient(90deg,#0000 0 14px,#0002 14px 16px)}.bsw[data-board=wood]::after{background:#f6e7c8}.bsw[data-board=neon]{background:#0b0b1e;border-color:#0ff;box-shadow:0 0 12px #0ff8}.bsw[data-board=neon]::after{background:#14143a;border-color:#0ff}
 .csw{width:70px;aspect-ratio:5/7;border-radius:8px;border:2px solid #c9a64a;background:url(/back.webp) center/100% 100% no-repeat,#111;flex:none}
-.csw[data-cback=crimson],[data-cback=crimson] .c.bk{filter:sepia(1) hue-rotate(-35deg) saturate(5)}.csw[data-cback=gold],[data-cback=gold] .c.bk{filter:sepia(1) saturate(3.5) brightness(1.2)}.csw[data-cback=ocean],[data-cback=ocean] .c.bk{filter:sepia(1) hue-rotate(160deg) saturate(4)}
-[data-board=slate] #mid{background:#3a4254}[data-board=slate] .zr,[data-board=slate] .pl{background:#e9edf5}
-[data-board=wood] #mid{background:#8a5a2b repeating-linear-gradient(90deg,#0000 0 18px,#0002 18px 20px)}[data-board=wood] .zr,[data-board=wood] .pl{background:#f6e7c8}
-[data-board=neon] #mid{background:#0b0b1e;box-shadow:inset 0 0 0 3px #0ff,inset 0 0 34px #f0f8}[data-board=neon] .zr,[data-board=neon] .pl{background:#14143a;border-color:#0ff;color:#cff}[data-board=neon] .zr::before,[data-board=neon] .zr::after{color:#0ff}
+.csw[data-cback=crimson],.sd[data-cback=crimson] .c.bk,body[data-cback=crimson] #pkr .c.bk{filter:sepia(1) hue-rotate(-35deg) saturate(5)}.csw[data-cback=gold],.sd[data-cback=gold] .c.bk,body[data-cback=gold] #pkr .c.bk{filter:sepia(1) saturate(3.5) brightness(1.2)}.csw[data-cback=ocean],.sd[data-cback=ocean] .c.bk,body[data-cback=ocean] #pkr .c.bk{filter:sepia(1) hue-rotate(160deg) saturate(4)}
+#mid .sd{border-radius:12px;padding:4px;background:#8f8f8f;box-shadow:inset 0 0 0 2px #2228}.sd[data-board=slate]{background:#3a4254!important}.sd[data-board=slate] .zr,.sd[data-board=slate] .pl{background:#e9edf5}
+.sd[data-board=wood]{background:#8a5a2b repeating-linear-gradient(90deg,#0000 0 18px,#0002 18px 20px)!important}.sd[data-board=wood] .zr,.sd[data-board=wood] .pl{background:#f6e7c8}
+.sd[data-board=neon]{background:#0b0b1e!important;box-shadow:inset 0 0 0 3px #0ff,inset 0 0 34px #f0f8!important}.sd[data-board=neon] .zr,.sd[data-board=neon] .pl{background:#14143a;border-color:#0ff;color:#cff}.sd[data-board=neon] .zr::before,.sd[data-board=neon] .zr::after{color:#0ff}
 body[data-bg=line] #top button{background:#fff;color:#111;border:2px solid #111}body[data-bg=line] .rmh small,body[data-bg=line] .vs,body[data-bg=line] .cta small{color:#111;background:#fffd;padding:0 8px;border-radius:8px}
 /* room */
 .rmh{display:flex;align-items:center;gap:12px;margin-bottom:6px}.rcode{font-size:34px;font-weight:900;letter-spacing:8px;background:var(--pn);border:2px dashed #8888;border-radius:14px;padding:4px 16px;cursor:pointer}#rexp{margin-left:auto;font-size:.85em;opacity:.8}
@@ -177,6 +177,29 @@ details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck i
 .bh2{display:flex;gap:8px;align-items:center}.bh2 .pill{margin:0}.bh2 button{margin:0;white-space:nowrap}
 .mis{font-size:.85em;color:#fbbf24;background:#fbbf2418;border:1px solid #fbbf2455;border-radius:10px;padding:4px 10px}
 .srch{display:flex;align-items:center;gap:6px;background:var(--pn);border:2px solid #8888;border-radius:999px;padding:0 12px}.srch input{border:0;background:none;padding:8px 2px;margin:0;flex:1;min-width:0}
+
+/* ===== v7: ร้านค้าเต็มจอ / เอฟเฟกต์ / ปุ่ม ===== */
+@media(min-width:900px){#hand{--w:120px}}
+.bh .tabs{position:static;padding:0;background:none}.bh .tabs button{flex:1}.bh1 .gm{background:#ffd24a;color:#111;border-radius:14px;padding:3px 12px;font-weight:700}.gar{font-size:.85em;background:#fc32;border:1px solid #fc36;border-radius:10px;padding:3px 10px;text-align:center}
+.shg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:4px 0}.shg .sh{margin:0;background:var(--pn);border:1px solid #8885;border-radius:16px;padding:12px}.shb{padding:0 0 16px}
+.ph .ib{padding:0 8px;margin:0 2px;font-size:14px;border-radius:6px;vertical-align:middle}
+.c.pkf.rSR::after,.c.pkf.rUR::after,.c.pkf.rSCR::after,.c.pkf.rCBR::after,.c.pkf.rPR::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,#0000 30%,#fff9 48%,#0000 62%) 0 0/250% 100%;animation:shim 1.8s linear infinite;mix-blend-mode:screen;z-index:4}
+.c.pkf.rSCR::after,.c.pkf.rCBR::after,.c.pkf.rPR::after{background:linear-gradient(115deg,#f0f5,#0ff5,#ff05,#f0f5,#0ff5) 0 0/300% 100%;animation-duration:2.2s}
+@keyframes shim{from{background-position:-150% 0}to{background-position:250% 0}}
+.c.pkf.rUR::before,.c.pkf.rSCR::before,.c.pkf.rCBR::before,.c.pkf.rPR::before{display:block;content:'';position:absolute;inset:0;height:auto;z-index:3;pointer-events:none;background:radial-gradient(circle at 20% 25%,#fff 0 1.5px,#0000 3px),radial-gradient(circle at 75% 18%,#fff 0 1.5px,#0000 3px),radial-gradient(circle at 60% 70%,#ffe 0 2px,#0000 4px),radial-gradient(circle at 30% 80%,#fff 0 1.5px,#0000 3px),radial-gradient(circle at 85% 55%,#fff 0 1.5px,#0000 3px);animation:tw .9s steps(2) infinite}
+@keyframes tw{50%{opacity:.2}}
+.pkflash{position:fixed;inset:0;pointer-events:none;animation:pkf .9s ease-out forwards}.pkflash.fSR{background:radial-gradient(circle,#6cf6,#0000 60%)}.pkflash.fUR{background:radial-gradient(circle,#fc3c,#0000 65%)}.pkflash.fSCR,.pkflash.fCBR,.pkflash.fPR{background:radial-gradient(circle,#f6fd,#0ff6 40%,#0000 72%)}@keyframes pkf{from{opacity:1}to{opacity:0}}
+.fxl{position:fixed;z-index:30;pointer-events:none;transform:translate(-50%,-50%)}.fxl .c{margin:0}
+.fxb{font-weight:900;font-size:32px;white-space:nowrap;text-shadow:0 0 8px #000,0 2px 0 #000;animation:fxup 1.2s ease-out forwards}.fxb.up{color:#5f5}.fxb.dn{color:#f55}.fxb.nt{color:#fc3}
+@keyframes fxup{0%{transform:translateY(12px) scale(.4);opacity:0}25%{transform:translateY(-6px) scale(1.4);opacity:1}100%{transform:translateY(-64px) scale(1);opacity:0}}
+.c.fxu{animation:glu .9s}@keyframes glu{0%,100%{filter:none}30%{filter:drop-shadow(0 0 12px #5f5) brightness(1.6)}}
+.c.fxd{animation:gld .9s}@keyframes gld{0%,100%{filter:none}25%,65%{filter:drop-shadow(0 0 12px #f33) brightness(.6) saturate(2)}}
+.fxboom{width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffd24a 22%,#f60 50%,#0000 72%);animation:bm .75s ease-out forwards}@keyframes bm{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.6);opacity:0}}
+.fxgd{animation:gd .85s ease-in forwards}@keyframes gd{0%{transform:scale(1)}30%{transform:scale(1.12) rotate(-5deg);filter:brightness(2)}100%{transform:scale(.2) rotate(35deg);opacity:0;filter:brightness(3) blur(4px)}}
+.fxbn{font-size:36px;font-weight:900;color:#fff;white-space:nowrap;text-shadow:0 0 16px #f60,0 3px 0 #000;animation:bn 1.5s forwards}@keyframes bn{0%{transform:scale(.3);opacity:0}20%{transform:scale(1.25);opacity:1}80%{opacity:1}100%{transform:scale(1);opacity:0}}
+.fxhole{width:150px;height:64px;border-radius:50%;background:radial-gradient(ellipse,#000 30%,#4a2208 60%,#0000 72%);animation:hole 1.5s ease-out forwards}@keyframes hole{0%{transform:scale(.1);opacity:0}25%,70%{transform:scale(1);opacity:1}100%{transform:scale(.8);opacity:0}}
+.fxfall{animation:fall .95s cubic-bezier(.5,0,1,.6) forwards}@keyframes fall{0%{transform:translate(0,0) scale(1) rotate(0)}40%{transform:translate(calc(var(--dx)*.4),calc(var(--dy)*.4 - 46px)) scale(1.15) rotate(100deg)}100%{transform:translate(var(--dx),var(--dy)) scale(.2) rotate(560deg);opacity:0}}
+.shk{animation:shk .5s}@keyframes shk{20%,60%{transform:translate(-5px,3px)}40%,80%{transform:translate(5px,-3px)}}
 .bh .seg{margin:0}.bh .chips{margin:0}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
@@ -219,7 +242,7 @@ function mkroom(){const c=Math.random().toString(36).slice(2,6).toUpperCase();mu
 function copyCode(){try{navigator.clipboard.writeText(cur)}catch(e){}toast('คัดลอกรหัสห้องแล้ว')}
 function mk(){const c=prompt('ชื่อโค้ด (A-Z 0-9)');if(c)send({t:'mkcode',c,gems:prompt('Gem ที่ได้ (0=ไม่มี)','0'),art:prompt('จำนวนการ์ดอาร์ตสุ่ม (0=ไม่มี)','0')})}
 function doAuth(t){send({t,name:aname.value,pw:apass.value})}
-function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · ${esc(m.name)} ${m.admin?'<button onclick="mk()">+โค้ด</button>':''}<button onclick="cfg.tok='';ap();location.reload()">ออกจากระบบ</button><br><small>การันตี UR+ ในอีก ${Math.max(1,20-m.pity)} ซอง</small>`;$('bf').textContent=m.rq.length?'('+m.rq.length+')':'';if(!$('md').hidden&&$('md').dataset.pg=='room')roomPg();if(!$('md').hidden&&$('md').dataset.pg=='shop')shop();fillSv();if(RM&&!$('room').hidden)roomUI();return;$('sv').innerHTML=['SD01','SD02','SD03',...m.bought].map(k=>`<button onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(m.decks).map(n=>`<button data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">${esc(n)}</button>`).join('')}
+function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · ${esc(m.name)} ${m.admin?'<button onclick="mk()">+โค้ด</button>':''}<button onclick="cfg.tok='';ap();location.reload()">ออกจากระบบ</button>`;$('bf').textContent=m.rq.length?'('+m.rq.length+')':'';if(!$('md').hidden&&$('md').dataset.pg=='room')roomPg();if(!$('md').hidden&&$('md').dataset.pg=='shop')shop();fillSv();if(RM&&!$('room').hidden)roomUI();return;$('sv').innerHTML=['SD01','SD02','SD03',...m.bought].map(k=>`<button onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(m.decks).map(n=>`<button data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">${esc(n)}</button>`).join('')}
 let bd;const oc=i=>Object.entries(ME.cards).reduce((a,[k,v])=>k.split('|')[0]==i?a+v:a,0),exp=o=>Object.entries(o).flatMap(([i,n])=>Array(n).fill(i)),sm=o=>Object.values(o).reduce((a,b)=>a+b,0);
 function decks(){bd=bd||{n:'',m:{},l:{},q:'',t:''};md.className='dkb';$('md').dataset.pg='';bdr();md.hidden=false}
 const lifeDup=()=>{const n=Object.keys(bd.l).flatMap(i=>Array(bd.l[i]).fill(C[i]?C[i].n:i));return n.length!=new Set(n).size};
@@ -271,13 +294,13 @@ const bimg=(k,fb)=>`<img class="bi" src="/${k}.webp" data-f="${esc(fb)}" onerror
 const setArt=s=>{const ids=Object.keys(C).filter(i=>i.startsWith(s+'-')&&art(i)).sort(),ur=ids.filter(i=>(C[i].v||[])[0]=='UR');return[...ur,...ids].filter((v,k,a)=>a.indexOf(v)==k).slice(0,3)};
 const box=s=>{const a=setArt(s);return`<div class="bx" style="--h:${((+s.slice(2)||0)*33)%360}"><div class="bxc">${[0,1,2].map(k=>`<i style="${art(a[k])}"></i>`).join('')}</div><div class="bxl"><small>BOOSTER BOX</small><b>${s}</b></div></div>`};
 const sbox=k=>{const u=((ST[k]||{}).main||[]).find(x=>x[2]=='UR');return`<div class="bx st" style="--h:${(k.charCodeAt(0)*7+(+k.slice(2)||0)*40)%360}"><div class="bxc"><i style="${art(u&&u[0])}"></i></div><div class="bxl"><small>STARTER DECK</small><b>${k}</b></div></div>`};
-function shop(t){const y=t?0:$('md').scrollTop;if(t)SHT=t;md.className='';$('md').dataset.pg='shop';const S_=['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
-const tabs=[['box','📦 BOX SET'],['st','🃏 STARTER DECK'],['code','🎟 REDEEM CODE'],['bsk','🗺 BOARD SKIN'],['csk','🂠 CARD SKIN']];let body='';
-if(SHT=='box')body=S_.map(s=>`<div class="sh"><div class="bw">${bimg(s,box(s))}<button class="mgf" onclick="rates('${s}')">🔍</button></div><div><b>${s}</b><br><button onclick="buy('${s}',1)">1 ซอง 100💎</button><button onclick="buy('${s}',10)">10 ซอง 900💎</button></div></div>`).join('');
-else if(SHT=='st')body=`<p>เด็คสำเร็จรูป ใบละ 1,500💎 (SD01–03 แจกฟรีตอนสมัคร)</p>`+Object.entries(ST).filter(([k])=>!/^SD0[123]$/.test(k)).map(([k,v])=>`<div class="sh">${bimg(k,sbox(k))}<div><b>${k}</b> ${esc(v.name)}<br>${(ME.bought||[]).includes(k)?'<span class="tagx">ซื้อแล้ว</span>':`<button class="pri" onclick="send({t:'buyst',set:'${k}'})">ซื้อ 1,500💎</button>`}</div></div>`).join('')+'<small>SD09 เร็วๆ นี้ (รอข้อมูล Cost/Gem/Power)</small>';
+function shop(t){const y=t?0:$('md').scrollTop;if(t)SHT=t;md.className='dkb';$('md').dataset.pg='shop';const S_=['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
+const tabs=[['box','📦 BOX SET'],['st','🃏 STARTER'],['code','🎟 โค้ด'],['bsk','🗺 บอร์ด'],['csk','🂠 สกินการ์ด']];let body='';
+if(SHT=='box')body=`<div class="shg">`+S_.map(s=>`<div class="sh"><div class="bw">${bimg(s,box(s))}<button class="mgf" onclick="rates('${s}')">🔍</button></div><div><b>${s}</b><br><button onclick="buy('${s}',1)">1 ซอง 100💎</button><button onclick="buy('${s}',10)">10 ซอง 900💎</button></div></div>`).join('')+`</div>`;
+else if(SHT=='st')body=`<p>เด็คสำเร็จรูป ใบละ 1,500💎 (SD01–03 แจกฟรีตอนสมัคร)</p><div class="shg">`+Object.entries(ST).filter(([k])=>!/^SD0[123]$/.test(k)).map(([k,v])=>`<div class="sh">${bimg(k,sbox(k))}<div><b>${k}</b> ${esc(v.name)}<br>${(ME.bought||[]).includes(k)?'<span class="tagx">ซื้อแล้ว</span>':`<button class="pri" onclick="send({t:'buyst',set:'${k}'})">ซื้อ 1,500💎</button>`}</div></div>`).join('')+'</div><small>SD09 เร็วๆ นี้ (รอข้อมูล Cost/Gem/Power)</small>';
 else if(SHT=='code')body=`<div class="cardx"><h3>🎟 ใช้โค้ด</h3><div class="join"><input id="cdi" class="pill" placeholder="กรอกโค้ด"><button class="pri" onclick="send({t:'code',c:cdi.value})">ใช้โค้ด</button></div></div>`;
-else body=skinTab(SHT=='bsk'?'board':'card');
-$('md').innerHTML=`<div class="in pg"><div class="ph2"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><h2>ร้านค้า</h2><span class="gm">💎 <b id="sgm">${ME.gems}</b></span></div><div class="tabs">${tabs.map(([k,n])=>`<button class="${SHT==k?'on':''}" onclick="shop('${k}')">${n}</button>`).join('')}</div><div style="padding:0 12px">${body}</div></div>`;$('md').hidden=false;$('md').scrollTop=y;const on=document.querySelector('.tabs .on');on&&on.scrollIntoView({inline:'center',block:'nearest'})}
+else body=`<div class="shg">${skinTab(SHT=='bsk'?'board':'card')}</div>`;
+$('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><b style="flex:1">🛒 ร้านค้า</b><span class="gm">💎 <b id="sgm">${ME.gems}</b></span></div><div class="gar">🎯 การันตี UR+ ในอีก <b>${Math.max(1,20-ME.pity)}</b> ซอง</div><div class="tabs">${tabs.map(([k,n])=>`<button class="${SHT==k?'on':''}" onclick="shop('${k}')">${n}</button>`).join('')}</div></div><div class="shb">${body}</div></div>`;$('md').hidden=false;$('md').scrollTop=y;const on=document.querySelector('.tabs .on');on&&on.scrollIntoView({inline:'center',block:'nearest'})}
 let LB=null;const buy=(set,n)=>{LB={set,n};send({t:'open',set,n})};
 const RO=['SCR','UR','SR','R','C','PR','CBR'],RC={SCR:'#e0a',UR:'#fc3',SR:'#6af',R:'#9d9',C:'#ccc',PR:'#f96',CBR:'#f96'};
 function rates(set){const R=[];Object.values(C).forEach(c=>c.id.startsWith(set+'-')&&(c.v||[]).forEach(r=>R.push({id:c.id,r})));const by=r=>R.filter(x=>x.r==r),P={},add=(x,p)=>{const k=x.id+'|'+x.r;P[k]=(P[k]||0)+p};
@@ -290,7 +313,7 @@ if(!ps||!ps.length){if(note)toast(note);return}
 const flat=ps.flat(),n=ps.length,dl=n>1?70:380;
 e.innerHTML=`<div class="pkh">เปิดซอง${n>1?' '+n+' ซอง':''}${note?' · '+esc(note):''} <small>(แตะเพื่อข้ามอนิเมชั่น)</small></div>`+ps.map((p,i)=>`<div class="pkrow">${p.map((x,k)=>`<div class="c bk" data-pi="${i*5+k}"></div>`).join('')}</div>`).join('')+'<div id="pks"></div>';e.hidden=false;e.scrollTop=0;
 let k=0;const el=i=>e.querySelector('[data-pi="'+i+'"]');
-const show=i=>{const x=flat[i],d=el(i);if(!d)return;const c=C[x.id]||{n:x.id},a=art(x.id,x.r);d.className='c pkf r'+x.r+(a?' im':'');d.setAttribute('style','--k:'+(KC[c.col]||'#999')+';'+a);d.innerHTML=a?'':`<b>${esc(c.n)}</b><i>${x.r}</i>`;d.dataset.id=x.id;if(['UR','SCR'].includes(x.r))sfx('win')};
+const show=i=>{const x=flat[i],d=el(i);if(!d)return;const c=C[x.id]||{n:x.id},a=art(x.id,x.r);d.className='c pkf r'+x.r+(a?' im':'');d.setAttribute('style','--k:'+(KC[c.col]||'#999')+';'+a);d.innerHTML=a?'':`<b>${esc(c.n)}</b><i>${x.r}</i>`;d.dataset.id=x.id;if(['UR','SCR'].includes(x.r))sfx('win');if(['SR','UR','SCR','CBR','PR'].includes(x.r)){const f=document.createElement('div');f.className='pkflash f'+x.r;e.append(f);setTimeout(()=>f.remove(),900)}};
 const done=()=>{const cnt={};flat.forEach(x=>cnt[x.r]=(cnt[x.r]||0)+1);const price=LB?(LB.n==10?900:LB.n*100):0;
 $('pks').innerHTML=`<div>ได้ทั้งหมด ${flat.length} ใบ</div>`+RO.filter(r=>cnt[r]).map(r=>`<span class="chip" style="color:${RC[r]}">${r} ×${cnt[r]}</span>`).join('')+'<br>'+(LB&&!note?`<button class="yes" onclick="send({t:'open',set:LB.set,n:LB.n})">🎲 สุ่มต่อ (${LB.n} ซอง · ${price}💎)</button>`:'')+`<button onclick="$('pkr').hidden=true">ปิด</button>`};
 const step=()=>{if(k>=flat.length)return done();show(k++);pkT=setTimeout(step,dl)};
@@ -301,24 +324,24 @@ const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
 const supOK=x=>!x.tired&&!x.tk&&/สามัคคี/.test(info(x).e||'')&&x.u!=atk;
 const can=(x,z,o)=>(S.ask&&S.ask.mine&&S.ask.opts.includes(x.u))||(mode=='atk'&&o&&(z=='av'||z=='co'))||(mode=='atk'&&!o&&z=='av'&&supOK(x))||(mode=='pay'&&z=='hand'&&x.u!=sel);
 const cd=(x,z,o)=>{const c=info(x),a=x.tk?'':art(x.id),p=c.p!=null?(x.cp!=null?x.cp:c.p+(x.pw||0)):'';return`<div class="c${a?' im':''}${x.tired?' z':''}${sel==x.u?' sel':''}${z=='hand'&&NEW.has(x.u)?' nw':''}${pay.includes(x.u)||akSel.includes(x.u)||supl.includes(x.u)?' pay':''}${can(x,z,o)?' can':''}" data-u="${x.u}" data-z="${z}" data-o="${o?1:0}" style="--k:${KC[c.col]||'#999'};${a}">${a?'':`<b>${esc(c.n)}</b><i>${c.t=='Magic'?'':c.c??''}${c.g?'◆'+c.g:''}</i>`}${p!==''?`<s class="p ${p>c.p?'up':p<c.p?'dn':''}" data-k="${x.u}">${p}</s>`:''}${gb(x,z)}</div>`};
-const row=(a,z,o)=>`<div class="r zr" data-l="${ZL[z]}" data-s="${ZS[z]}">${a.map(x=>cd(x,z,o)).join('')}</div>`;
+const row=(a,z,o)=>`<div class="r zr" data-l="${ZL[z]}" data-s="${ZS[z]}">${(z=='mg'?a.filter(x=>!x.at||find(x.at)):a).map(x=>cd(x,z,o)).join('')}</div>`;
 const lifeT=()=>{if(mode!='atk'||!S)return false;const f=find(atk);return !S.op.av.length||/เตะไข่/.test(f?info(f.x).e||'':'')||[...S.me.mg,...S.op.mg].some(y=>y.at==atk&&/เตะไข่/.test(info(y).e||''))};
 const gb=(x,z)=>{if(z=='av'){const n=[...S.me.mg,...S.op.mg].filter(y=>y.at==x.u).length;return n?'<em>+'+n+'</em>':''}if(z=='mg'&&x.at){const f=find(x.at);return f?'<span class="at">→ '+esc(info(f.x).n)+'</span>':''}return''};
 const life=(p,o)=>`<div class="lc zr${o&&lifeT()?' can':''}" data-l="Life"${o?' data-lf="1"':''}>${p.life.map(l=>l.up?cd(l,'life',o):'<div class="c bk"></div>').join('')}</div>`;
 const ZNm={hand:'มือ',av:'สนาม',hell:'นรก',deck:'Deck',mg:'Magic',co:'Construct',dk:'มิติมืด'};
 const piles=(p,o)=>{const t=p.hell[p.hell.length-1],d=(p.dk||[])[(p.dk||[]).length-1],pc=(top,tx)=>top?`<div class="c im" style="${art(top.id)||''}">${art(top.id)?'':esc(info(top).n)}</div>`:`<small>${tx}</small>`;
-const H=`<div class="pl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.length}</b></div>`,K=`<div class="pl" data-dk="${o?1:0}">${pc(d,'มิติมืด')}${(p.dk||[]).length?`<b>${p.dk.length}</b>`:''}</div>`,D=`<div class="pl"><div class="c bk"></div><b>${p.deck}</b></div>`;return o?[D,K,H]:[H,K,D]};
-const side=(p,o)=>{const rows=o?[['mg',p.mg],['av',p.av],['co',p.co]]:[['co',p.co],['av',p.av],['mg',p.mg]];return`<div class="sd ${o?'op':'me'}">${life(p,o)}<div class="zc">${rows.map(([z,a])=>row(a,z,o)).join('')}</div><div class="pc">${piles(p,o).join('')}</div></div>`};
+const H=`<div class="pl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.length}</b></div>`,K=`<div class="pl" data-dk="${o?1:0}">${pc(d,'มิติมืด')}${(p.dk||[]).length?`<b>${p.dk.length}</b>`:''}</div>`,D=`<div class="pl" data-dp="${o?1:0}"><div class="c bk"></div><b>${p.deck}</b></div>`;return o?[D,K,H]:[H,K,D]};
+const side=(p,o)=>{const rows=o?[['mg',p.mg],['av',p.av],['co',p.co]]:[['co',p.co],['av',p.av],['mg',p.mg]];return`<div class="sd ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}">${life(p,o)}<div class="zc">${rows.map(([z,a])=>row(a,z,o)).join('')}</div><div class="pc">${piles(p,o).join('')}</div></div>`};
 const pi=(p,o)=>`<div class="pi">${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
 function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u);NEW=new Set(handSeen?hs.filter(u=>!handSeen.has(u)):[]);handSeen=new Set(hs)}
-$('mid').innerHTML=pi(o,1)+side(o,1)+`<div class="ph">${S.mine?'เทิร์นเรา':'เทิร์นศัตรู'} · ${{main:1,battle:2,end:3}[S.phase]!=null?['DRAW','MAIN','BATTLE','END'].map((t,k)=>`<span class="tc${k==({main:1,battle:2,end:3}[S.phase])?' on':''}">${t}</span>`).join('→'):PH[S.phase]}${S.land?' · Land: '+esc(info(S.land.c).n):''}${S.land?cd(S.land.c,'land',S.land.o!=S.i):''}</div>`+side(m,0)+pi(m,0);
+$('mid').innerHTML=pi(o,1)+side(o,1)+`<div class="ph">${S.mine?'เทิร์นเรา':'เทิร์นศัตรู'} · ${{main:1,battle:2,end:3}[S.phase]!=null?['DRAW','MAIN','BATTLE','END'].map((t,k)=>`<span class="tc${k==({main:1,battle:2,end:3}[S.phase])?' on':''}">${t}</span>`).join('→'):PH[S.phase]}${S.land?' · Land: '+esc(info(S.land.c).n):''}${S.land?cd(S.land.c,'land',S.land.o!=S.i):''} <button class="ib" onclick="playmat()">📖</button><button class="ib" onclick="st()">⚙</button></div>`+side(m,0)+pi(m,0);
 $('hand').innerHTML=m.hand.filter(x=>!(mode=='pay'&&pay.includes(x.u))).map(x=>cd(x,'hand',0)).join('');ptrUI();
 const L=S.log.slice(-10).map(esc);$('lg').innerHTML=L.join('<hr>');$('ls').innerHTML=L.slice(-2).join('<br>')+(S.over?'<br><b>'+esc(S.over)+'</b>':'');
 document.querySelectorAll('.p').forEach(s=>{const u=s.dataset.k,v=+s.textContent;if(prev[u]!==undefined&&prev[u]!==v)s.classList.add('pop');prev[u]=v});
 if(S.mine&&lastMine===false)sfx('turn');lastMine=S.mine;
 if(S.log.length>lastLog&&/LIFE หงาย|สู้|ตาย/.test(S.log.slice(lastLog).join()))sfx('hit');lastLog=S.log.length;
 if(S.ev&&S.ev.n!=lastEv){lastEv=S.ev.n;zoom(S.ev.id,2400);sfx('play')}
-if(sel&&!find(sel))sel=null;diceUI();akUI();if((!sel&&S.phase!='mull')||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI()}
+if(sel&&!find(sel))sel=null;diceUI();akUI();if((!sel&&S.phase!='mull')||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI();handFit();playFx();updPos()}
 let tt;const toast=t=>{const e=$('ts');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,1600)};
 function drt(){const d=S.dr;if(!d||d.n==lastDr)return;lastDr=d.n;if(d.c>0){toast((d.who==S.i?'คุณ':'ศัตรู')+'จั่ว '+d.c+' ใบ');sfx('draw')}}
 function rx(){const e=$('rx'),p=S.pend,R=S.me.hand.filter(x=>{const c=info(x);return c.t=='Magic'&&c.st=='React'});
@@ -362,7 +385,8 @@ function flyCard(u){const f=find(u);if(!f)return;const d=document.createElement(
 function ptrUI(){const e=$('ptr');if(mode!='pay'||!S){e.hidden=true;return}const f=find(sel),c=f&&info(f.x),g=pay.reduce((a,u)=>{const q=find(u);return a+(q&&info(q.x).g||0)},0);e.innerHTML=`<small>จ่าย Cost<br><b>${g}/${c?c.c:'-'}</b></small>`+pay.map(u=>{const q=find(u);return q?cd(q.x,'ptray',0):''}).join('')+'<small>แตะเพื่อเอาออก</small>';e.hidden=false}
 function akUI(){const e=$('akp'),a=S&&S.ask;const key=a&&a.mine?a.text+a.opts.join():'';if(key!==lastAk){lastAk=key;akSel=[]}
 if(!a||!a.mine){e.hidden=true;return}
-e.innerHTML=`<h4>🎯 ${esc(a.text)}</h4>`+(a.cards&&a.cards.length?`<div class="akr">${a.cards.map(c=>{const ar=c.id&&c.id!='TK'?art(c.id):'';return`<div class="akc${akSel.includes(c.u)?' sel':''}" data-ak="${c.u}"><div class="c im" style="${ar}">${ar?'':esc(c.tk||(C[c.id]||{}).n||'')}</div>${c.i==null?'':(c.i==S.i?'เรา':'ศัตรู')+' · '+(ZNm[c.z]||c.z||'')}</div>`}).join('')}</div>`:'');e.hidden=false}
+const off=(a.cards||[]).filter(c=>!['av','co','mg','hand'].includes(c.z));
+e.innerHTML=`<h4>🎯 ${esc(a.text)}</h4>`+(off.length?`<div class="akr">${off.map(c=>{const ar=c.id&&c.id!='TK'?art(c.id):'';return`<div class="akc${akSel.includes(c.u)?' sel':''}" data-ak="${c.u}"><div class="c im" style="${ar}">${ar?'':esc(c.tk||(C[c.id]||{}).n||'')}</div>${c.i==null?'':(c.i==S.i?'เรา':'ศัตรู')+' · '+(ZNm[c.z]||c.z||'')}</div>`}).join('')}</div>`:'');e.hidden=false}
 function zoom(id,ms){const c=C[id];if(!c)return;const a=art(id);$('zm').innerHTML=a?`<div class="zw"><div class="zi" style="${a}"></div><div class="zt">${bigHtml(c)}</div></div>`:`<div class="big">${bigHtml(c)}</div>`;$('zm').hidden=false;clearTimeout(zoom.t);if(ms)zoom.t=setTimeout(()=>$('zm').hidden=true,ms)}
 $('zm').onclick=()=>$('zm').hidden=true;
 $('hand').addEventListener('pointermove',e=>{const cs=[...$('hand').children],r=$('hand').getBoundingClientRect(),i=Math.min(cs.length-1,Math.max(0,Math.floor((e.clientX-r.left)/r.width*cs.length)));cs.forEach((c,k)=>c.classList.toggle('h',k==i))});
@@ -387,28 +411,26 @@ if(z=='life'||z=='land'||z=='hell'){const f=find(u);return f&&pv(f.x.id)}
 sel=u;mode=null;render();const f=find(u);f&&pv(f.x.id)});
 function hell(w){md.className='';const p=w?S.op:S.me;$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button> นรก (${p.hell.length}) แตะการ์ดเพื่ออ่าน<div class="r">${p.hell.map(x=>cd(x,'hell',w)+(!w&&S.mine&&S.phase=='main'&&x.mh===S.tn&&info(x).st=='Modification'?`<button onclick="md.hidden=true;send({t:'cast',u:${x.u}})">ใช้จากนรก</button>`:'')).join('')}</div></div>`;$('md').hidden=false}
 function dkView(w){md.className='';const p=w?S.op:S.me,a=p.dk||[];$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button> มิติมืด (${a.length}) — การ์ดที่ถูกเนรเทศ<div class="r">${a.map(x=>cd(x,'hell',w)).join('')||'<p>ยังไม่มีการ์ด</p>'}</div></div>`;$('md').hidden=false}
-function st(){const s=(k,t,v)=>`<label>${t} <select onchange="cfg.${k}=isNaN(this.value)?this.value:+this.value;ap();music()">${Object.entries(v).map(([a,b])=>`<option value="${a}" ${cfg[k]==a?'selected':''}>${b}</option>`).join('')}</select></label><br>`;
-$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button><br>${s('th','ธีม',{dark:'มืด',light:'สว่าง'})}${s('bg','พื้นหลังล็อบบี้',{pasulol:'ผู้รู้ความจริง',neon:'นีออน',stars:'ดวงดาว'})}<label>วิดีโอพื้นหลัง (ชื่อไฟล์ เช่น bg1.mp4) <input value="${esc(cfg.bgv)}" onchange="cfg.bgv=this.value;ap()"></label><br>${s('img','รูปการ์ด',{1:'เปิด',0:'ปิด (ประหยัดเน็ต)'})}${s('cs','ลายการ์ด',{crayon:'กรอบสีเทียน',plain:'เรียบ'})}${s('snd','เสียงเอฟเฟกต์',{1:'เปิด',0:'ปิด'})}${s('mus','เพลงพื้นหลัง',{1:'เปิด',0:'ปิด'})}${s('wl','กันจอดับ',{1:'เปิด',0:'ปิด'})}${s('fs','ขนาดตัวอักษร',{14:'เล็ก',16:'กลาง',19:'ใหญ่'})}</div>`;$('md').hidden=false}
-function bar(){const b=$('bar');b.innerHTML='';const A=(t,f)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;b.append(e);return e};
+function bar(){const b=$('bar');b.innerHTML='<div class="bm"></div><div class="br2"></div>';const BM=b.children[0],BR=b.children[1];const A=(t,f,p)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;(p||BM).append(e);return e};
 if(S.over){A('📊 ผลการแข่ง',()=>{endHide=false;endUI()});A(MYRM?'⏳ รออีกฝ่าย…':'เล่นซ้ำ',()=>{if(!MYRM){MYRM=1;send({t:'rm'});endUI()}});return A('กลับหน้าหลัก',()=>location.reload())}
 if(S.phase=='dice'||S.phase=='pick')return;
+A('🏳 ยอมแพ้',()=>{if(confirm('ยืนยันยอมแพ้ ?'))send({t:'surrender'})},BR).className='srb';
 if(S.ask){const a=S.ask;if(!a.mine)return A('⏳ รอฝ่ายตรงข้ามเลือก…',()=>{});
 if(a.yn){A('✔ ใช่',()=>send({t:'pick',yes:1}));return A('✖ ไม่',()=>send({t:'pick',yes:0}))}
 const ok=akSel.length>=a.min&&akSel.length<=a.n;const bt=A('ยืนยัน ('+akSel.length+'/'+(a.min==a.n?a.n:a.min+'-'+a.n)+')',()=>send({t:'pick',us:akSel}));bt.disabled=!ok;bt.className='atkb';
 return a.cancel?A('ยกเลิก',()=>send({t:'pick',cancel:1})):bt}
 if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
 if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s)':''),()=>send({t:'pass'}));
-if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (ดูการ์ดบนมือเพื่อตัดสินใจได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';b.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
+if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (ดูการ์ดบนมือเพื่อตัดสินใจได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';BM.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7){const ex=S.me.hand.length-7;return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') · มือเกิน 7 ใบ',()=>pay.length?send({t:'discardm',us:pay}):alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ'))}
 const f=sel&&find(sel),c=f&&info(f.x);
 if(mode=='pay')A('ยืนยันจ่าย ('+pay.length+')',()=>send({t:c.t=='Avatar'?'summon':'build',u:sel,pay}));
-if(mode=='atk'){const ok=lifeT();b.insertAdjacentHTML('beforeend','<div class="hint">⚔ แตะ Avatar/Construct ศัตรูที่จะโจมตี'+(ok?' หรือแตะแถว LIFE':' (ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar)')+' · แตะ Avatar ของเราที่มี สามัคคี เพื่อเสริมพลัง ('+supl.length+')</div>');A('🎯 ตี LIFE',()=>send({t:'atk',u:atk,tg:'life',sup:supl})).disabled=!ok}
+if(mode=='atk'){const ok=lifeT();BM.insertAdjacentHTML('beforeend','<div class="hint">⚔ แตะ Avatar/Construct ศัตรูที่จะโจมตี'+(ok?' หรือแตะแถว LIFE':' (ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar)')+' · แตะ Avatar ของเราที่มี สามัคคี เพื่อเสริมพลัง ('+supl.length+')</div>');A('🎯 ตี LIFE',()=>send({t:'atk',u:atk,tg:'life',sup:supl})).disabled=!ok}
 if(mode){return A('ยกเลิก',()=>{mode=null;pay=[];supl=[];render()})}
 if(f&&!f.o){if(f.z=='hand'){if(c.t=='Avatar'||c.t=='Construct')A(c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',()=>c.c?(mode='pay',pay=[],render()):send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:[]}));
 if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}));A('ทิ้ง',()=>send({t:'discard',u:sel}))}
 else{if(f.z=='av'&&S.phase=='battle'&&S.mine&&!S.pend){const e=A(f.x.tired?'💤 นอนอยู่ โจมตีไม่ได้':'⚔ โจมตี',()=>{atk=sel;mode='atk';render()});e.disabled=!!f.x.tired;e.className='atkb'}}}
-if(S.mine)A(S.phase=='main'?'→ Battle':S.phase=='battle'?'→ End':'จบเทิร์น',()=>send({t:'next'}));
-A('เด็ค',()=>{const n=prompt('ดูกี่ใบบนสุด? (0 = ค้นทั้งเด็ค)','0');n!==null&&send({t:'dview',n})});A('แชท',()=>{const x=prompt('ข้อความ');x&&send({t:'chat',x})});A('📖',()=>{$('zm').innerHTML='<img src="/playmat.webp" style="max-width:98vw;max-height:96vh">';$('zm').hidden=false});A('⚙',st)}
+if(S.mine)A(S.phase=='main'?'→ BATTLE':S.phase=='battle'?'→ END':'จบเทิร์น',()=>send({t:'next'}),BR).className='endb';A('💬 แชท',()=>{const x=prompt('ข้อความ');x&&send({t:'chat',x})})}
 $('auth').hidden=!!cfg.tok;$('ld').hidden=!cfg.tok;setInterval(()=>{if(!S)return;if(S.pend&&S.pend.mine&&S.pend.until){bar();rxT()}const q=$('erq');if(q&&RMQ>Date.now())q.textContent=' ('+Math.ceil((RMQ-Date.now())/1e3)+'s)'},1000);
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
@@ -435,5 +457,23 @@ const el=document.elementFromPoint(x,y);if(!el)return;const t=el.closest('.c[dat
 if(t&&(t.dataset.z=='av'||t.dataset.z=='co'))return send({t:'atk',u,tg:+t.dataset.u,sup:[]});
 if(el.closest('.sd.op .lc')){atk=u;mode='atk';const ok=lifeT();mode=null;if(!ok)return toast('ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar');return send({t:'atk',u,tg:'life',sup:[]})}
 toast('ปล่อยบน Avatar / Construct / LIFE ของศัตรู')}
+function playmat(){$('zm').innerHTML='<img src="/playmat.webp" style="max-width:98vw;max-height:96vh">';$('zm').hidden=false}
+function handFit(){const h=$('hand'),n=h.children.length;if(n>1){const w=h.firstElementChild.getBoundingClientRect().width,av=h.clientWidth-16,st=Math.min(w*.6,(av-w)/(n-1));h.style.setProperty('--ml',(st-w)+'px')}}
+/* ===== อนิเมชันเอฟเฟกต์ (buff/debuff/ตาย/ธรณีสูบ/LIFE) ===== */
+let lastFx=-1,POS={};
+const rc=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width}};
+const fxEl=(h,x,y,ms)=>{const d=document.createElement('div');d.className='fxl';d.style.left=x+'px';d.style.top=y+'px';d.innerHTML=h;document.body.append(d);setTimeout(()=>d.remove(),ms||1300);return d};
+const cel=u=>document.querySelector('#mid [data-u="'+u+'"]'),pos=u=>rc(cel(u))||POS[u]||null;
+const updPos=()=>{POS={};document.querySelectorAll('#mid .c[data-u]').forEach(e=>POS[e.dataset.u]=rc(e))};
+function playFx(){const L=S.fx||[];if(lastFx==-1){lastFx=L.length?L[L.length-1].n:0;return}L.filter(f=>f.n>lastFx).forEach(f=>{lastFx=f.n;try{fx1(f)}catch(e){}})}
+function fx1(f){
+if(f.k=='buff'){const p=pos(f.u);if(!p)return;const e=cel(f.u);e&&e.classList.add(f.v>0?'fxu':'fxd');fxEl(`<div class="fxb ${f.v>0?'up':'dn'}">${f.v>0?'▲ +':'▼ '}${f.v}</div>`,p.x,p.y);sfx(f.v>0?'play':'hit')}
+else if(f.k=='die'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxboom"></div>',p.x,p.y,800);fxEl(`<div class="c im fxgd" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,900);sfx('hit')}
+else if(f.k=='bounce'){const p=pos(f.u);p&&fxEl('<div class="fxb nt">↩ กลับมือ</div>',p.x,p.y)}
+else if(f.k=='life'){const e=document.querySelector(f.i==S.i?'.sd.me .lc':'.sd.op .lc'),p=rc(e);p&&fxEl('<div class="fxb dn">💔 LIFE</div>',p.x,p.y)}
+else if(f.k=='mill'){const w=f.i==S.i?'0':'1',a=rc(document.querySelector('[data-dp="'+w+'"]')),b=rc(document.querySelector('.pl[data-h="'+w+'"]'));if(!a||!b)return;
+const m=$('mid');m.classList.remove('shk');void m.offsetWidth;m.classList.add('shk');
+fxEl('<div class="fxbn">🕳 ธรณีสูบ! '+f.ids.length+' ใบ</div>',innerWidth/2,innerHeight*.4,1600);fxEl('<div class="fxhole"></div>',b.x,b.y,1600);
+f.ids.forEach((id,k)=>{const ar=art(id);setTimeout(()=>fxEl(`<div class="c im fxfall" style="--w:54px;--dx:${b.x-a.x}px;--dy:${b.y-a.y}px;${ar}">${ar?'':esc((C[id]||{}).n||'')}</div>`,a.x,a.y,1100),k*160)});sfx('hit')}}
 conn();
 </script>

@@ -65,6 +65,10 @@ const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floo
 const inst = id => ({ u: UID++, id, pw: 0, tired: false });
 const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
+/* ===== เอฟเฟกต์ให้ฝั่งไคลเอนต์เล่นอนิเมชัน + กวาดอุปกรณ์ที่ไม่มีเจ้าของ ===== */
+let CR = null, FXN = 0;
+const fx = o => { if (!CR || !CR.g) return; const g = CR.g; (g.fxl = g.fxl || []).push({ n: ++FXN, ...o }); if (g.fxl.length > 20) g.fxl.shift(); };
+function sweep(r) { r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); } } }); }
 
 /* ===== ENGINE: กฎ v3.2 + สกิล SD01-03 (เลือกเป้าหมายเอง) ===== */
 const nmOf = x => x.tk ? x.tk.n : B[x.id].n;
@@ -72,7 +76,7 @@ const symOf = x => x.tk ? (x.tk.s || '') : (B[x.id].s || '');
 const isAv = x => !x.tk && B[x.id] && B[x.id].t === 'Avatar';
 const TRIO = ['กุ่ย', 'ฮอล', 'นาย'];
 const allAv = r => { const a = []; r.p.forEach((p, i) => p.av.forEach(x => a.push({ i, x }))); return a; };
-const addTp = (x, n) => { x.tp = (x.tp || 0) + n; };
+const addTp = (x, n) => { x.tp = (x.tp || 0) + n; n && fx({ k: 'buff', u: x.u, v: n }); };
 const lose = (r, i, why) => { if (r.g.over) return; r.g.over = r.p[i].name + ' ' + why + ' แพ้!'; r.g.win = 1 - i; };
 function P(r, x) {
   const f = find(r, x.u); let v = (x.tk ? x.tk.p : (B[x.id].p || 0)) + (x.pw || 0) + (x.tp || 0) + (x.bp || 0);
@@ -88,7 +92,7 @@ function P(r, x) {
 const kick = (r, a) => /เตะไข่/.test(a.tk ? '' : B[a.id].e) || r.p.some(q => q.mg.some(m => m.at === a.u && B[m.id].e.includes('เตะไข่')));
 const allCards = (r, u) => { for (let i = 0; i < 2; i++) for (const z of [...ZN, 'deck']) { const c = r.p[i][z].find(x => x.u === u); if (c) return { i, z, c }; } return null; };
 /* ===== คิว + ตัวเลือก (ask) ===== */
-function runQ(r) { const g = r.g; let n = 0; while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } }
+function runQ(r) { CR = r; const g = r.g; let n = 0; while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } sweep(r); }
 function ask(r, who, o) {
   const opts = o.yn ? [] : o.opts;
   if (!o.yn && !opts.length) { o.none && o.none(); return false; }
@@ -99,7 +103,7 @@ function ask(r, who, o) {
 }
 const sendHell = (r, u) => { const f = take(r, u); if (!f.c.tk) r.p[f.i].hell.push(f.c); };
 const destroyAv = (r, u) => { const f = find(r, u); if (f && f.z === 'av') kill(r, f.i, u); };
-const bounce = (r, u) => { const f = take(r, u); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
+const bounce = (r, u) => { const f = take(r, u); fx({ k: 'bounce', u }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
 function summonFree(r, i, c) {
   const p = r.p[i]; if (p.av.filter(x => !x.tk).length >= 4 || p.av.length >= 6) { log(r, 'Avatar เต็ม อัญเชิญไม่ได้'); return false; }
   const k = p.hell.findIndex(h => h.u === c.u); if (k < 0) return false; p.hell.splice(k, 1);
@@ -108,7 +112,7 @@ function summonFree(r, i, c) {
 function mill(r, i, n, src) {
   const p = r.p[i]; if (src) p.av.forEach(a => { if (a.id === 'SD03-004' && src.id !== 'SD03-004') n += 2; });
   const cs = []; for (let k = 0; k < n && p.deck.length; k++) cs.push(p.deck.pop());
-  cs.forEach(c => p.hell.push(c)); log(r, '🕳 ' + p.name + ': ธรณีสูบ ' + cs.length + ' ใบ (' + cs.map(c => B[c.id].n).join(', ') + ')');
+  cs.forEach(c => p.hell.push(c)); cs.length && fx({ k: 'mill', i, ids: cs.map(c => c.id) }); log(r, '🕳 ' + p.name + ': ธรณีสูบ ' + cs.length + ' ใบ (' + cs.map(c => B[c.id].n).join(', ') + ')');
   cs.forEach(c => { if (c.id === 'SD03-018') c.mh = r.g.n; });
   if (!p.deck.length) return lose(r, i, 'เด็คหมด');
   cs.filter(c => c.id === 'SD03-003').forEach(c => r.g.q.unshift(() => ask(r, i, { yn: true, text: 'นายนิรยบาล แว่น ถูกธรณีสูบ — อัญเชิญลง Avatar Zone จากนรกไหม?', cb: y => y && summonFree(r, i, c) })));
@@ -226,8 +230,8 @@ function mkDeck(text, rand, skip, ban) {
   return { main, life };
 }
 const view = (r, i) => {
-  const g = r.g, pub = p => ({ name: p.name, av: p.av.map(x => ({ ...x, cp: P(r, x) })), mg: p.mg, co: p.co, hell: p.hell, dk: p.dk, deck: p.deck.length, hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, cp: P(r, x) })), mg: p.mg, co: p.co, hell: p.hell, dk: p.dk, deck: p.deck.length, hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
+  return { i, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: g.fxl || [], tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const bc = r => r.p.forEach((p, i) => {
   if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
@@ -239,7 +243,7 @@ const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
 const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) if (p.mg[k].at === u) { const [g] = p.mg.splice(k, 1); delete g.at; p.hell.push(g); } });
 const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') release(r, u); delete f.c.at; return f; };
-const kill = (r, i, u) => { const f = take(r, u); if (!f.c.tk) r.p[f.i].hell.push(f.c); };
+const kill = (r, i, u) => { const f = take(r, u); fx({ k: 'die', u, id: f.c.tk ? null : f.c.id, nm: f.c.tk ? f.c.tk.n : null }); if (!f.c.tk) r.p[f.i].hell.push(f.c); };
 
 function payOK(c, pay, me) {
   if (!c.c) { if (pay.length) E('Cost 0 ไม่ต้องจ่าย'); return; }
@@ -258,17 +262,17 @@ function startTurn(r) {
 function hit(r, d, atk) {
   const k = d.life.findIndex(l => !l.up);
   if (k < 0) { r.g.over = atk.name + ' ชนะ!'; r.g.win = r.p.indexOf(atk); return 'KO'; }
-  d.life[k].up = 1; (d.lf = d.lf || []).push(d.life[k].id); const c = B[d.life[k].id];
+  d.life[k].up = 1; fx({ k: 'life', i: r.p.indexOf(d) }); (d.lf = d.lf || []).push(d.life[k].id); const c = B[d.life[k].id];
   log(r, d.name + ' LIFE: ' + c.n + ' — ' + c.e);
   if (d.life.every(l => l.up)) log(r, d.name + ' สาหัส!');
   return d.life[k].id;
 }
 
 function act(r, i, m) {
-  const g = r.g, me = r.p[i], op = r.p[1 - i], mine = g.turn === i;
+  CR = r; const g = r.g, me = r.p[i], op = r.p[1 - i], mine = g.turn === i;
   if (g.over && m.t !== 'chat') E('เกมจบแล้ว');
-  if (g.ask) { if (!['chat', 'pick'].includes(m.t)) E('รอเลือกให้เสร็จก่อน'); if (m.t === 'pick' && g.ask.who !== i) E('รออีกฝ่ายเลือก'); }
-  else if (g.pend && !['chat','pass'].includes(m.t) && !(i === g.pend.who && ['dview','dmove','dpos','dshuf','cast','discard'].includes(m.t))) E('รอ React ก่อน');
+  if (g.ask) { if (!['chat', 'pick', 'surrender'].includes(m.t)) E('รอเลือกให้เสร็จก่อน'); if (m.t === 'pick' && g.ask.who !== i) E('รออีกฝ่ายเลือก'); }
+  else if (g.pend && !['chat','pass','surrender'].includes(m.t) && !(i === g.pend.who && ['dview','dmove','dpos','dshuf','cast','discard'].includes(m.t))) E('รอ React ก่อน');
   const mainOnly = () => { if (!mine || g.phase !== 'main') E('เฉพาะ Main Phase'); };
   const own = u => { const f = find(r, u); if (!f || f.i !== i) E('ไม่ใช่การ์ดของเรา'); return f; };
   const pays = () => (m.pay || []).map(u => { if (u === m.u) E('ใช้การ์ดใบนี้เป็น Cost ของตัวเองไม่ได้'); const f = own(u); if (f.z !== 'hand') E('ต้องจ่ายด้วยการ์ดในมือ'); return f.c; });
@@ -330,8 +334,8 @@ function act(r, i, m) {
       else if (op.co.some(x => x.u === m.tg)) tk = 'co';
       else E('ไม่พบเป้าหมาย');
       const sup = [...new Set((m.sup || []).map(Number))].filter(u => u !== a.c.u).map(u => { const q = own(u); if (q.z !== 'av' || q.c.tired || q.c.tk || !B[q.c.id].e.includes('สามัคคี')) E('สามัคคีไม่ได้: ' + nmOf(q.c)); return q.c; });
-      sup.forEach(q => { a.c.bp = (a.c.bp || 0) + P(r, q); q.tired = true; log(r, '🤝 ' + nmOf(q) + ' สามัคคี +' + P(r, q)); });
-      if (g.land && g.land.c.id === 'SD02-020' && TRIO.includes(nmOf(a.c))) { a.c.bp = (a.c.bp || 0) + 2; log(r, '🏠 สมชายห้องเช่า: POWER +2'); }
+      sup.forEach(q => { a.c.bp = (a.c.bp || 0) + P(r, q); q.tired = true; fx({ k: 'buff', u: a.c.u, v: P(r, q) }); log(r, '🤝 ' + nmOf(q) + ' สามัคคี +' + P(r, q)); });
+      if (g.land && g.land.c.id === 'SD02-020' && TRIO.includes(nmOf(a.c))) { a.c.bp = (a.c.bp || 0) + 2; fx({ k: 'buff', u: a.c.u, v: 2 }); log(r, '🏠 สมชายห้องเช่า: POWER +2'); }
       a.c.tired = true; log(r, nmOf(a.c) + ' โจมตี ' + (tk === 'life' ? 'LIFE' : tk === 'co' ? 'Construct' : 'Avatar'));
       g.q.push(() => fxAtk(r, i, a.c)); g.q.push(() => open(r, { who: 1 - i, k: 'atk', ai: i, u: m.u, tg: m.tg, tk })); break;
     }
@@ -345,6 +349,7 @@ function act(r, i, m) {
     case 'dmove': { const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบ'); if (!['hand','hell','av','mg','co'].includes(m.to)) E('โซนผิด'); const [c] = me.deck.splice(k, 1); me[m.to].push(c); log(r, me.name + ' ย้ายจากเด็ค → ' + m.to); if (!me.deck.length && !g.over) { g.over = me.name + ' เด็คหมด'; g.win = 1 - i; } break; }
     case 'dpos': { const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบ'); const [c] = me.deck.splice(k, 1); m.top ? me.deck.push(c) : me.deck.unshift(c); log(r, me.name + ' วาง' + (m.top ? 'บน' : 'ใต้') + 'เด็ค'); break; }
     case 'dshuf': shuf(me.deck); log(r, me.name + ' สับเด็ค 🔀'); break;
+    case 'surrender': { if (g.phase === 'dice' || g.phase === 'pick') E('ยังยอมแพ้ไม่ได้'); g.ask = null; g.pend = null; g.q = []; g.over = me.name + ' ยอมแพ้'; g.win = 1 - i; log(r, '🏳 ' + me.name + ' ยอมแพ้'); break; }
     case 'chat': log(r, '💬 ' + me.name + ': ' + String(m.x || '').slice(0, 200)); break;
     default: E('คำสั่งไม่รู้จัก');
   }
@@ -374,7 +379,7 @@ function resolveAtk(r, p) {
     const d = op.co.find(x => x.u === p.tg); if (!d) return log(r, 'เป้าหาย');
     const pd = (B[d.id].p || 0) + (d.pw || 0), dn = B[d.id].n; let res = 'none';
     log(r, an + ' (' + pa + ') โจมตี Construct ' + dn + ' (' + pd + ')');
-    if (pa > pd) { take(r, d.u); op.hell.push(d); log(r, dn + ' ถูกทำลาย'); res = 'win'; } else log(r, 'Power ไม่เกิน Construct — ไม่มีอะไรเกิดขึ้น');
+    if (pa > pd) { take(r, d.u); fx({ k: 'die', u: d.u, id: d.id }); op.hell.push(d); log(r, dn + ' ถูกทำลาย'); res = 'win'; } else log(r, 'Power ไม่เกิน Construct — ไม่มีอะไรเกิดขึ้น');
     setBt(r, { ...base, tg: 'av', dn, did: d.id, pd, res });
   } else {
     const d = op.av.find(x => x.u === p.tg); if (!d) return log(r, 'เป้าหาย');
@@ -387,7 +392,7 @@ function resolveAtk(r, p) {
   }
   a.bp = 0;
 }
-function passReact(r) { const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') resolveAtk(r, p); runQ(r); }
+function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') resolveAtk(r, p); runQ(r); }
 function begin(r) {
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; });
   r.g = { turn: 0, phase: 'dice', pend: null, ask: null, q: [], n: 0, used: [{}, {}], land: null, log: ['เริ่มเกม!'], over: null };
@@ -499,7 +504,7 @@ wss.on('connection', ws => {
         if (!r) { if (!m.create) E('ไม่พบห้อง'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5,10,20].includes(+m.clock) ? +m.clock : 0, react: [10,20,30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] }); }
-        r.p[i].ws = ws; if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
+        r.p[i].ws = ws; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
