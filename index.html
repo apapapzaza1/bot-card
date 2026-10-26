@@ -149,7 +149,7 @@ body[data-bg=line] .lgb{background:#fff;color:#111;border:3px solid #111;box-sha
 .in.pg{max-width:560px;padding:0 0 24px;background:none}.ph2{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:12px;margin:-14px -14px 10px;background:var(--bg);border-bottom:1px solid #8884}.ph2 h2{margin:0;flex:1;font-size:1.25em}.ph2 .gm{background:#ffd24a;color:#111;border-radius:14px;padding:3px 12px;font-weight:700}
 .xb{min-width:40px;height:40px;border-radius:12px;font-size:18px;padding:0;margin:0}
 .cardx{background:var(--pn);border:1px solid #8885;border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 4px 14px #0003}.cardx h3{margin:0 0 8px;font-size:1.05em}.cardx p{margin:4px 0 10px;opacity:.8}
-.pri{background:linear-gradient(135deg,#3b82f6,#6a5af9);color:#fff;border:0;font-weight:700;border-radius:12px;padding:10px 18px}.pri.big{width:100%;padding:16px;font-size:1.15em;border-radius:16px;box-shadow:0 4px 0 #2a2f9a}.pri:disabled{filter:grayscale(1);opacity:.45}.dng{background:#c0392b;color:#fff;border:0;border-radius:12px}
+.pri{background:linear-gradient(135deg,#3b82f6,#6a5af9);color:#fff;border:0;font-weight:700;border-radius:12px;padding:10px 18px}.pri.big{display:block;width:100%;max-width:280px;margin:6px auto;padding:10px 16px;font-size:1em;border-radius:12px;box-shadow:0 3px 0 #2a2f9a}.pri:disabled{filter:grayscale(1);opacity:.45}.dng{background:#c0392b;color:#fff;border:0;border-radius:12px}
 .pill{border-radius:999px!important;padding:10px 16px!important;border:2px solid #8888!important;flex:1;min-width:0}.join{display:flex;gap:8px;align-items:center}.pill.code{text-transform:uppercase;letter-spacing:4px;text-align:center;font-weight:800}
 .seg{display:flex;background:#8883;border-radius:12px;padding:3px;gap:3px;flex-wrap:wrap}.seg button{flex:1;margin:0;border:0;border-radius:9px;background:none;padding:8px 6px;min-width:64px}.seg button.on{background:#3b82f6;color:#fff;font-weight:700;box-shadow:0 2px 8px #3b82f688}.seg button:disabled{opacity:.9}
 .row2,.row3{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #8883}.row3{flex-direction:column;align-items:stretch}.row3>span{opacity:.85}
@@ -178,6 +178,7 @@ details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck i
 .mis{font-size:.85em;color:#fbbf24;background:#fbbf2418;border:1px solid #fbbf2455;border-radius:10px;padding:4px 10px}
 .srch{display:flex;align-items:center;gap:6px;background:var(--pn);border:2px solid #8888;border-radius:999px;padding:0 12px}.srch input{border:0;background:none;padding:8px 2px;margin:0;flex:1;min-width:0}
 
+#inv{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:40;background:#14141cf5;color:#fff;border:2px solid #3b9eff;border-radius:14px;padding:10px 14px;text-align:center;box-shadow:0 6px 30px #000b}#inv[hidden]{display:none}#inv button{margin:6px 4px 0}
 /* ===== v7: ร้านค้าเต็มจอ / เอฟเฟกต์ / ปุ่ม ===== */
 @media(min-width:900px){#hand{--w:120px}}
 .bh .tabs{position:static;padding:0;background:none}.bh .tabs button{flex:1}.bh1 .gm{background:#ffd24a;color:#111;border-radius:14px;padding:3px 12px;font-weight:700}.gar{font-size:.85em;background:#fc32;border:1px solid #fc36;border-radius:10px;padding:3px 10px;text-align:center}
@@ -209,7 +210,7 @@ details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck i
 <div id="bt"><button class="lgb" onclick="roomPg()"><span class="ic" style="--c:#ffd24a">👥</span><span class="tx"><b>เล่นกับเพื่อน</b><small>สร้างห้อง / เข้าห้อง / เพื่อน <span id="bf"></span></small></span><i>›</i></button><button class="lgb" onclick="decks()"><span class="ic" style="--c:#6ec6ff">🃏</span><span class="tx"><b>จัดเด็ค</b><small>สร้างและบันทึกเด็คของคุณ</small></span><i>›</i></button><button class="lgb" onclick="shop()"><span class="ic" style="--c:#ff8fb1">🛒</span><span class="tx"><b>ร้านค้า</b><small>กล่องการ์ด · สกิน · โค้ด</small></span><i>›</i></button><button class="lgb" onclick="st()"><span class="ic" style="--c:#b6f08a">⚙</span><span class="tx"><b>ตั้งค่า</b><small>ธีม เสียง การแสดงผล</small></span><i>›</i></button></div></div></div>
 <div id="room" class="scr" hidden></div>
 <div id="game" hidden><div id="lg"></div><div id="mid"></div><div id="dt"></div><div id="ls"></div><div id="hand"></div><div id="bar"></div></div>
-<div id="dcv" hidden></div><div id="ptr" hidden></div><div id="rt" hidden></div><div id="pkr" hidden></div><div id="zm" hidden></div><div id="pvw" hidden></div><div id="akp" hidden></div><div id="md" hidden></div><div id="rx" hidden></div><div id="bt2" hidden></div><div id="ts" hidden></div><div id="end" hidden></div>
+<div id="dcv" hidden></div><div id="ptr" hidden></div><div id="rt" hidden></div><div id="pkr" hidden></div><div id="zm" hidden></div><div id="pvw" hidden></div><div id="akp" hidden></div><div id="md" hidden></div><div id="rx" hidden></div><div id="bt2" hidden></div><div id="ts" hidden></div><div id="inv" hidden></div><div id="end" hidden></div>
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KC={แดง:'#e5484d',ฟ้า:'#3b9eff',เขียว:'#3dd68c',ม่วง:'#a78bfa'},PH={dice:'ทอยเต๋า',pick:'เลือกลำดับ',mull:'เปลี่ยนมือ',main:'Main Phase',battle:'Battle Phase',end:'End Phase',x:''};
@@ -234,7 +235,8 @@ ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.err){if(/เซสชัน/.te
 if(m.t=='auth'){cfg.tok=m.tok;ap();me(m.me);$('auth').hidden=true;$('ld').hidden=true;$('lobby').hidden=false;if(cur)send({t:'join',room:cur})}
 if(m.t=='me'){if(m.gain)GAIN=m.gain;me(m.me);if(S&&S.over)endUI()}if(m.note)alert(m.note);
 if(m.t=='clk')m.a.forEach((v,k)=>{const e=$('ck'+k);if(e)e.textContent=' ⏱'+Math.floor(v/6e4)+':'+String(Math.floor(v/1e3)%60).padStart(2,'0')});if(m.t=='dv'){DV=m.cards;dvs()}if(m.t=='rmq'){RMQ=Date.now()+10000;if(S&&S.over)endUI()}if(m.t=='rmx'){alert('ไม่มีการตอบรับ กลับหน้าหลัก');location.reload()}if(m.t=='packs'){me(m.me);packs(m.ps,m.note)}
-if(m.t=='lobby'){$('lobby').hidden=true;$('md').hidden=true;$('md').dataset.pg='';$('room').hidden=false;RM=m;RMX=m.exp?Date.now()+m.exp:0;roomUI()}
+if(m.t=='fst'){FST=m.l;const e=$('frl');e&&(e.innerHTML=frHtml())}if(m.t=='inv'&&!cur)showInv(m.from,m.room);if(m.t=='specend'){alert('การแข่งจบแล้ว');location.reload()}
+if(m.t=='lobby'){$('lobby').hidden=true;$('md').hidden=true;$('md').dataset.pg='';$('room').hidden=false;RM=m;RMX=m.exp?Date.now()+m.exp:0;roomUI();if(INV){send({t:'finv',name:INV,room:cur});INV=null;toast('ส่งคำเชิญแล้ว')}}
 if(m.t=='s'){S=m.s;sel=mode=atk=null;pay=[];supl=[];$('lobby').hidden=true;$('room').hidden=true;$('md').hidden=true;$('game').hidden=false;document.body.classList.add('ing');render()}}}
 const send=m=>ws&&ws.readyState==1&&ws.send(JSON.stringify(m));
 function go(){if(!rm.value)return alert('ใส่รหัสห้อง');music();wake();cur=rm.value;send({t:'join',room:rm.value})}
@@ -270,14 +272,20 @@ function roomPg(){md.className='';$('md').dataset.pg='room';const q=ME.rq.length
 $('md').innerHTML=`<div class="in pg"><div class="ph2"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><h2>เล่นกับเพื่อน</h2></div>
 <div class="cardx"><h3>🎮 สร้างห้องใหม่</h3><p>กดสร้างแล้วไปตั้งกติกา (เวลาต่อฝ่าย, React, แบนลิสต์) และรอเพื่อนเข้าห้องได้ในห้อง</p><button class="pri big" onclick="mkroom()">＋ สร้างห้อง</button></div>
 <div class="cardx"><h3>🔑 เข้าร่วมห้อง</h3><div class="join"><input id="rm" class="pill code" maxlength="8" placeholder="รหัสห้อง" autocapitalize="characters"><button class="pri" onclick="go()">เข้าห้อง</button></div></div>
-<div class="cardx"><h3>👫 เพื่อน</h3><div class="join"><input id="fn" class="pill" placeholder="ชื่อผู้ใช้เพื่อน"><button onclick="send({t:'fadd',name:fn.value})">เพิ่ม</button></div><div class="chips" style="flex-wrap:wrap;margin-top:8px">${ME.fr.map(n=>`<span class="chip">👤 ${esc(n)}</span>`).join('')||'<small>ยังไม่มีเพื่อน</small>'}</div>${q}</div></div>`;$('md').hidden=false}
+<div class="cardx"><h3>👫 เพื่อน</h3><div class="join"><input id="fn" class="pill" placeholder="ชื่อผู้ใช้เพื่อน"><button onclick="send({t:'fadd',name:fn.value})">เพิ่ม</button></div><div id="frl" style="margin-top:8px">${frHtml()}</div>${q}</div></div>`;$('md').hidden=false;send({t:'fstat'})}
+let FST=[],INV=null;
+const frHtml=()=>{const m={};FST.forEach(f=>m[f.name]=f);return ME.fr.map(n=>{const f=m[n]||{},tx=f.st=='play'?'🎮 กำลังแข่ง':f.st=='room'?'🚪 อยู่ในห้อง':f.on?'🟢 ออนไลน์':'⚫ ออฟไลน์';return`<div class="join" style="margin:4px 0"><b style="flex:1">👤 ${esc(n)}<br><small>${tx}</small></b><button class="pri" ${f.on&&!f.st?'':'disabled'} data-n="${esc(n)}" onclick="invF(this.dataset.n)">🎮 เชิญ</button><button ${f.st=='play'?'':'disabled'} data-n="${esc(n)}" onclick="send({t:'spec',name:this.dataset.n})">👁 ดู</button></div>`}).join('')||'<small>ยังไม่มีเพื่อน</small>'};
+const invF=n=>{INV=n;mkroom()};
+const showInv=(from,code)=>{const e=$('inv');e.innerHTML=`<b>${esc(from)}</b> ชวนเล่นห้อง <b>${esc(code)}</b><br><button class="pri" onclick="acceptInv('${esc(code)}')">เข้าร่วม</button><button onclick="$('inv').hidden=true">ไม่ไป</button>`;e.hidden=false;sfx('turn')};
+const acceptInv=code=>{$('inv').hidden=true;if(cur)return;music();wake();cur=code;send({t:'join',room:code})};
+setInterval(()=>{if(!$('md').hidden&&$('md').dataset.pg=='room')send({t:'fstat'})},5000)
 function fillSv(){const e=$('sv');if(!e||!ME)return;e.innerHTML=['SD01','SD02','SD03',...ME.bought].map(k=>`<button class="chip" onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(ME.decks).map(n=>`<button class="chip" data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">🃏 ${esc(n)}</button>`).join('')}
 function roomUI(){const m=RM;if(!m||!ME)return;const own=m.owner==ME.name,two=m.players.length>1,rdy=two&&m.players.every(p=>p.ready);
 const seg=(k,vals,cu)=>`<div class="seg">${vals.map(([v,t])=>`<button class="${cu==v?'on':''}" ${own?`onclick="send({t:'rcfg',${k}:${v}})"`:'disabled'}>${t}</button>`).join('')}</div>`;
 $('room').innerHTML=`<div class="rmh"><button class="xb" onclick="location.reload()">←</button><div><small>รหัสห้อง (แตะเพื่อคัดลอก)</small><div class="rcode" onclick="copyCode()">${esc((cur||'').toUpperCase())}</div></div><span id="rexp"></span></div>
 <div class="plr">${[0,1].map(i=>{const p=m.players[i];return p?`<div class="pc2${p.ready?' rdy':''}"><div class="av">${esc((p.name||'?')[0])}</div><b>${esc(p.name)}</b><small>${i==0?'เจ้าห้อง · ':''}${p.ready?'✓ เลือกเด็คแล้ว':'กำลังเลือกเด็ค…'}</small></div>`:`<div class="pc2 wt"><div class="av spin">⏳</div><b>รอผู้เล่นเข้าห้อง…</b><small>ส่งรหัสให้เพื่อน</small></div>`}).join('<div class="vs">VS</div>')}</div>
 <div class="cardx"><h3>⚙ กติกาห้อง ${own?'':'<small>(เจ้าห้องเป็นคนตั้ง)</small>'}</h3><div class="row3"><span>⏱ เวลาต่อฝ่าย</span>${seg('clock',[[0,'ไม่จำกัด'],[5,'5 นาที'],[10,'10 นาที'],[20,'20 นาที']],m.clock)}</div><div class="row3"><span>⚡ เวลา React</span>${seg('react',[[0,'ไม่จำกัด'],[10,'10 วิ'],[20,'20 วิ'],[30,'30 วิ']],m.react)}</div><div class="row3"><span>🚫 แบนลิสต์ (การ์ดบาป)</span>${seg('ban',[[1,'เปิด'],[0,'ปิด']],m.ban?1:0)}</div></div>
-<div class="cardx"><h3>🃏 เลือกเด็คของคุณ</h3><div id="sv" class="chips"></div><details><summary>วางลิสต์เด็คเอง / เด็คทดสอบ</summary><textarea id="dx" rows="4" placeholder="เช่น BT01-001 x4 (รวม LIFE 5 ใบ)"></textarea><label class="ck"><input type="checkbox" id="sk"> ข้ามการตรวจเด็ค</label><button onclick="send({t:'deck',text:dx.value,skip:sk.checked})">ใช้เด็คที่วาง</button><button onclick="send({t:'deck',rand:1})">เด็คสุ่มทดสอบ</button></details></div>
+<div class="cardx"><h3>🃏 เลือกเด็คของคุณ</h3><div id="sv" class="chips"></div></div>
 <div class="cta">${own?`<button class="pri big" ${rdy?'':'disabled'} onclick="send({t:'start'})">▶ เริ่มเกม</button><small>${rdy?'ทั้งสองฝ่ายพร้อมแล้ว':two?'รอผู้เล่นทั้งสองเลือกเด็คให้ครบ':'รอผู้เล่นอีกฝ่ายเข้าห้อง'}</small>`:`<div class="wait">${rdy?'⏳ รอเจ้าห้องกดเริ่มเกม…':'เลือกเด็คของคุณให้พร้อม'}</div>`}</div>`;fillSv();rexp()}
 const rexp=()=>{const e=$('rexp');if(!e)return;if(RM&&RM.players.length<2&&RMX){const t=Math.max(0,Math.ceil((RMX-Date.now())/1e3));e.textContent='⏳ รหัสหมดอายุใน '+Math.floor(t/60)+':'+String(t%60).padStart(2,'0')}else e.textContent=''};setInterval(rexp,1000);
 function skinAp(){document.body.dataset.board=(ME&&ME.eq&&ME.eq.board)||'classic';document.body.dataset.cback=(ME&&ME.eq&&ME.eq.card)||'black'}
@@ -334,7 +342,7 @@ const H=`<div class="pl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.lengt
 const side=(p,o)=>{const rows=o?[['mg',p.mg],['av',p.av],['co',p.co]]:[['co',p.co],['av',p.av],['mg',p.mg]];return`<div class="sd ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}">${life(p,o)}<div class="zc">${rows.map(([z,a])=>row(a,z,o)).join('')}</div><div class="pc">${piles(p,o).join('')}</div></div>`};
 const pi=(p,o)=>`<div class="pi">${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
 function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u);NEW=new Set(handSeen?hs.filter(u=>!handSeen.has(u)):[]);handSeen=new Set(hs)}
-$('mid').innerHTML=pi(o,1)+side(o,1)+`<div class="ph">${S.mine?'เทิร์นเรา':'เทิร์นศัตรู'} · ${{main:1,battle:2,end:3}[S.phase]!=null?['DRAW','MAIN','BATTLE','END'].map((t,k)=>`<span class="tc${k==({main:1,battle:2,end:3}[S.phase])?' on':''}">${t}</span>`).join('→'):PH[S.phase]}${S.land?' · Land: '+esc(info(S.land.c).n):''}${S.land?cd(S.land.c,'land',S.land.o!=S.i):''} <button class="ib" onclick="playmat()">📖</button><button class="ib" onclick="st()">⚙</button></div>`+side(m,0)+pi(m,0);
+$('mid').innerHTML=pi(o,1)+side(o,1)+`<div class="ph">${S.spec?'เทิร์น '+esc((S.tp?o:m).name):S.mine?'เทิร์นเรา':'เทิร์นศัตรู'} · ${{main:1,battle:2,end:3}[S.phase]!=null?['DRAW','MAIN','BATTLE','END'].map((t,k)=>`<span class="tc${k==({main:1,battle:2,end:3}[S.phase])?' on':''}">${t}</span>`).join('→'):PH[S.phase]}${S.land?' · Land: '+esc(info(S.land.c).n):''}${S.land?cd(S.land.c,'land',S.land.o!=S.i):''} <button class="ib" onclick="playmat()">📖</button><button class="ib" onclick="st()">⚙</button></div>`+side(m,0)+pi(m,0);
 $('hand').innerHTML=m.hand.filter(x=>!(mode=='pay'&&pay.includes(x.u))).map(x=>cd(x,'hand',0)).join('');ptrUI();
 const L=S.log.slice(-10).map(esc);$('lg').innerHTML=L.join('<hr>');$('ls').innerHTML=L.slice(-2).join('<br>')+(S.over?'<br><b>'+esc(S.over)+'</b>':'');
 document.querySelectorAll('.p').forEach(s=>{const u=s.dataset.k,v=+s.textContent;if(prev[u]!==undefined&&prev[u]!==v)s.classList.add('pop');prev[u]=v});
@@ -358,6 +366,7 @@ if(b.tg=='life'){const a=b.cid?art(b.cid):'';R=`<div class="bk2 ra"><div class="
 else{R=cv(b.did,b.dn,b.pd,'ra'+(rd?' dead':''));t={win:esc(b.an)+' ชนะ!',lose:esc(b.an)+' พ่ายแพ้',both:'ตายทั้งคู่!',none:'เสมอ ไม่มีใครตาย'}[b.res]}
 const e=$('bt2');e.innerHTML=`<div class="bw"><div class="bs2">${L}<div class="vs">⚔</div>${R}</div><div class="tx">${t}</div></div>`;e.hidden=false;clearTimeout(btl.t);btl.t=setTimeout(()=>e.hidden=true,2400)}
 function endUI(){const e=$('end');if(!S||!S.over){e.hidden=true;e.dataset.k='';endHide=false;GAIN=0;RMQ=0;MYRM=0;return}
+if(S.spec){e.className='';e.hidden=false;e.innerHTML='<div class="eb"><div class="et">🏁</div><h1>จบการแข่ง</h1><div>'+esc(S.over)+'</div><button onclick="location.reload()">🏠 ออก</button></div>';return}
 if(endHide){e.hidden=true;return}
 const w=S.won,m=S.me,o=S.op,lf=p=>p.life.filter(l=>!l.up).length;
 const first=e.dataset.k!=S.over;if(first){e.dataset.k=S.over;sfx(w===true?'win':w===false?'lose':'turn')}
@@ -370,7 +379,7 @@ const hidePv=()=>{$('pvw').hidden=true};$('pvw').onclick=hidePv;
 const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const FACE=n=>`<div class="f f${n}">${[0,1,2,3,4,5,6,7,8].map(k=>`<i class="${PIPS[n].includes(k)?'':'o'}"></i>`).join('')}</div>`;
 const ROT={1:[0,0],2:[0,-90],3:[-90,0],4:[90,0],5:[0,90],6:[0,180]};
-function diceUI(){const e=$('dcv');if(!S){e.hidden=true;return}
+function diceUI(){const e=$('dcv');if(!S||S.spec){e.hidden=true;return}
 const rolling=S.dc&&Date.now()<rollEnd;let key=null;
 if(S.dc&&S.dc.n!==dcSeen){dcSeen=S.dc.n;rollEnd=Date.now()+2700;setTimeout(()=>S&&diceUI(),2750)}
 const roll=S.dc&&Date.now()<rollEnd&&(S.phase=='pick'||S.phase=='mull'||S.phase=='dice');
@@ -412,6 +421,7 @@ sel=u;mode=null;render();const f=find(u);f&&pv(f.x.id)});
 function hell(w){md.className='';const p=w?S.op:S.me;$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button> นรก (${p.hell.length}) แตะการ์ดเพื่ออ่าน<div class="r">${p.hell.map(x=>cd(x,'hell',w)+(!w&&S.mine&&S.phase=='main'&&x.mh===S.tn&&info(x).st=='Modification'?`<button onclick="md.hidden=true;send({t:'cast',u:${x.u}})">ใช้จากนรก</button>`:'')).join('')}</div></div>`;$('md').hidden=false}
 function dkView(w){md.className='';const p=w?S.op:S.me,a=p.dk||[];$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button> มิติมืด (${a.length}) — การ์ดที่ถูกเนรเทศ<div class="r">${a.map(x=>cd(x,'hell',w)).join('')||'<p>ยังไม่มีการ์ด</p>'}</div></div>`;$('md').hidden=false}
 function bar(){const b=$('bar');b.innerHTML='<div class="bm"></div><div class="br2"></div>';const BM=b.children[0],BR=b.children[1];const A=(t,f,p)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;(p||BM).append(e);return e};
+if(S.spec){A('👁 กำลังรับชม — กดเพื่อออก',()=>location.reload());return}
 if(S.over){A('📊 ผลการแข่ง',()=>{endHide=false;endUI()});A(MYRM?'⏳ รออีกฝ่าย…':'เล่นซ้ำ',()=>{if(!MYRM){MYRM=1;send({t:'rm'});endUI()}});return A('กลับหน้าหลัก',()=>location.reload())}
 if(S.phase=='dice'||S.phase=='pick')return;
 A('🏳 ยอมแพ้',()=>{if(confirm('ยืนยันยอมแพ้ ?'))send({t:'surrender'})},BR).className='srb';
