@@ -859,7 +859,5 @@ Object.assign(AB,{
 console.log('[KD] Batch3 loaded');
 }catch(e){console.log('[KD] Batch3 error:',e.message);}
 /* ===== END BATCH 3 ===== */
-
-srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo };
