@@ -39,6 +39,14 @@ function mig(d) {
   if (!d || typeof CARDS === 'undefined') return d;
   const CI = new Set(CARDS.map(c => c.id));
   if (d.cards) { const o = {}; for (const [k, n] of Object.entries(d.cards)) { let [id, r] = k.split('|'); if (!CI.has(id)) continue; r = RMAP[r] || r; const nk = id + '|' + r; o[nk] = (o[nk] || 0) + n; } d.cards = o; }
+  if (d.cards) {
+    d.stg = d.stg || [];
+    [...new Set(['SD01', 'SD02', 'SD03', ...(d.bought || [])])].filter(s => ST[s] && !d.stg.includes(s)).forEach(s => {
+      const own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
+      ST[s].main.concat(ST[s].life).forEach(([id, n, r]) => { if (!B[id]) return; const miss = n - (own[id] || 0); for (let j = 0; j < miss; j++) add(d, { id, r: (B[id].v || []).includes(r) ? r : (B[id].v || ['C'])[0] }); });
+      d.stg.push(s);
+    });
+  }
   if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i)); }
   return d;
 }
@@ -609,8 +617,7 @@ function act(r, i, m) {
 const hasReact = (r, w) => !r.g.used[w].React && r.p[w].hand.some(c => { const d = B[c.id]; return d && d.t === 'Magic' && d.st === 'React'; });
 const open = (r, p) => {
   if (r.g.over) return;
-  if (!hasReact(r, p.who)) { if (p.k === 'atk') resolveAtk(r, p); return; }
-  p.until = r.cfg.react ? Date.now() + r.cfg.react * 1000 : 0; r.g.pend = p;
+  p.until = Date.now() + (r.cfg.react || 15) * 1000; r.g.pend = p; /* เปิดช่วงตอบรับเสมอ ไม่ว่ามี React หรือไม่ */
 };
 const setBt = (r, o) => { r.g.bt = { n: ++BTN, ...o }; };
 function resolveAtk(r, p) {
@@ -690,7 +697,7 @@ wss.on('connection', ws => {
           if (m.t === 'reg') {
             if (d) E('ชื่อถูกใช้'); if (pw.length < 4) E('รหัสผ่าน ≥ 4 ตัว');
             const s = crypto.randomBytes(8).toString('hex'); d = { s, h: hash(pw, s), gems: 0, cards: {}, codes: [] };
-            ['SD01','SD02','SD03'].forEach(x => giveSt(d, x));
+            ['SD01','SD02','SD03'].forEach(x => giveSt(d, x)); d.stg = ['SD01','SD02','SD03'];
             await dbPut(n, d);
           } else if (!d || d.h !== hash(pw, d.s)) E('ชื่อ/รหัสผิด');
         }
@@ -734,7 +741,7 @@ wss.on('connection', ws => {
       if (m.t === 'buyst') {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
         if (!ST[m.set] || /^SD0[1-3]$/.test(m.set)) E('ไม่มีสินค้า'); if (d.bought.includes(m.set)) E('ซื้อแล้ว'); if (d.gems < 1500) E('Gem ไม่พอ');
-        d.gems -= 1500; d.bought.push(m.set); giveSt(d, m.set);
+        d.gems -= 1500; d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set);
         await dbPut(ws.user, d); me_(d); return;
       }
       if (m.t === 'deldeck') { const d = await dbGet(ws.user); if (!d.decks || !d.decks[m.name]) E('ไม่พบเด็ค'); delete d.decks[m.name]; await dbPut(ws.user, d); me_(d); return; }
@@ -809,4 +816,4 @@ wss.on('connection', ws => {
   });
 });
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
-if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack };
+if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig };
