@@ -825,5 +825,4 @@ console.log('[KD] loaded OK — SUM/MG/AB extended');
 }catch(e){console.log('[KD] load error:',e.message);}
 /* ===== END v3 ===== */
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
-srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo };
