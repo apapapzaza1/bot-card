@@ -801,99 +801,29 @@ wss.on('connection', ws => {
     } catch (e) { err(e && e.message ? 'ผิดพลาด' : e); }
   });
 });
-/* ===== KD01-04 SKILL PACK — paste ก่อน srv.listen ===== */
-(()=>{
-const H={
-scout,mill,draw,ask,find,destroyAv,bounce,sendHell,fromZone,summonFree,putAv,wearOn,take,P,addTp,lifeDown,log,fx,kill,shuf,nmOf,symOf,isAv,allAv,B,r,
-};
-
-/* ============ SUM: จุติ ============ */
+console.log('[KD] loading');
+try{
 Object.assign(SUM,{
-'KD01-007':(r,i)=>scout(r,i,3,{text:'จุติ: เทพ',pred:c=>(c.s||'')==='เทพ',rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD01-008':(r,i)=>{const me=r.p[i];ask(r,i,{text:'จุติ: เซ่นไหว้ Avatar',opts:me.av.map(a=>a.u),cancel:true,cb:us=>{const t=find(r,us[0]);if(!t)return;const s=symOf(t.c),nm=nmOf(t.c),L=me.hell.filter(c=>isAv(c)&&B[c.id].s===s&&B[c.id].n!==nm&&B[c.id].c<=8);destroyAv(r,us[0]);if(!L.length)return log(r,'ไม่พบ Symbol '+s);ask(r,i,{text:'อัญเชิญ จุติ',opts:L.map(c=>c.u),cb:u=>{const h=me.hell.find(c=>c.u===u[0]);if(h)summonFree(r,i,h);}});}});},
-'KD02-003':(r,i)=>{const me=r.p[i],L=me.hell.filter(c=>isAv(c)&&B[c.id].n.startsWith('นายนิรยบาล'));if(!L.length)return;ask(r,i,{text:'อัญเชิญ นรยบาล',opts:L.map(c=>c.u),cb:us=>{const h=me.hell.find(c=>c.u===us[0]);if(h)summonFree(r,i,h);}});},
-'KD02-004':(r,i)=>scout(r,i,5,{text:'จุติ: พญายม/นรยบาล',pred:c=>isAv(c)&&(B[c.id].n==='พญายม'||B[c.id].n.startsWith('นายนิรยบาล')),rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD02-005':(r,i)=>{const me=r.p[i];if(!me.hand.length)return;ask(r,i,{text:'จุติ: ทิ้ง 1 → mill 3 → อัญเชิญ',opts:me.hand.map(c=>c.u),cancel:true,cb:us=>{sendHell(r,us[0]);mill(r,i,3);const L=me.hell.filter(c=>isAv(c)&&B[c.id].s==='นรก'&&B[c.id].c<=4);if(!L.length)return;ask(r,i,{text:'อัญเชิญ นรก ≤4',opts:L.map(c=>c.u),cb:u=>{const h=me.hell.find(c=>c.u===u[0]);if(h)summonFree(r,i,h);}});}});},
-'KD03-003':(r,i)=>{const me=r.p[i],L=me.deck.filter(c=>isAv(c)&&(B[c.id].n.includes('โอตะ')||(B[c.id].e||'').includes('โอตะ')));if(!L.length)return;ask(r,i,{text:'โอตะ → ไอดอล',opts:L.map(c=>c.u),cb:us=>{const c=fromZone(r,i,'deck',us[0]);if(!c)return;const dio=me.av.filter(a=>nmOf(a).includes('ไอดอล'));if(!dio.length)return me.hell.push(c);ask(r,i,{text:'ไอดอล',opts:dio.map(a=>a.u),cb:u=>{const t=find(r,u[0]);if(t)wearOn(r,i,t.c,c);}});}});},
-'KD04-002':(r,i)=>scout(r,i,5,{text:'จุติ: ไมเกรน',pred:c=>isAv(c)&&B[c.id].n.includes('ไมเกรน'),rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD04-003':(r,i)=>scout(r,i,5,{text:'จุติ: อาวุธหุ่น',pred:c=>B[c.id].st==='Modification'&&(B[c.id].n||'').includes('อาวุธ'),rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD04-007':(r,i)=>{const op=r.p[1-i];if(!op.deck.length)return;const c=op.deck[op.deck.length-1];log(r,'🔎 '+B[c.id].n);if(isAv(c)){op.deck.pop();op.hell.push(c);log(r,'→ นรก');}},
-'KD04-008':(r,i)=>{const me=r.p[i],need=['โดรนสอดแนม','ยานเกราะ','อากาศยาน'],L=me.hell.filter(c=>need.some(n=>B[c.id].n.includes(n)));if(L.length<3)return log(r,'ไม่ครบ 3');L.slice(0,3).forEach(c=>{me.hell.splice(me.hell.indexOf(c),1);me.deck.push(c);});shuf(me.deck);const C=me.deck.filter(c=>isAv(c)&&B[c.id].n.includes('ไมเกรน')&&B[c.id].c<=5);if(!C.length)return;ask(r,i,{text:'อัญเชิญ ไมเกรน',opts:C.map(c=>c.u),cb:us=>{const c=fromZone(r,i,'deck',us[0]);if(!c)return;if(putAv(r,i,c)){const s=me.av.find(a=>a.id==='KD04-008');if(s)wearOn(r,i,s,c);}}});},
+'KD01-007':function(r,i){scout(r,i,3,{text:'จุติ KD01-007',pred:function(c){return (c.s||'')==='เทพ';},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD02-003':function(r,i){var me=r.p[i];var L=me.hell.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('นายนิรยบาล')===0;});if(!L.length)return;ask(r,i,{text:'จุติ KD02-003',opts:L.map(function(c){return c.u;}),cb:function(us){var h=me.hell.find(function(c){return c.u===us[0];});if(h)summonFree(r,i,h);}});},
+'KD02-004':function(r,i){scout(r,i,5,{text:'จุติ KD02-004',pred:function(c){return isAv(c)&&(B[c.id].n==='พญายม'||B[c.id].n.indexOf('นายนิรยบาล')===0);},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD04-002':function(r,i){scout(r,i,5,{text:'จุติ KD04-002',pred:function(c){return isAv(c)&&B[c.id].n.indexOf('ไมเกรน')>=0;},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD04-003':function(r,i){scout(r,i,5,{text:'จุติ KD04-003',pred:function(c){return B[c.id].st==='Modification'&&(B[c.id].n||'').indexOf('อาวุธ')>=0;},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});}
 });
-
-/* ============ MG: Magic ============ */
-/* ===== KD01-04 SKILL PACK v2 ===== */
-(()=>{
-/* ===== SUM: จุติ ===== */
-Object.assign(SUM,{
-'KD01-007':(r,i)=>scout(r,i,3,{text:'จุติ: เทพ',pred:c=>(c.s||'')==='เทพ',rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD01-008':(r,i)=>{const me=r.p[i];ask(r,i,{text:'จุติ: เซ่นไหว้ Avatar',opts:me.av.map(a=>a.u),cancel:true,cb:us=>{const t=find(r,us[0]);if(!t)return;const s=symOf(t.c),nm=nmOf(t.c),L=me.hell.filter(c=>isAv(c)&&B[c.id].s===s&&B[c.id].n!==nm&&B[c.id].c<=8);destroyAv(r,us[0]);if(!L.length)return;ask(r,i,{text:'อัญเชิญ จุติ',opts:L.map(c=>c.u),cb:u=>{const h=me.hell.find(c=>c.u===u[0]);if(h)summonFree(r,i,h);}});}});},
-'KD02-003':(r,i)=>{const me=r.p[i],L=me.hell.filter(c=>isAv(c)&&B[c.id].n.startsWith('นายนิรยบาล'));if(!L.length)return;ask(r,i,{text:'อัญเชิญ นรยบาล',opts:L.map(c=>c.u),cb:us=>{const h=me.hell.find(c=>c.u===us[0]);if(h)summonFree(r,i,h);}});},
-'KD02-004':(r,i)=>scout(r,i,5,{text:'จุติ: พญายม/นรยบาล',pred:c=>isAv(c)&&(B[c.id].n==='พญายม'||B[c.id].n.startsWith('นายนิรยบาล')),rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD02-005':(r,i)=>{const me=r.p[i];if(!me.hand.length)return;ask(r,i,{text:'จุติ: ทิ้ง 1 → mill 3',opts:me.hand.map(c=>c.u),cancel:true,cb:us=>{sendHell(r,us[0]);mill(r,i,3);const L=me.hell.filter(c=>isAv(c)&&B[c.id].s==='นรก'&&B[c.id].c<=4);if(!L.length)return;ask(r,i,{text:'อัญเชิญ นรก ≤4',opts:L.map(c=>c.u),cb:u=>{const h=me.hell.find(c=>c.u===u[0]);if(h)summonFree(r,i,h);}});}});},
-'KD03-003':(r,i)=>{const me=r.p[i],L=me.deck.filter(c=>isAv(c)&&(B[c.id].n.includes('โอตะ')||(B[c.id].e||'').includes('โอตะ')));if(!L.length)return;ask(r,i,{text:'โอตะ → ไอดอล',opts:L.map(c=>c.u),cb:us=>{const c=fromZone(r,i,'deck',us[0]);if(!c)return;const dio=me.av.filter(a=>nmOf(a).includes('ไอดอล'));if(!dio.length)return me.hell.push(c);ask(r,i,{text:'ไอดอล',opts:dio.map(a=>a.u),cb:u=>{const t=find(r,u[0]);if(t)wearOn(r,i,t.c,c);}});}});},
-'KD04-002':(r,i)=>scout(r,i,5,{text:'จุติ: ไมเกรน',pred:c=>isAv(c)&&B[c.id].n.includes('ไมเกรน'),rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD04-003':(r,i)=>scout(r,i,5,{text:'จุติ: อาวุธหุ่น',pred:c=>B[c.id].st==='Modification'&&(B[c.id].n||'').includes('อาวุธ'),rest:'bottom',then:c=>c&&r.p[i].hand.push(c)}),
-'KD04-007':(r,i)=>{const op=r.p[1-i];if(!op.deck.length)return;const c=op.deck[op.deck.length-1];log(r,'🔎 '+B[c.id].n);if(isAv(c)){op.deck.pop();op.hell.push(c);log(r,'→ นรก');}},
-'KD04-008':(r,i)=>{const me=r.p[i],need=['โดรนสอดแนม','ยานเกราะ','อากาศยาน'],L=me.hell.filter(c=>need.some(n=>B[c.id].n.includes(n)));if(L.length<3)return;L.slice(0,3).forEach(c=>{me.hell.splice(me.hell.indexOf(c),1);me.deck.push(c);});shuf(me.deck);const C=me.deck.filter(c=>isAv(c)&&B[c.id].n.includes('ไมเกรน')&&B[c.id].c<=5);if(!C.length)return;ask(r,i,{text:'อัญเชิญ ไมเกรน',opts:C.map(c=>c.u),cb:us=>{const c=fromZone(r,i,'deck',us[0]);if(!c)return;if(putAv(r,i,c)){const s=me.av.find(a=>a.id==='KD04-008');if(s)wearOn(r,i,s,c);}}});},
-});
-
-/* ===== MG: Magic ===== */
-const d2={run:(r,i)=>{draw(r,r.p[i],2);log(r,'✨ จั่ว 2');}};
-['KD01-013','KD03-012','KD04-018'].forEach(k=>MG[k]=d2);
-
-MG['KD01-014']={steps:[{key:'t',text:'Avatar',opts:r=>allAv(r).map(a=>a.x.u)}],run:(r,i,cx)=>{const t=find(r,cx.pick.t[0]);if(t){addTp(t.c,4);log(r,'💪 +4');}}};
-MG['KD01-016']={mod:1,steps:[{key:'tg',text:'Avatar',opts:r=>allAv(r).map(a=>a.x.u)}]};
-MG['KD01-017']={react:'summon',run:(r,i,cx)=>{destroyAv(r,cx.ev.u);log(r,'💥 อุบัติเหตุ');}};
-MG['KD01-018']={react:'atk',run:(r,i,cx)=>{const p=r.p[i],n=p.av.length+p.mg.length+p.co.length+p.hand.length+((r.g.land&&r.g.land.o===i)?1:0),a=find(r,cx.pend.u);if(a){addTp(a.c,-2*n);log(r,'🐎 -'+(2*n));}}};
-MG['KD02-014']={run:(r,i)=>{const me=r.p[i];mill(r,i,3);const cnt=new Set(me.hell.filter(c=>isAv(c)&&B[c.id].s==='นรก').map(c=>B[c.id].n)).size;draw(r,me,cnt>=5?2:1);log(r,'✨ สัญญาเลือด: '+(cnt>=5?2:1));}};
-MG['KD02-015']={steps:[{key:'t',text:'Avatar ศัตรู',opts:r=>r.p[1].av.map(a=>a.u)}],run:(r,i,cx)=>{bounce(r,cx.pick.t[0]);log(r,'↩');}};
-MG['KD02-017']={react:'any',run:(r,i,cx)=>{if(r.g.pend)r.g.pend.cancel=1;log(r,'⛔');}};
-MG['KD02-018']={react:'cast',run:(r,i,cx)=>{const cc=cx.ev&&cx.ev.cx;if(cc)cc.cancelled=1;log(r,'⛔');}};
-MG['KD02-019']={mod:1,steps:[{key:'tg',text:'Avatar นรก',opts:(r,i)=>r.p[i].av.filter(x=>B[x.id].s==='นรก').map(x=>x.u)}]};
-MG['KD03-013']={steps:[{key:'t',text:'ผี ≤4',opts:(r,i)=>r.p[i].deck.filter(c=>isAv(c)&&B[c.id].s==='ผี'&&B[c.id].c<=4).map(c=>c.u)}],run:(r,i,cx)=>{if(!r.p[i].av.some(a=>B[a.id].s==='มนุษย์'&&B[a.id].c>=3))return log(r,'ไม่มี มนุษย์');const c=fromZone(r,i,'deck',cx.pick.t[0]);if(c)putAv(r,i,c);shuf(r.p[i].deck);}};
-MG['KD03-014']={run:(r,i)=>{if(!r.p[i].av.some(a=>nmOf(a).includes('ไอดอล')))return;const L=r.p[i].deck.filter(c=>isAv(c)&&B[c.id].n.includes('โอตะ'));if(L.length){r.p[i].hand.push(fromZone(r,i,'deck',L[0].u));log(r,'✨');}}};
-MG['KD03-015']={react:'atk',run:(r,i,cx)=>{const t=find(r,cx.pend.tg);if(!t||!nmOf(t.c).includes('ไอดอล'))return;cx.pend.cancel=1;const L=r.p[i].hell.filter(c=>isAv(c)&&B[c.id].n.includes('โอตะ'));if(L.length)wearOn(r,i,t.c,L[0]);log(r,'⛔');}};
-MG['KD03-016']={react:'summon',run:(r,i,cx)=>{destroyAv(r,cx.ev.u);}};
-MG['KD03-017']={react:'use',run:(r,i,cx)=>{const t=find(r,cx.ev&&cx.ev.u);if(t)t.c.noab=r.g.n;}};
-MG['KD03-018']={mod:1,steps:[{key:'tg',text:'Avatar',opts:r=>allAv(r).map(a=>a.x.u)}]};
-MG['KD03-019']={mod:1,steps:[{key:'tg',text:'ไอดอล',opts:(r,i)=>r.p[i].av.filter(a=>nmOf(a).includes('ไอดอล')).map(a=>a.u)}],run:(r,i)=>{draw(r,r.p[i],1);}};
-MG['KD04-012']={steps:[{key:'t',text:'ไมเกรน',opts:(r,i)=>r.p[i].av.filter(a=>B[a.id].n.includes('ไมเกรน')).map(a=>a.u)}],run:(r,i,cx)=>{const t=find(r,cx.pick.t[0]);if(t){t.c.multi=r.g.n;log(r,'⚔️ THE END');}}};
-MG['KD04-013']={mod:1,steps:[{key:'tg',text:'หุ่นยนต์',opts:(r,i)=>r.p[i].av.filter(a=>B[a.id].s==='หุ่นยนต์').map(a=>a.u)}]};
-MG['KD04-014']={mod:1,steps:[{key:'tg',text:'ผู้กล้า',opts:(r,i)=>r.p[i].av.filter(a=>nmOf(a).includes('ผู้กล้า')).map(a=>a.u)}]};
-MG['KD04-015']={mod:1,steps:[{key:'tg',text:'หุ่นยนต์',opts:(r,i)=>r.p[i].av.filter(a=>B[a.id].s==='หุ่นยนต์').map(a=>a.u)}]};
-MG['KD04-019']={react:'cast',run:(r,i,cx)=>{const cc=cx.ev&&cx.ev.cx;if(cc)cc.cancelled=1;}};
-MG['KD04-020']={react:'battle',run:(r,i,cx)=>{const L=r.p[i].hell.filter(c=>B[c.id].st==='Modification');if(L.length)r.p[i].hand.push(fromZone(r,i,'hell',L[0].u));const a=find(r,cx.pend.u);if(a)addTp(a.c,-1);}};
-
-/* ===== AB: สั่งใช้ ===== */
+var d2={run:function(r,i){draw(r,r.p[i],2);log(r,'จั่ว 2');}};
+MG['KD01-013']=d2;MG['KD03-012']=d2;MG['KD04-018']=d2;
+MG['KD01-014']={steps:[{key:'t',text:'Avatar',opts:function(r){return allAv(r).map(function(a){return a.x.u;});}}],run:function(r,i,cx){var t=find(r,cx.pick.t[0]);if(t)addTp(t.c,4);}};
+MG['KD01-016']={mod:1,steps:[{key:'tg',text:'Avatar',opts:function(r){return allAv(r).map(function(a){return a.x.u;});}}]};
+MG['KD01-017']={react:'summon',run:function(r,i,cx){destroyAv(r,cx.ev.u);}};
+MG['KD02-014']={run:function(r,i){var me=r.p[i];mill(r,i,3);var seen={};me.hell.forEach(function(c){if(isAv(c)&&B[c.id].s==='นรก')seen[B[c.id].n]=1;});var cnt=Object.keys(seen).length;draw(r,me,cnt>=5?2:1);}};
+MG['KD02-015']={steps:[{key:'t',text:'Avatar ศัตรู',opts:function(r){return r.p[1].av.map(function(a){return a.u;});}}],run:function(r,i,cx){bounce(r,cx.pick.t[0]);}};
+MG['KD02-019']={mod:1,steps:[{key:'tg',text:'Avatar นรก',opts:function(r,i){return r.p[i].av.filter(function(x){return B[x.id].s==='นรก';}).map(function(x){return x.u;});}}]};
 Object.assign(AB,{
-'KD04-002':{z:'av',steps:[{key:'t',text:'ทิ้ง 1',opts:(r,i,cx)=>r.p[i].hand.filter(c=>c.u!==cx.card.u).map(c=>c.u)}],run:(r,i,cx)=>{cx.card.us=r.g.n;sendHell(r,cx.pick.t[0]);const L=r.p[i].hell.filter(c=>B[c.id].st==='Modification'&&(B[c.id].n||'').includes('อาวุธ'));if(L.length)r.p[i].hand.push(fromZone(r,i,'hell',L[0].u));}},
-'KD04-006':{z:'av',steps:[{key:'t',text:'ไมเกรน',opts:(r,i)=>r.p[i].av.filter(a=>B[a.id].n.includes('ไมเกรน')).map(a=>a.u)}],run:(r,i,cx)=>{cx.card.us=r.g.n;const t=find(r,cx.pick.t[0]);if(t){t.c.ward=(r.g.n||0)+1;log(r,'🛡');}}},
-'KD02-001':{z:'av',can:(r,i)=>{const L=r.p[i].hell.filter(c=>isAv(c)&&B[c.id].s==='นรก');return new Set(L.map(x=>B[x.id].n)).size>=7;},steps:[{key:'t',text:'เนรเทศ นรก 5',opts:(r,i)=>r.p[i].hell.filter(c=>isAv(c)&&B[c.id].s==='นรก').map(c=>c.u),n:5,min:5}],run:(r,i,cx)=>{cx.card.us=r.g.n;cx.pick.t.forEach(u=>{const k=r.p[i].hell.findIndex(c=>c.u===u);if(k>=0)r.p[i].dk.push(r.p[i].hell.splice(k,1)[0]);});r.p[1-i].av.slice().forEach(x=>{if(x.u!==cx.card.u)kill(r,1-i,x.u);});log(r,'💀 ล้างสนาม');}},
-'KD04-001':{z:'av',can:(r,i)=>{const L=r.p[i].hell.filter(c=>isAv(c)&&B[c.id].n.includes('ไมเกรน'));return new Set(L.map(x=>B[x.id].n)).size>=3;},steps:[{key:'t',text:'ไมเกรน 3 ชื่อ',opts:(r,i)=>{const L=r.p[i].hell.filter(c=>isAv(c)&&B[c.id].n.includes('ไมเกรน'));return new Set(L.map(c=>B[c.id].n)).size<3?[]:L.map(c=>c.u);},n:3,min:3}],run:(r,i,cx)=>{cx.card.us=r.g.n;cx.pick.t.forEach(u=>{const k=r.p[i].hell.findIndex(c=>c.u===u);if(k>=0)r.p[i].dk.push(r.p[i].hell.splice(k,1)[0]);});log(r,'✨');}},
+'KD04-006':{z:'av',steps:[{key:'t',text:'ไมเกรน',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].n.indexOf('ไมเกรน')>=0;}).map(function(a){return a.u;});}}],run:function(r,i,cx){cx.card.us=r.g.n;var t=find(r,cx.pick.t[0]);if(t)t.c.ward=(r.g.n||0)+1;}}
 });
-
-/* ===== HOOKS (reassign function declaration เท่านั้น) ===== */
-const _RA=resolveAtk;
-resolveAtk=function(r,p){
-  const a0=find(r,p.u);if(a0&&a0.c.id==='KD01-006')addTp(a0.c,2);
-  _RA(r,p);
-  const bt=r.g.bt,a=find(r,p.u);
-  if(bt&&bt.res==='win'&&a){
-    if(a.c.id==='KD04-001'||a.c.id==='KD04-012'){const op=r.p[1-p.ai];if(hit(r,op,r.p[p.ai])!=='KO'){fx({k:'life',i:1-p.ai});log(r,'💔 LIFE');}}
-    if(a.c.multi===r.g.n){r.p[1-p.ai].av.slice().forEach(x=>{if(x.u!==p.tg)kill(r,1-p.ai,x.u);});delete a.c.multi;log(r,'⚔️ THE END');}
-  }
-};
-const _sc=scout;
-scout=function(r,i,n,o){
-  const me=r.p[i];
-  _sc(r,i,n,{...o,then:(got,seen)=>{
-    const kd=seen.find(c=>c.id==='KD02-001');
-    if(kd&&me.deck.includes(kd)){me.deck.splice(me.deck.indexOf(kd),1);me.hand.push(kd);log(r,'✨ เมฟิส (สอดแนม)');}
-    o.then&&o.then(got,seen);
-  }});
-};
-})();
-/* ===== END KD01-04 v2 ===== */
+console.log('[KD] loaded OK — SUM/MG/AB extended');
+}catch(e){console.log('[KD] load error:',e.message);}
+/* ===== END v3 ===== */
+srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo };
