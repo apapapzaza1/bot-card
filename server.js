@@ -34,7 +34,15 @@ const srv = http.createServer((q, r) => {
 const crypto = require('crypto');
 const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY, SEC = process.env.SECRET || crypto.createHash('sha256').update('bot:' + (process.env.SUPABASE_KEY || 'dev')).digest('hex'), ADMIN = (process.env.ADMIN_USER || '').toLowerCase();
 const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, mem = {};
-const dbGet = async n => { if (!SB) return mem[n]; const a = await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=d`, { headers: H })).json(); return a[0] && a[0].d; };
+const RMAP = { SCR: 'SEC', CBR: 'UBR' };
+function mig(d) {
+  if (!d || typeof CARDS === 'undefined') return d;
+  const CI = new Set(CARDS.map(c => c.id));
+  if (d.cards) { const o = {}; for (const [k, n] of Object.entries(d.cards)) { let [id, r] = k.split('|'); if (!CI.has(id)) continue; r = RMAP[r] || r; const nk = id + '|' + r; o[nk] = (o[nk] || 0) + n; } d.cards = o; }
+  if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i)); }
+  return d;
+}
+const dbGet = async n => { if (!SB) return mig(mem[n]); const a = await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=d`, { headers: H })).json(); return mig(a[0] && a[0].d); };
 const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await fetch(`${SB}/rest/v1/users`, { method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ name: n, d }) }); if (!r.ok) throw 'บันทึกข้อมูลไม่สำเร็จ'; };
 const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
 const sign = n => { const p = n + '|' + (Date.now() + 90 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
@@ -42,12 +50,12 @@ const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'bas
 const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {} });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
-const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
+const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10'];
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
 function pack(set, gar) {
   const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
-  const by = r => R.filter(x => x.r === r), w = () => { const x = Math.random(); return gar ? (x < .7 ? 'UR' : 'SCR') : x < .62 ? 'R' : x < .9 ? 'SR' : x < .98 ? 'UR' : 'SCR'; };
+  const by = r => R.filter(x => x.r === r), w = () => { const x = Math.random(); return gar ? (x < .7 ? 'UR' : 'SEC') : x < .62 ? 'R' : x < .9 ? 'SR' : x < .98 ? 'UR' : 'SEC'; };
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g('R'), g(w())];
 }
@@ -230,16 +238,9 @@ function mkDeck(text, rand, skip, ban) {
   }
   return { main, life };
 }
-const DC_MS = 180000, LOST = {};
-const rjRoom = n => Object.values(rooms).find(q => q.g && !q.g.over && q.p.some(p => p.name === n));
-function rjStatus(ws) {
-  const q = rjRoom(ws.user);
-  if (q) { const k = q.p.findIndex(p => p.name === ws.user), p = q.p[k]; ws.send(JSON.stringify({ t: 'rj', room: q.code, op: q.p[1 - k] && q.p[1 - k].name, left: p.dc ? Math.max(0, DC_MS - (Date.now() - p.dc)) : DC_MS })); return; }
-  const l = LOST[ws.user]; if (l && Date.now() - l.at < 18e5) ws.send(JSON.stringify({ t: 'lost', op: l.op })); else delete LOST[ws.user];
-}
 const view = (r, i) => {
   const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, cp: P(r, x) })), mg: p.mg, co: p.co, hell: p.hell, dk: p.dk, deck: p.deck.length, hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: g.fxl || [], tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: g.fxl || [], tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -422,7 +423,7 @@ setInterval(() => {
     const r = rooms[c], g = r.g;
     if (!g) { if (r.exp && now > r.exp) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ err: 'ห้องหมดอายุ' }))); dropRoom(c); } continue; }
     if (g.over) { g.oa = g.oa || now; if ((r.rmT && now - r.rmT > 10000) || now - g.oa > 6e5) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ t: 'rmx' }))); dropRoom(c); } continue; }
-    r.p.forEach((p, k) => { if (!g.over && p.dc && now - p.dc > DC_MS) { g.over = p.name + ' หลุด 3 นาที แพ้'; g.win = 1 - k; LOST[p.name] = { op: r.p[1 - k].name, at: now }; } });
+    r.p.forEach((p, k) => { if (p.dc && now - p.dc > 12e4) { g.over = p.name + ' หลุด 2 นาที แพ้'; g.win = 1 - k; } });
     if (g.pend && g.pend.until && now > g.pend.until) { passReact(r); bc(r); settle(r).catch(() => { }); }
     if (!g.over && r.cfg.clock && ['main','battle','end'].includes(g.phase)) {
       const p = r.p[g.turn]; p.t -= 1000; if (p.t <= 0) { g.over = p.name + ' หมดเวลา แพ้'; g.win = 1 - g.turn; }
@@ -433,7 +434,7 @@ setInterval(() => {
 }, 1000);
 wss.on('connection', ws => {
   let r, i;
-  ws.on('close', () => { if (ws.sp) ws.sp.spec = (ws.sp.spec || []).filter(w => w !== ws); if (r && r.p[i] && r.p[i].ws === ws) { r.p[i].dc = Date.now(); if (r.g && !r.g.over) { log(r, '⚠ ' + r.p[i].name + ' หลุด (รอ 3 นาที)'); bc(r); } } });
+  ws.on('close', () => { if (ws.sp) ws.sp.spec = (ws.sp.spec || []).filter(w => w !== ws); if (r && r.p[i] && r.p[i].ws === ws) { r.p[i].dc = Date.now(); if (r.g && !r.g.over) { log(r, '⚠ ' + r.p[i].name + ' หลุด (รอ 2 นาที)'); bc(r); } } });
   const err = s => ws.send(JSON.stringify({ err: String(s) }));
   ws.on('message', async raw => {
     try {
@@ -450,17 +451,9 @@ wss.on('connection', ws => {
             await dbPut(n, d);
           } else if (!d || d.h !== hash(pw, d.s)) E('ชื่อ/รหัสผิด');
         }
-        ws.user = n; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: prof(n, d) })); rjStatus(ws); return;
+        ws.user = n; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: prof(n, d) })); return;
       }
       if (!ws.user) E('ต้องล็อกอินก่อน');
-      if (m.t === 'rjq') { rjStatus(ws); return; }
-      if (m.t === 'lostack') { delete LOST[ws.user]; return; }
-      if (m.t === 'rjff') {
-        const q = rjRoom(ws.user); if (!q) E('ไม่มีเกมที่ค้างอยู่');
-        const k = q.p.findIndex(p => p.name === ws.user), g = q.g;
-        g.ask = null; g.pend = null; g.q = []; g.over = ws.user + ' ยอมแพ้'; g.win = 1 - k; log(q, '🏳 ' + ws.user + ' ยอมแพ้');
-        bc(q); settle(q).catch(() => { }); ws.send(JSON.stringify({ t: 'lost', op: q.p[1 - k].name, self: 1 })); return;
-      }
       if (m.t === 'fstat') {
         const d = await dbGet(ws.user), on = n => [...wss.clients].some(w => w.user === n && w.readyState === 1);
         const L = (d.fr || []).map(n => { const q = Object.values(rooms).find(x => x.p.some(p => p.name === n && p.ws && p.ws.readyState === 1)); return { name: n, on: on(n), st: q ? (q.g && !q.g.over ? 'play' : 'room') : '' }; });
@@ -526,14 +519,14 @@ wss.on('connection', ws => {
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= 20); if (['UR','SCR'].includes(p[4].r)) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= 20); if (['UR','SEC'].includes(p[4].r)) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
       if (m.t === 'code') {
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, ...((await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); d.codes.push(c);
         let ps = []; d.gems += X.gems || 0;
-        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','CBR','SCR'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
+        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','UBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: X.gems ? 'ได้ ' + X.gems + ' Gem' : '' })); return;
       }
       if (m.t === 'join') {
@@ -543,7 +536,7 @@ wss.on('connection', ws => {
         if (!r) { if (!m.create) E('ไม่พบห้อง'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5,10,20].includes(+m.clock) ? +m.clock : 0, react: [10,20,30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] }); }
-        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
+        r.p[i].ws = ws; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
