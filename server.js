@@ -823,6 +823,31 @@ Object.assign(AB,{
 });
 console.log('[KD] loaded OK — SUM/MG/AB extended');
 }catch(e){console.log('[KD] load error:',e.message);}
+/* ===== KD BATCH 2: SUM เพิ่มเติม ===== */
+try{
+Object.assign(SUM,{
+'KD01-001':function(r,i){var me=r.p[i];var n=me.av.filter(function(a){return B[a.id].n.indexOf('พระนารายณ์')>=0;});if(!n.length)return;ask(r,i,{text:'ส่ง นารายณ์ ลงนรกเพื่ออัญเชิญ?',opts:n.map(function(a){return a.u;}),cb:function(u){sendHell(r,u[0]);var c=fromZone(r,i,'hand',me.hand.find(function(x){return x.id==='KD01-001';}).u);putAv(r,i,c);scout(r,i,2,{text:'สอดแนม 2',pred:function(){return true;},rest:'bottom',then:function(g,seen){seen.forEach(function(x){me.hand.push(x);});me.deck=me.deck.filter(function(x){return seen.indexOf(x)<0;});}});}});},
+'KD01-002':function(r,i){var me=r.p[i];var n=me.av.filter(function(a){return B[a.id].n.indexOf('พระนารายณ์')>=0;});if(!n.length)return;ask(r,i,{text:'ส่ง นารายณ์ ลงนรก?',opts:n.map(function(a){return a.u;}),cb:function(u){sendHell(r,u[0]);var c=fromZone(r,i,'hand',me.hand.find(function(x){return x.id==='KD01-002';}).u);putAv(r,i,c);ask(r,i,{text:'ทำลาย Avatar <=4',opts:r.p[1-i].av.filter(function(a){return B[a.id].c<=4;}).map(function(a){return a.u;}),cb:function(us){destroyAv(r,us[0]);}});}});},
+'KD01-003':function(r,i){var me=r.p[i];var n=me.av.filter(function(a){return B[a.id].n.indexOf('พระนารายณ์')>=0;});if(!n.length)return;ask(r,i,{text:'ส่ง นารายณ์ ลงนรก?',opts:n.map(function(a){return a.u;}),cb:function(u){sendHell(r,u[0]);var c=fromZone(r,i,'hand',me.hand.find(function(x){return x.id==='KD01-003';}).u);putAv(r,i,c);var t=me.av.find(function(a){return a.tired&&B[a.id].s==='เทพ';});if(t)t.tired=false;}});},
+'KD01-007':function(r,i){scout(r,i,3,{text:'จุติ KD01-007',pred:function(c){return (c.s||'')==='เทพ';},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD02-003':function(r,i){var me=r.p[i];var L=me.hell.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('นายนิรยบาล')===0;});if(!L.length)return;ask(r,i,{text:'จุติ KD02-003',opts:L.map(function(c){return c.u;}),cb:function(us){var h=me.hell.find(function(c){return c.u===us[0];});if(h)summonFree(r,i,h);}});},
+'KD02-004':function(r,i){scout(r,i,5,{text:'จุติ KD02-004',pred:function(c){return isAv(c)&&(B[c.id].n==='พญายม'||B[c.id].n.indexOf('นายนิรยบาล')===0);},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD02-005':function(r,i){var me=r.p[i];if(!me.hand.length)return;ask(r,i,{text:'จุติ KD02-005',opts:me.hand.map(function(c){return c.u;}),cancel:true,cb:function(us){sendHell(r,us[0]);mill(r,i,3);var L=me.hell.filter(function(c){return isAv(c)&&B[c.id].s==='นรก'&&B[c.id].c<=4;});if(!L.length)return;ask(r,i,{text:'อัญเชิญ นรก ≤4',opts:L.map(function(c){return c.u;}),cb:function(u){var h=me.hell.find(function(c){return c.u===u[0];});if(h)summonFree(r,i,h);}});}});},
+'KD02-010':function(r,i){},'KD02-011':function(r,i){},'KD02-012':function(r,i){},'KD02-013':function(r,i){},
+'KD03-001':function(r,i){var me=r.p[i];var b=me.av.find(function(a){return a.id==='KD03-003'||B[a.id].n.indexOf('บีมมิ')>=0;});if(!b)return;take(r,b.u);me.dk.push(b);var c=fromZone(r,i,'hand',me.hand.find(function(x){return x.id==='KD03-001';}).u);putAv(r,i,c);var L=me.deck.filter(function(x){return isAv(x)&&B[x.id].n.indexOf('ไอดอล')>=0;});if(L.length){var id=fromZone(r,i,'deck',L[0].u);putAv(r,i,id);}},
+'KD03-002':function(r,i){var me=r.p[i];var dio=me.av.filter(function(a){return B[a.id].n.indexOf('ไอดอล')>=0||B[a.id].n.indexOf('บีมมิ')>=0;});if(!dio.length)return;ask(r,i,{text:'สวมให้ใคร?',opts:dio.map(function(a){return a.u;}),cb:function(u){var t=find(r,u[0]);if(t)wearOn(r,i,t.c,fromZone(r,i,'hand',me.hand.find(function(x){return x.id==='KD03-002';}).u));}});},
+'KD03-003':function(r,i){var me=r.p[i];var L=me.deck.filter(function(c){return isAv(c)&&(B[c.id].n.indexOf('โอตะ')>=0||(B[c.id].e||'').indexOf('โอตะ')>=0);});if(!L.length)return;ask(r,i,{text:'โอตะ→ไอดอล',opts:L.map(function(c){return c.u;}),cb:function(us){var c=fromZone(r,i,'deck',us[0]);if(!c)return;var dio=me.av.filter(function(a){return B[a.id].n.indexOf('ไอดอล')>=0;});if(!dio.length)return me.hell.push(c);ask(r,i,{text:'ไอดอล',opts:dio.map(function(a){return a.u;}),cb:function(u){var t=find(r,u[0]);if(t)wearOn(r,i,t.c,c);}});}});},
+'KD03-005':function(r,i){},'KD03-006':function(r,i){},'KD03-007':function(r,i){},'KD03-008':function(r,i){},'KD03-009':function(r,i){},
+'KD04-002':function(r,i){scout(r,i,5,{text:'จุติ KD04-002',pred:function(c){return isAv(c)&&B[c.id].n.indexOf('ไมเกรน')>=0;},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD04-003':function(r,i){scout(r,i,5,{text:'จุติ KD04-003',pred:function(c){return B[c.id].st==='Modification'&&(B[c.id].n||'').indexOf('อาวุธ')>=0;},rest:'bottom',then:function(c){if(c)r.p[i].hand.push(c);}});},
+'KD04-007':function(r,i){var op=r.p[1-i];if(!op.deck.length)return;var c=op.deck[op.deck.length-1];log(r,'🔎 '+B[c.id].n);if(isAv(c)){op.deck.pop();op.hell.push(c);log(r,'→ นรก');}},
+'KD04-008':function(r,i){var me=r.p[i];var need=['โดรนสอดแนม','ยานเกราะ','อากาศยาน'];var L=me.hell.filter(function(c){return need.some(function(n){return B[c.id].n.indexOf(n)>=0;});});if(L.length<3)return;L.slice(0,3).forEach(function(c){me.hell.splice(me.hell.indexOf(c),1);me.deck.push(c);});shuf(me.deck);var C=me.deck.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('ไมเกรน')>=0&&B[c.id].c<=5;});if(!C.length)return;ask(r,i,{text:'อัญเชิญ ไมเกรน',opts:C.map(function(c){return c.u;}),cb:function(us){var c=fromZone(r,i,'deck',us[0]);if(!c)return;if(putAv(r,i,c)){var s=me.av.find(function(a){return a.id==='KD04-008';});if(s)wearOn(r,i,s,c);}}});}
+});
+console.log('[KD] Batch2 loaded');
+}catch(e){console.log('[KD] Batch2 error:',e.message);}
+/* ===== END BATCH 2 ===== */
+
+/* ===== KD BATCH 3: MG + Hook ===== */
 /* ===== KD BATCH 3: MG + Hook ===== */
 try{
 var d2={run:function(r,i){draw(r,r.p[i],2);log(r,'จั่ว 2');}};
