@@ -210,15 +210,27 @@ details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck i
 #tb .tn{background:#0006;border-radius:999px;padding:1px 10px;font-weight:700}#tb .tw{font-weight:800;font-size:1.05em}#tb .to{color:#fde68a;font-weight:700}
 @media(min-width:900px){#game{grid-template-rows:auto 1fr auto auto}#tb{grid-column:1/4;grid-row:1}#lg,#dt{grid-row:2/5}#mid{grid-row:2}#hand{grid-row:3}#bar{grid-row:4}#lg{display:flex;flex-direction:column;padding:0;overflow:hidden}}
 /* mat */
-#mid{background:transparent;box-shadow:none;padding:2px 4px;color:var(--fg)}#mid .pi,#mid .pi a{color:var(--fg)}
-#mid .sd{position:relative;isolation:isolate}
+#mid{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;background:transparent;box-shadow:none;padding:2px 4px;color:var(--fg);--oh:430px}
+#mid>.oh,#mid>.pi{align-self:stretch}#mid .pi,#mid .pi a{color:var(--fg)}
+#mid .sd{position:relative;isolation:isolate;container-type:inline-size;display:block;width:min(100%,calc((100dvh - var(--oh))*.9));aspect-ratio:1.8;margin:0 auto;padding:0;border-radius:10px}
 #mid .sd[data-board=classic]{background:none!important;box-shadow:none!important}
-#mid .sd[data-board=classic]::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:12px;background:#2a2a33 url(/playmat.webp) center/100% 100% no-repeat}
+#mid .sd[data-board=classic]::before{content:'';position:absolute;inset:0;z-index:-1;border-radius:10px;background:#9a9a9a url(/playmat.webp) left top/100% 116.9% no-repeat}
 #mid .sd.op[data-board=classic]::before{transform:rotate(180deg)}
-#mid .sd[data-board=classic] .zr,#mid .sd[data-board=classic] .pl{background:#ffffff1f;border-color:#fff7;color:#fff}
-#mid .sd[data-board=classic] .zr::before,#mid .sd[data-board=classic] .zr::after{color:#fff;text-shadow:0 0 3px #000}
-#mid .pc{width:42px}#mid .pl{width:38px}#mid .pl .c{--w:36px}
-.pl.ld{border-style:dashed}.pl.ld small{color:#fff}
+#mid .sd[data-board=classic] .zr,#mid .sd[data-board=classic] .pl{background:none;border:0;box-shadow:none}
+#mid .sd[data-board=classic] .zr::before,#mid .sd[data-board=classic] .pl small{display:none}
+#mid .sd .zr::after{display:none}#mid .sd .zr::before{font-size:3cqw}
+#mid .sd .mz{position:absolute;left:var(--x);top:var(--y);width:var(--w2);height:var(--h2);min-height:0;margin:0;padding:0;display:flex;align-items:center;justify-content:center;flex-wrap:nowrap;gap:1.2cqw;aspect-ratio:auto}
+#mid .sd.op .mz{left:calc(100% - var(--x) - var(--w2));top:calc(100% - var(--y) - var(--h2))}
+.z-co{--x:2.36%;--y:.43%;--w2:36.93%;--h2:17.19%}.z-ld{--x:40.86%;--y:0%;--w2:18.29%;--h2:14.33%}.z-dk{--x:60.79%;--y:.43%;--w2:36.79%;--h2:17.19%}
+.z-lf{--x:2.36%;--y:21.49%;--w2:15%;--h2:74.78%}.z-av{--x:18.21%;--y:21.92%;--w2:65.57%;--h2:36.53%}.z-mg{--x:18.07%;--y:59.89%;--w2:65.71%;--h2:36.39%}
+.z-hl{--x:84.64%;--y:21.49%;--w2:13%;--h2:36.53%}.z-dp{--x:84.64%;--y:59.46%;--w2:13%;--h2:36.68%}
+#mid .sd .z-av,#mid .sd .z-mg{--w:12.5cqw}#mid .sd .z-co{--w:8cqw}#mid .sd .z-lf{--w:10.5cqw}#mid .sd .z-hl,#mid .sd .z-dp{--w:9cqw}#mid .sd .z-dk{--w:8cqw}#mid .sd .z-ld{--w:7cqw}
+#mid .sd .pl .c{--w:inherit;margin:0}
+#mid .sd .lc{flex-direction:column;justify-content:center}#mid .sd .lc .c{margin-top:calc(var(--w)*-.8)}#mid .sd .lc>.c:first-child{margin-top:0}
+#mid .sd .z-co .c,#mid .sd .z-dk .c,#mid .sd .z-ld .c{transform:rotate(90deg);margin:0 calc(var(--w)*.2)}
+#mid .sd .z-co .c.hv,#mid .sd .z-dk .c.hv,#mid .sd .z-ld .c.hv{transform:rotate(90deg) scale(1.3)!important}
+#hand{--w:min(20vw,84px)}#bar button{min-height:44px;padding:8px 10px;font-size:1.05em}#bar .endb{min-height:54px;font-size:1.15em}#bar .srb{min-height:34px;font-size:.9em;padding:4px}
+@media(min-width:900px){#game{max-width:1400px;grid-template-columns:240px minmax(420px,1fr) 280px}#mid{--oh:390px}#hand{--w:96px}}
 /* opp hand */
 .oh{position:relative;height:36px;overflow:hidden;display:flex;justify-content:center}
 .ohc{display:flex;justify-content:center;padding-left:14px}.ohc .c{--w:30px;margin-left:-14px;transform:rotate(180deg);transition:none}
@@ -380,14 +392,14 @@ const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
 const supOK=x=>!x.tired&&!x.tk&&/สามัคคี/.test(info(x).e||'')&&x.u!=atk;
 const can=(x,z,o)=>(S.ask&&S.ask.mine&&S.ask.opts.includes(x.u))||(mode=='atk'&&o&&(z=='av'||z=='co'))||(mode=='atk'&&!o&&z=='av'&&supOK(x))||(mode=='pay'&&z=='hand'&&x.u!=sel);
 const cd=(x,z,o)=>{const c=info(x),a=x.tk?'':art(x.id),p=c.p!=null?(x.cp!=null?x.cp:c.p+(x.pw||0)):'';return`<div class="c${a?' im':''}${x.tired?' z':''}${sel==x.u?' sel':''}${z=='hand'&&NEW.has(x.u)?' nw':''}${pay.includes(x.u)||akSel.includes(x.u)||supl.includes(x.u)?' pay':''}${can(x,z,o)?' can':''}" data-u="${x.u}" data-z="${z}" data-o="${o?1:0}" style="--k:${KC[c.col]||'#999'};${a}">${a?'':`<b>${esc(c.n)}</b><i>${c.t=='Magic'?'':c.c??''}${c.g?'◆'+c.g:''}</i>`}${p!==''?`<s class="p ${p>c.p?'up':p<c.p?'dn':''}" data-k="${x.u}">${p}</s>`:''}${gb(x,z)}</div>`};
-const row=(a,z,o)=>`<div class="r zr" data-l="${ZL[z]}" data-s="${ZS[z]}">${(z=='mg'?a.filter(x=>!x.at||find(x.at)):a).map(x=>cd(x,z,o)).join('')}</div>`;
+const row=(a,z,o)=>`<div class="r zr mz z-${z}" data-l="${ZL[z]}" data-s="${ZS[z]}">${(z=='mg'?a.filter(x=>!x.at||find(x.at)):a).map(x=>cd(x,z,o)).join('')}</div>`;
 const lifeT=()=>{if(mode!='atk'||!S)return false;const f=find(atk);return !S.op.av.length||/เตะไข่/.test(f?info(f.x).e||'':'')||[...S.me.mg,...S.op.mg].some(y=>y.at==atk&&/เตะไข่/.test(info(y).e||''))};
 const gb=(x,z)=>{if(z=='av'){const n=[...S.me.mg,...S.op.mg].filter(y=>y.at==x.u).length;return n?'<em>+'+n+'</em>':''}if(z=='mg'&&x.at){const f=find(x.at);return f?'<span class="at">→ '+esc(info(f.x).n)+'</span>':''}return''};
-const life=(p,o)=>`<div class="lc zr${o&&lifeT()?' can':''}" data-l="Life"${o?' data-lf="1"':''}>${p.life.map(l=>l.up?cd(l,'life',o):'<div class="c bk"></div>').join('')}</div>`;
+const life=(p,o)=>`<div class="lc zr mz z-lf${o&&lifeT()?' can':''}" data-l="Life"${o?' data-lf="1"':''}>${p.life.map(l=>l.up?cd(l,'life',o):'<div class="c bk"></div>').join('')}</div>`;
 const ZNm={hand:'มือ',av:'สนาม',hell:'นรก',deck:'Deck',mg:'Magic',co:'Construct',dk:'มิติมืด'};
-const piles=(p,o)=>{const t=p.hell[p.hell.length-1],d=(p.dk||[])[(p.dk||[]).length-1],pc=(top,tx)=>top?`<div class="c im" style="${art(top.id)||''}">${art(top.id)?'':esc(info(top).n)}</div>`:`<small>${tx}</small>`;
-const H=`<div class="pl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.length}</b></div>`,K=`<div class="pl" data-dk="${o?1:0}">${pc(d,'มิติมืด')}${(p.dk||[]).length?`<b>${p.dk.length}</b>`:''}</div>`,D=`<div class="pl" data-dp="${o?1:0}"><div class="c bk"></div><b>${p.deck}</b></div>`;const own=S.land&&((S.land.o==S.i)==!o),L=`<div class="pl ld" data-ld="${o?1:0}">${own?cd(S.land.c,'land',o):'<small>Land</small>'}</div>`;return o?[D,K,H,L]:[L,H,K,D]};
-const side=(p,o)=>{const rows=o?[['mg',p.mg],['av',p.av],['co',p.co]]:[['co',p.co],['av',p.av],['mg',p.mg]];return`<div class="sd ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}">${life(p,o)}<div class="zc">${rows.map(([z,a])=>row(a,z,o)).join('')}</div><div class="pc">${piles(p,o).join('')}</div></div>`};
+const piles=(p,o)=>{const t=p.hell[p.hell.length-1],d=(p.dk||[])[(p.dk||[]).length-1],pc=(top,tx)=>top?`<div class="c im" style="${art(top.id)||''}">${art(top.id)?'':esc(info(top).n)}</div>`:`<small>${tx}</small>`,own=S.land&&((S.land.o==S.i)==!o);
+return{H:`<div class="pl mz z-hl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.length}</b></div>`,K:`<div class="pl mz z-dk" data-dk="${o?1:0}">${pc(d,'มิติมืด')}${(p.dk||[]).length?`<b>${p.dk.length}</b>`:''}</div>`,D:`<div class="pl mz z-dp" data-dp="${o?1:0}"><div class="c bk"></div><b>${p.deck}</b></div>`,L:`<div class="pl mz z-ld" data-ld="${o?1:0}">${own?cd(S.land.c,'land',o):'<small>Land</small>'}</div>`}};
+const side=(p,o)=>{const P=piles(p,o);return`<div class="sd ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}">${row(p.co,'co',o)}${P.L}${P.K}${life(p,o)}${row(p.av,'av',o)}${row(p.mg,'mg',o)}${P.H}${P.D}</div>`};
 const pi=(p,o)=>`<div class="pi">${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
 function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u);NEW=new Set(handSeen?hs.filter(u=>!handSeen.has(u)):[]);handSeen=new Set(hs)}
 $('mid').innerHTML=ophand(o)+pi(o,1)+side(o,1)+side(m,0)+pi(m,0);ODC=S.odc>0?Date.now()+S.odc:0;tbUI();
@@ -548,7 +560,7 @@ function feedUpd(){const L=S.log.slice(-40).map(feedItem);
 document.querySelectorAll('#lg .fd,#lgs .fd').forEach(d=>{const nb=d.scrollTop+d.clientHeight>=d.scrollHeight-40,it=L.filter(x=>FT=='all'||x.k==FT);d.innerHTML=it.map(x=>x.h).join('')||'<div class="fe lg">— ไม่มีรายการ —</div>';if(nb)d.scrollTop=d.scrollHeight});
 document.querySelectorAll('.ft button[data-f]').forEach(b=>b.classList.toggle('on',b.dataset.f==FT));
 document.querySelectorAll('.fi').forEach(f=>f.style.display=S.spec?'none':'');
-const ls=$('ls');ls.innerHTML=L.slice(-2).map(x=>x.h).join('')+(S.over?`<div class="fe lg"><b>${esc(S.over)}</b></div>`:'')+'<i class="lm">แตะเพื่อดูทั้งหมด / พิมพ์แชท</i>';ls.scrollTop=ls.scrollHeight}
+const ls=$('ls');ls.innerHTML=L.slice(-1).map(x=>x.h).join('')+(S.over?`<div class="fe lg"><b>${esc(S.over)}</b></div>`:'')+'<i class="lm">แตะเพื่อดูทั้งหมด / พิมพ์แชท</i>';ls.scrollTop=ls.scrollHeight}
 const feedTab=k=>{FT=k;if(S)feedUpd()};
 function feedOpen(o){const e=$('lgs');e.classList.toggle('open',!!o);if(o&&S){feedUpd();const d=e.querySelector('.fd');d.scrollTop=d.scrollHeight}}
 function feedSend(i){const x=i.value.trim();if(x){send({t:'chat',x});i.value=''}}
