@@ -502,7 +502,7 @@ if(mode){return A('ยกเลิก',()=>{mode=null;pay=[];supl=[];render()})}
 if(f&&!f.o){if(f.z=='hand'){if(c.t=='Avatar'||c.t=='Construct')A(c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',()=>c.c?(mode='pay',pay=[],render()):send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:[]}));
 if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}));A('ทิ้ง',()=>send({t:'discard',u:sel}))}
 else{if(f.x.ab&&S.mine&&S.phase=='main'&&!S.pend&&!S.ask)A('⚡ ใช้ความสามารถ',()=>send({t:'use',u:sel})).className='atkb';if(f.z=='av'&&S.phase=='battle'&&S.mine&&!S.pend){const e=A(f.x.tired?'💤 นอนอยู่ โจมตีไม่ได้':'⚔ โจมตี',()=>{atk=sel;mode='atk';render()});e.disabled=!!f.x.tired;e.className='atkb'}}}
-if(S.mine)A(S.phase=='main'?'→ BATTLE':S.phase=='battle'?'→ END':'จบเทิร์น',()=>send({t:'next'}),BR).className='endb';A('💬 แชท',()=>feedOpen(1))}
+if(S.mine){const fin=S.phase!='main'||S.tn==0;A(S.phase=='main'&&S.tn>0?'→ BATTLE':'จบเทิร์น',()=>send(fin?{t:'next',fin:1}:{t:'next'}),BR).className='endb';if(S.phase=='main'&&S.tn>0)A('⏭ จบเทิร์นเลย',()=>{if(confirm('ข้าม Battle Phase และจบเทิร์น ?'))send({t:'next',fin:1})},BR).className='srb'}A('💬 แชท',()=>feedOpen(1))}
 $('auth').hidden=!!cfg.tok;$('ld').hidden=!cfg.tok;setInterval(()=>{if(!S)return;if(S.pend&&S.pend.mine&&S.pend.until){bar();rxT()}const q=$('erq');if(q&&RMQ>Date.now())q.textContent=' ('+Math.ceil((RMQ-Date.now())/1e3)+'s)'},1000);
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});

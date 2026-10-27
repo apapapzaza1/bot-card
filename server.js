@@ -337,6 +337,17 @@ function wall(r, i) {
       const n = 1 + (p.co.some(x => x.id === 'SD06-019') ? 2 : 0), seen = p.deck.splice(-n).reverse(); log(r, '🔎 สอดแนม ' + seen.length + ' ใบ: ' + seen.map(x => B[x.id].n).join(', '));
       seen.forEach(x => { if (campTxt(x) && B[x.id].c <= 4) putAv(r, i, x); else { p.hand.push(x); log(r, '✋ ' + B[x.id].n + ' ขึ้นมือ'); } }); } }); } });
 }
+/* ทำลาย Construct ด้วยความสามารถของ Avatar หรือ Magic — การ์ดสกิลใหม่ต้องเรียกฟังก์ชันนี้ (ไม่ใช่การทำลายจากการต่อสู้) */
+function destroyCo(r, u) {
+  const f = find(r, u); if (!f || f.z !== 'co') return;
+  if (r.g.ask) return r.g.q.push(() => destroyCo(r, u));
+  const i = f.i, p = r.p[i], done = () => { const h = find(r, u); if (!h || h.z !== 'co') return; take(r, u); p.hell.push(h.c); fx({ k: 'die', u, id: h.c.id }); log(r, '💥 Construct ' + B[h.c.id].n + ' ถูกทำลาย'); onConDie(r, i, h.c); };
+  if (f.c.id === 'SD06-018' && !r.g.used[i].dhamma) {
+    const m = [...p.hand, ...p.av].filter(c => c.id === 'SD06-007');
+    if (m.length) return ask(r, i, { yn: true, text: 'อาจารย์ธรรมโชติ: ส่งกลับใต้ Deck เพื่อให้ ค่ายบางระจัน ไม่ถูกทำลาย?', cb: y => { if (!y) return done(); r.g.used[i].dhamma = 1; const c = m[0]; take(r, c.u); p.deck.unshift(c); log(r, '🛡 อาจารย์ธรรมโชติ กลับใต้ Deck — ค่ายบางระจัน ไม่ถูกทำลาย'); } });
+  }
+  done();
+}
 function shieldThen(r, p) {
   const d = r.p[p.who], L = p.tk === 'co' ? [] : d.av.filter(a => !a.tired && a.u !== p.tg && hasKw(r, a, 'โล่มนุษย์')).map(a => a.u);
   if (!L.length) return open(r, p);
@@ -485,6 +496,10 @@ function hit(r, d, atk) {
   return d.life[k].id;
 }
 
+function passTurn(r, i) {
+  const g = r.g; if (r.p[i].hand.length > 7) E('มือเกิน 7 ต้องทิ้งก่อน');
+  r.p.forEach(q => q.av.forEach(a => { a.tp = 0; a.bp = 0; })); g.turn = 1 - i; g.n++; endTurn456(r); startTurn(r);
+}
 function act(r, i, m) {
   CR = r; const g = r.g, me = r.p[i], op = r.p[1 - i], mine = g.turn === i;
   if (g.over && m.t !== 'chat') E('เกมจบแล้ว');
@@ -508,9 +523,10 @@ function act(r, i, m) {
     }
     case 'next':
       if (!mine) E('ไม่ใช่เทิร์นเรา');
+      if (m.fin) { if (g.phase === 'dice' || g.phase === 'pick' || g.phase === 'mull') E('ยังจบเทิร์นไม่ได้'); if (me.hand.length > 7) { g.phase = 'end'; log(r, me.name + ': มือเกิน 7 ต้องทิ้ง ' + (me.hand.length - 7) + ' ใบ'); } else passTurn(r, i); break; }
       if (g.phase === 'main') g.phase = g.n === 0 ? 'end' : 'battle';
       else if (g.phase === 'battle') g.phase = 'end';
-      else { if (me.hand.length > 7) E('มือเกิน 7 ต้องทิ้งก่อน'); r.p.forEach(q => q.av.forEach(a => { a.tp = 0; a.bp = 0; })); g.turn = 1 - i; g.n++; endTurn456(r); startTurn(r); }
+      else passTurn(r, i);
       break;
     case 'discard': { const f = own(m.u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); take(r, m.u); me.hell.push(f.c); log(r, me.name + ' ทิ้ง ' + B[f.c.id].n); break; }
     case 'summon': case 'build': {
@@ -571,7 +587,7 @@ function act(r, i, m) {
     case 'pass': { if (!g.pend || g.pend.who !== i) E('ไม่มี React'); passReact(r); break; }
     case 'token': case 'move': case 'pw': case 'tire': case 'drawn':
       E('คำสั่งนี้ถูกปิด'); break;
-    case 'discardm': { const us = [...new Set((m.us || []).map(Number))].slice(0, 20); if (!us.length) E('ยังไม่เลือก'); us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ'); break; }
+    case 'discardm': { const us = [...new Set((m.us || []).map(Number))].slice(0, 20); if (!us.length) E('ยังไม่เลือก'); us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ'); if (mine && g.phase === 'end' && me.hand.length <= 7) passTurn(r, i); break; }
     case 'dview': { const n = +m.n | 0, L = (n > 0 ? me.deck.slice(-n) : me.deck.slice()).reverse(); me.ws && me.ws.send(JSON.stringify({ t: 'dv', cards: L.map(c => ({ u: c.u, id: c.id })) })); log(r, me.name + ' ดูเด็ค'); break; }
     case 'dmove': { const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบ'); if (!['hand','hell','av','mg','co'].includes(m.to)) E('โซนผิด'); const [c] = me.deck.splice(k, 1); me[m.to].push(c); log(r, me.name + ' ย้ายจากเด็ค → ' + m.to); if (!me.deck.length && !g.over) { g.over = me.name + ' เด็คหมด'; g.win = 1 - i; } break; }
     case 'dpos': { const k = me.deck.findIndex(c => c.u === m.u); if (k < 0) E('ไม่พบ'); const [c] = me.deck.splice(k, 1); m.top ? me.deck.push(c) : me.deck.unshift(c); log(r, me.name + ' วาง' + (m.top ? 'บน' : 'ใต้') + 'เด็ค'); break; }
@@ -786,4 +802,4 @@ wss.on('connection', ws => {
   });
 });
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
-if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf };
+if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo };
