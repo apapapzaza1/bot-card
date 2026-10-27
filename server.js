@@ -823,6 +823,43 @@ Object.assign(AB,{
 });
 console.log('[KD] loaded OK — SUM/MG/AB extended');
 }catch(e){console.log('[KD] load error:',e.message);}
-/* ===== END v3 ===== */
+/* ===== KD BATCH 3: MG + Hook ===== */
+try{
+var d2={run:function(r,i){draw(r,r.p[i],2);log(r,'จั่ว 2');}};
+MG['KD01-013']=d2;MG['KD03-012']=d2;MG['KD04-018']=d2;
+MG['KD01-014']={steps:[{key:'t',text:'Avatar',opts:function(r){return allAv(r).map(function(a){return a.x.u;});}}],run:function(r,i,cx){var t=find(r,cx.pick.t[0]);if(t)addTp(t.c,4);}};
+MG['KD01-016']={mod:1,steps:[{key:'tg',text:'Avatar',opts:function(r){return allAv(r).map(function(a){return a.x.u;});}}]};
+MG['KD01-017']={react:'summon',run:function(r,i,cx){destroyAv(r,cx.ev.u);}};
+MG['KD01-018']={react:'atk',run:function(r,i,cx){var p=r.p[i];var n=p.av.length+p.mg.length+p.co.length+p.hand.length+((r.g.land&&r.g.land.o===i)?1:0);var a=find(r,cx.pend.u);if(a)addTp(a.c,-2*n);}};
+MG['KD02-014']={run:function(r,i){var me=r.p[i];mill(r,i,3);var seen={};me.hell.forEach(function(c){if(isAv(c)&&B[c.id].s==='นรก')seen[B[c.id].n]=1;});draw(r,me,Object.keys(seen).length>=5?2:1);}};
+MG['KD02-015']={steps:[{key:'t',text:'Avatar ศัตรู',opts:function(r){return r.p[1].av.map(function(a){return a.u;});}}],run:function(r,i,cx){bounce(r,cx.pick.t[0]);}};
+MG['KD02-017']={react:'any',run:function(r,i,cx){if(r.g.pend)r.g.pend.cancel=1;}};
+MG['KD02-018']={react:'cast',run:function(r,i,cx){var cc=cx.ev&&cx.ev.cx;if(cc)cc.cancelled=1;}};
+MG['KD02-019']={mod:1,steps:[{key:'tg',text:'Avatar นรก',opts:function(r,i){return r.p[i].av.filter(function(x){return B[x.id].s==='นรก';}).map(function(x){return x.u;});}}]};
+MG['KD03-013']={steps:[{key:'t',text:'ผี ≤4',opts:function(r,i){return r.p[i].deck.filter(function(c){return isAv(c)&&B[c.id].s==='ผี'&&B[c.id].c<=4;}).map(function(c){return c.u;});}}],run:function(r,i,cx){if(!r.p[i].av.some(function(a){return B[a.id].s==='มนุษย์'&&B[a.id].c>=3;}))return;var c=fromZone(r,i,'deck',cx.pick.t[0]);if(c)putAv(r,i,c);shuf(r.p[i].deck);}};
+MG['KD03-014']={run:function(r,i){if(!r.p[i].av.some(function(a){return B[a.id].n.indexOf('ไอดอล')>=0;}))return;var L=r.p[i].deck.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('โอตะ')>=0;});if(L.length){r.p[i].hand.push(fromZone(r,i,'deck',L[0].u));}}};
+MG['KD03-015']={react:'atk',run:function(r,i,cx){var t=find(r,cx.pend.tg);if(!t||B[t.c.id].n.indexOf('ไอดอล')<0)return;cx.pend.cancel=1;var L=r.p[i].hell.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('โอตะ')>=0;});if(L.length)wearOn(r,i,t.c,L[0]);}};
+MG['KD03-016']={react:'summon',run:function(r,i,cx){destroyAv(r,cx.ev.u);}};
+MG['KD03-017']={react:'use',run:function(r,i,cx){var t=find(r,cx.ev&&cx.ev.u);if(t)t.c.noab=r.g.n;}};
+MG['KD03-018']={mod:1,steps:[{key:'tg',text:'Avatar',opts:function(r){return allAv(r).map(function(a){return a.x.u;});}}]};
+MG['KD03-019']={mod:1,steps:[{key:'tg',text:'ไอดอล',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].n.indexOf('ไอดอล')>=0;}).map(function(a){return a.u;});}}],run:function(r,i){draw(r,r.p[i],1);}};
+MG['KD04-012']={steps:[{key:'t',text:'ไมเกรน',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].n.indexOf('ไมเกรน')>=0;}).map(function(a){return a.u;});}}],run:function(r,i,cx){var t=find(r,cx.pick.t[0]);if(t)t.c.multi=r.g.n;}};
+MG['KD04-013']={mod:1,steps:[{key:'tg',text:'หุ่นยนต์',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].s==='หุ่นยนต์';}).map(function(a){return a.u;});}}]};
+MG['KD04-014']={mod:1,steps:[{key:'tg',text:'ผู้กล้า',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].n.indexOf('ผู้กล้า')>=0;}).map(function(a){return a.u;});}}]};
+MG['KD04-015']={mod:1,steps:[{key:'tg',text:'หุ่นยนต์',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].s==='หุ่นยนต์';}).map(function(a){return a.u;});}}]};
+MG['KD04-019']={react:'cast',run:function(r,i,cx){var cc=cx.ev&&cx.ev.cx;if(cc)cc.cancelled=1;}};
+MG['KD04-020']={react:'battle',run:function(r,i,cx){var L=r.p[i].hell.filter(function(c){return B[c.id].st==='Modification';});if(L.length)r.p[i].hand.push(fromZone(r,i,'hell',L[0].u));var a=find(r,cx.pend.u);if(a)addTp(a.c,-1);}};
+
+Object.assign(AB,{
+'KD04-002':{z:'av',steps:[{key:'t',text:'ทิ้ง 1',opts:function(r,i,cx){return r.p[i].hand.filter(function(c){return c.u!==cx.card.u;}).map(function(c){return c.u;});}}],run:function(r,i,cx){cx.card.us=r.g.n;sendHell(r,cx.pick.t[0]);var L=r.p[i].hell.filter(function(c){return B[c.id].st==='Modification'&&(B[c.id].n||'').indexOf('อาวุธ')>=0;});if(L.length)r.p[i].hand.push(fromZone(r,i,'hell',L[0].u));}},
+'KD04-006':{z:'av',steps:[{key:'t',text:'ไมเกรน',opts:function(r,i){return r.p[i].av.filter(function(a){return B[a.id].n.indexOf('ไมเกรน')>=0;}).map(function(a){return a.u;});}}],run:function(r,i,cx){cx.card.us=r.g.n;var t=find(r,cx.pick.t[0]);if(t)t.c.ward=(r.g.n||0)+1;}},
+'KD02-001':{z:'av',can:function(r,i){var L=r.p[i].hell.filter(function(c){return isAv(c)&&B[c.id].s==='นรก';});var s={};L.forEach(function(c){s[B[c.id].n]=1;});return Object.keys(s).length>=7;},steps:[{key:'t',text:'เนรเทศ นรก 5',opts:function(r,i){return r.p[i].hell.filter(function(c){return isAv(c)&&B[c.id].s==='นรก';}).map(function(c){return c.u;});},n:5,min:5}],run:function(r,i,cx){cx.card.us=r.g.n;cx.pick.t.forEach(function(u){var k=r.p[i].hell.findIndex(function(c){return c.u===u;});if(k>=0)r.p[i].dk.push(r.p[i].hell.splice(k,1)[0]);});r.p[1-i].av.slice().forEach(function(x){if(x.u!==cx.card.u)kill(r,1-i,x.u);});}},
+'KD04-001':{z:'av',can:function(r,i){var L=r.p[i].hell.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('ไมเกรน')>=0;});var s={};L.forEach(function(c){s[B[c.id].n]=1;});return Object.keys(s).length>=3;},steps:[{key:'t',text:'ไมเกรน 3 ชื่อ',opts:function(r,i){var L=r.p[i].hell.filter(function(c){return isAv(c)&&B[c.id].n.indexOf('ไมเกรน')>=0;});return L.map(function(c){return c.u;});},n:3,min:3}],run:function(r,i,cx){cx.card.us=r.g.n;cx.pick.t.forEach(function(u){var k=r.p[i].hell.findIndex(function(c){return c.u===u;});if(k>=0)r.p[i].dk.push(r.p[i].hell.splice(k,1)[0]);});}}
+});
+console.log('[KD] Batch3 loaded');
+}catch(e){console.log('[KD] Batch3 error:',e.message);}
+/* ===== END BATCH 3 ===== */
+
+srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo };
