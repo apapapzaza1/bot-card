@@ -337,6 +337,13 @@ function wall(r, i) {
       const n = 1 + (p.co.some(x => x.id === 'SD06-019') ? 2 : 0), seen = p.deck.splice(-n).reverse(); log(r, '🔎 สอดแนม ' + seen.length + ' ใบ: ' + seen.map(x => B[x.id].n).join(', '));
       seen.forEach(x => { if (campTxt(x) && B[x.id].c <= 4) putAv(r, i, x); else { p.hand.push(x); log(r, '✋ ' + B[x.id].n + ' ขึ้นมือ'); } }); } }); } });
 }
+function shieldThen(r, p) {
+  const d = r.p[p.who], L = p.tk === 'co' ? [] : d.av.filter(a => !a.tired && a.u !== p.tg && hasKw(r, a, 'โล่มนุษย์')).map(a => a.u);
+  if (!L.length) return open(r, p);
+  const go = () => r.g.q.unshift(() => open(r, p));
+  ask(r, p.who, { text: 'โล่มนุษย์: เลือก Avatar โล่มนุษย์ (สภาพตื่น) เพื่อรับการโจมตีแทน — จะกลายเป็นสภาพนอน (ยกเลิก = ไม่ใช้)', opts: L, cancel: true, onCancel: go,
+    cb: us => { const s = find(r, us[0]); if (s && !s.c.tired) { s.c.tired = true; p.tg = s.c.u; p.tk = 'av'; if (s.c.id === 'SD05-004') { s.c.bp = (s.c.bp || 0) + 2; p.sh = s.c.u; } log(r, '🛡 โล่มนุษย์: ' + nmOf(s.c) + ' รับการโจมตีแทน'); } go(); } });
+}
 function endTurn456(r) {
   const g = r.g; r.p.forEach(q => { q.co.forEach(c => { if (c.pb) { c.pw = (c.pw || 0) - c.pb; c.pb = 0; } });
     q.av.slice().forEach(a => { if (a.ward && g.n >= a.ward) delete a.ward; if (a.exp && g.n >= a.exp) { log(r, '👻 ' + nmOf(a) + ' กลับลงนรก'); sendHell(r, a.u); } }); });
@@ -440,8 +447,12 @@ const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
 const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) if (p.mg[k].at === u) { const [g] = p.mg.splice(k, 1); delete g.at; p.hell.push(g); } });
 const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') { release(r, u); if (f.c.wr && f.c.wr.length) { f.c.wr.forEach(w => r.p[f.i].hell.push(w)); f.c.wr = []; } } delete f.c.at; return f; };
-const kill = (r, i, u) => {
+const kill = (r, i, u, ns) => {
   const f0 = find(r, u);
+  if (f0 && f0.z === 'av' && !ns && f0.c.id !== 'SD06-005' && campTxt(f0.c) && hasCamp(r, f0.i) && !r.g.ask) {
+    const g5 = r.p[f0.i].av.find(a => a.id === 'SD06-005');
+    if (g5) { ask(r, f0.i, { yn: true, text: 'พันเรือง: ทำลาย พันเรือง แทน ' + nmOf(f0.c) + ' ไหม?', cb: y => y ? kill(r, f0.i, g5.u, 1) : kill(r, i, u, 1) }); return; }
+  }
   if (f0 && f0.z === 'av') {
     if (f0.c.ward) { delete f0.c.ward; log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกทำลาย (คุณพยาบาล)'); return; }
     const k = (f0.c.wr || []).findIndex(w => w.id === 'SD04-002');
@@ -546,7 +557,7 @@ function act(r, i, m) {
       if (g.land && g.land.c.id === 'SD02-020' && TRIO.includes(nmOf(a.c))) { a.c.bp = (a.c.bp || 0) + 2; fx({ k: 'buff', u: a.c.u, v: 2 }); log(r, '🏠 สมชายห้องเช่า: POWER +2'); }
       a.c.tired = true; log(r, nmOf(a.c) + ' โจมตี ' + (tk === 'life' ? 'LIFE' : tk === 'co' ? 'Construct' : 'Avatar'));
       if (a.c.id === 'SD06-002' && tk === 'life' && op.av.length) g.q.push(() => ask(r, i, { text: 'เตะไข่: เลือก Avatar ฝ่ายเรา 1 ใบ ทำลาย', opts: me.av.map(x => x.u), cb: us => destroyAv(r, us[0]) }));
-      g.q.push(() => fxAtk(r, i, a.c)); g.q.push(() => open(r, { who: 1 - i, k: 'atk', ai: i, u: m.u, tg: m.tg, tk })); break;
+      g.q.push(() => fxAtk(r, i, a.c)); g.q.push(() => shieldThen(r, { who: 1 - i, k: 'atk', ai: i, u: m.u, tg: m.tg, tk })); break;
     }
     case 'use': {
       mainOnly(); let f = find(r, m.u), z;
@@ -610,7 +621,7 @@ function resolveAtk(r, p) {
     setBt(r, { ...base, tg: 'av', dn, did: d.tk ? null : d.id, pd, res });
   }
   if (p.tk !== 'av') surviveFx(r, p.ai, a);
-  a.bp = 0;
+  a.bp = 0; if (p.sh) { const q = find(r, p.sh); q && (q.c.bp = 0); }
 }
 function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') resolveAtk(r, p); runQ(r); }
 function begin(r) {
