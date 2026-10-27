@@ -280,6 +280,26 @@ body.dragging #hand .c.h{transform:none}
 }
 .dc.bad .di{outline:3px solid #f55}.fl{font-style:normal;font-size:.75em;background:#f5535522;border:1px solid #f5535566;border-radius:6px;padding:0 5px;margin-right:3px;display:inline-block}.mis ul{margin:4px 0 0 18px;padding:0}.mis li{margin:2px 0}.okb{font-size:.85em;color:#4ade80;background:#4ade8018;border:1px solid #4ade8055;border-radius:10px;padding:4px 10px}
 .pair{display:flex;gap:12px;flex-wrap:wrap}.pair>div{flex:1;min-width:140px;display:flex;flex-direction:column;gap:4px}.pair>div>span{opacity:.85}
+
+/* ===== v9 ===== */
+.c.nw{animation:drr .75s cubic-bezier(.2,.8,.25,1) backwards;animation-delay:var(--dl,0ms);z-index:25}
+@keyframes drr{0%{transform:translate(var(--fx,70vw),var(--fy,-30vh)) scale(.45) rotate(24deg);opacity:0}18%{opacity:1}65%{transform:translate(calc(var(--fx,70vw)*.1),calc(var(--fy,-30vh)*.08)) scale(1.12) rotate(-5deg)}100%{transform:none;opacity:1}}
+.ohc .c.bk.nw{animation-name:drr}
+.dbtn{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border-radius:16px;font-size:1.1em;text-align:left;min-height:88px;border:2px dashed #3b82f6;background:#3b82f618;margin:0}
+.dbtn.set{border-style:solid}.dbtn .dth{width:58px;height:81px;border-radius:7px;background-color:#0003;background-repeat:no-repeat;flex:none;display:flex;align-items:center;justify-content:center;font-size:1.8em;overflow:hidden}
+.dbtn .dth img{width:100%;height:100%;object-fit:contain}.dbtn b{font-size:1.15em;display:block}.dbtn small{opacity:.75}
+#md.dpk .dsec{margin:12px 0}.dsec h3{margin:6px 0}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.dtile{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;border-radius:14px;margin:0;text-align:center;border:2px solid #8884}
+.dtile.on{border-color:#3b82f6;background:#3b82f622;box-shadow:0 0 0 2px #3b82f6}
+.dtile .dimg{width:100%;aspect-ratio:5/7;border-radius:8px;background-color:#0003;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center;font-size:2.4em;overflow:hidden}
+.dtile .dimg img{width:100%;height:100%;object-fit:contain}.dtile b{font-size:.95em;line-height:1.2}.dtile small{opacity:.65}
+.myd .lab{opacity:.7;font-size:.85em}.mydg{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.mdt{width:76px;margin:0;padding:4px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px}.mdt.on{border-color:#3b82f6;background:#3b82f622}
+.mdi{width:100%;aspect-ratio:5/7;border-radius:5px;background-color:#0003;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center}.mdt small{font-size:.7em;line-height:1.1;word-break:break-all}
+#md.dkb .dg{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#md.dkb .dc{gap:2px}#md.dkb .dc>b{font-size:.7em;line-height:1.15}#md.dkb .dc small{font-size:.6em}#md.dkb .fl{font-size:.58em;padding:0 3px}
+#md.dkb .ct{gap:2px}#md.dkb .ct button{padding:2px 8px;margin:0}#md.dkb .ct span{font-size:.8em}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -298,9 +318,15 @@ const vid=()=>{const o=$('bg')&&$('bg').querySelector('video');o&&o.remove();if(
 const ap=()=>{document.documentElement.dataset.th=cfg.th;document.documentElement.dataset.cs=cfg.cs;document.documentElement.style.setProperty('--fs',cfg.fs+'px');document.body.dataset.bg=cfg.bg;vid();try{localStorage.cfg=JSON.stringify(cfg)}catch(e){}};ap();
 for(let i=0;i<10;i++){const d=document.createElement('i');d.style.cssText=`left:${i*10}%;animation-delay:${-i*1.4}s;animation-duration:${12+i}s`;$('bg').append(d)}
 $('bg').insertAdjacentHTML('beforeend','<svg viewBox="0 0 100 120"><path d="M50 8c-14 0-22 10-22 24 0 8 3 12 3 12-12 10-20 40-24 76h86c-4-36-12-66-24-76 0 0 3-4 3-12C72 18 64 8 50 8z" fill="#050508"/><ellipse cx="50" cy="36" rx="13" ry="16" fill="#000"/></svg>');
-let AC;const note=(f,d,v,ty)=>{try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=ty||'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+Math.min(.05,d/3));g.gain.linearRampToValueAtTime(0,t+d);o.connect(g).connect(AC.destination);o.start();o.stop(t+d)}catch(e){}};
+let AC,MB=null,musWant=false;const note=(f,d,v,ty,bus)=>{try{AC=AC||new AudioContext();if(AC.state=='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=ty||'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+Math.min(.05,d/3));g.gain.linearRampToValueAtTime(0,t+d);if(bus&&!MB){MB=AC.createGain();MB.connect(AC.destination)}o.connect(g).connect(bus?MB:AC.destination);o.start();o.stop(t+d)}catch(e){}};
 const sfx=k=>{if(cfg.snd)({turn:()=>{note(660,.3,.06);note(880,.4,.05)},hit:()=>note(120,.25,.12,'triangle'),play:()=>note(440,.15,.05),draw:()=>note(520,.08,.04),win:()=>{note(523,.3,.07);note(659,.4,.07);note(784,.7,.07)},lose:()=>{note(220,.5,.07);note(165,.9,.07)}})[k]()};
-let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02));f();mu=setInterval(f,4000)};
+let mu;
+/* หยุดเพลงทันที (ตัดเสียงที่กำลังเล่นค้างอยู่ด้วย) — เสียงเอฟเฟกต์ไม่โดน */
+const stopMusic=()=>{clearInterval(mu);mu=0;if(MB&&AC){const b=MB;MB=null;try{b.gain.cancelScheduledValues(AC.currentTime);b.gain.setTargetAtTime(0,AC.currentTime,.1)}catch(e){}setTimeout(()=>{try{b.disconnect()}catch(e){}},1200)}};
+const music=on=>{stopMusic();if(on)musWant=true;if(!cfg.mus||!(on||cur)||!musWant)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02,'sine',1));f();mu=setInterval(f,4000)};
+const musOff=()=>{musWant=false;stopMusic()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMusic();else if(musWant&&cur)music()});
+addEventListener('pagehide',stopMusic);
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
 const info=x=>x.tk?{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'}:C[x.id]||{n:'?',t:'',e:''};
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
@@ -319,8 +345,8 @@ if(m.t=='fst'){FST=m.l;const e=$('frl');e&&(e.innerHTML=frHtml())}if(m.t=='inv'&
 if(m.t=='lobby'){$('lobby').hidden=true;$('md').hidden=true;$('md').dataset.pg='';$('room').hidden=false;RM=m;RMX=m.exp?Date.now()+m.exp:0;roomUI();if(INV){send({t:'finv',name:INV,room:cur});INV=null;toast('ส่งคำเชิญแล้ว')}}
 if(m.t=='s'){DLAT=Date.now();if(RJ){RJ=null;$('rjp').hidden=true;$('rjp').dataset.on=''}if(ffPending){ffPending=0;if(!m.s.over)send({t:'surrender',ff:1})}S=m.s;sel=mode=atk=null;pay=[];supl=[];$('lobby').hidden=true;$('room').hidden=true;$('md').hidden=true;$('game').hidden=false;document.body.classList.add('ing');render()}}}
 const send=m=>ws&&ws.readyState==1&&ws.send(JSON.stringify(m));
-function go(){if(!rm.value)return alert('ใส่รหัสห้อง');music();wake();cur=rm.value;send({t:'join',room:rm.value})}
-function mkroom(){const c=Math.random().toString(36).slice(2,6).toUpperCase();music();wake();cur=c;send({t:'join',room:c,create:1})}
+function go(){if(!rm.value)return alert('ใส่รหัสห้อง');music(1);wake();cur=rm.value;send({t:'join',room:rm.value})}
+function mkroom(){const c=Math.random().toString(36).slice(2,6).toUpperCase();music(1);wake();cur=c;send({t:'join',room:c,create:1})}
 function copyCode(){try{navigator.clipboard.writeText(cur)}catch(e){}toast('คัดลอกรหัสห้องแล้ว')}
 function mk(){const c=prompt('ชื่อโค้ด (A-Z 0-9)');if(c)send({t:'mkcode',c,gems:prompt('Gem ที่ได้ (0=ไม่มี)','0'),art:prompt('จำนวนการ์ดอาร์ตสุ่ม (0=ไม่มี)','0')})}
 function doAuth(t){send({t,name:aname.value,pw:apass.value})}
@@ -338,6 +364,26 @@ let DV=[];
 function dvs(){md.className='';const row=c=>{const d=C[c.id]||{n:c.id};return`<div class="rw"><span class="th" onclick="zoom('${c.id}',0)" style="${art(c.id)}"></span><a onclick="zoom('${c.id}',0)">${esc(d.n)}</a><small>${c.id}</small><button onclick="dvm(${c.u},'hand')">มือ</button><button onclick="dvm(${c.u},'hell')">นรก</button><button onclick="dvp(${c.u},1)">บนสุด</button><button onclick="dvp(${c.u},0)">ใต้เด็ค</button></div>`};
 $('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button><button onclick="send({t:'dshuf'});md.hidden=true">🔀 สับเด็คแล้วปิด</button><br>การ์ดในเด็ค (บนสุดอยู่บน) ${DV.length} ใบ${DV.map(row).join('')}</div>`;$('md').hidden=false}
 const dvm=(u,to)=>{send({t:'dmove',u,to});DV=DV.filter(x=>x.u!=u);dvs()},dvp=(u,t)=>{send({t:'dpos',u,top:t});DV=DV.filter(x=>x.u!=u);dvs()};
+
+/* ===== v9: เลือกเด็ค / รูปเด็คที่จัดเอง ===== */
+let MYDK=null;
+const dkArt=n=>{const k=((ME||{}).decks||{})[n];if(!k)return'';const id=k.main.find(i=>C[i]&&C[i].o=='Only #1');if(!id)return'';const rk=k.vr&&Object.keys(k.vr).find(x=>x.startsWith(id+'|'));return art(id,rk?rk.split('|')[1]:undefined)||''};
+const pickD=(kind,v)=>{MYDK=kind+':'+v;send(kind=='pre'?{t:'deck',pre:v}:{t:'deck',mine:v});$('md').hidden=true};
+function deckBtn(){const m=RM,me2=(m.players||[]).find(p=>p&&p.name==(ME||{}).name),dk=me2&&me2.ready?(me2.dk||MYDK):null;
+if(!dk)return`<button class="dbtn" onclick="deckPicker()"><div class="dth">🃏</div><div><b>เลือกเด็ค</b><small>แตะเพื่อเลือกเด็คที่จะใช้เล่น</small></div></button>`;
+const [kind,v]=dk.split(/:(.*)/s),pre=kind=='pre';
+return`<button class="dbtn set" onclick="deckPicker()"><div class="dth" style="${pre?'':dkArt(v)}">${pre?`<img src="/${v}.webp" onerror="this.remove()">`:dkArt(v)?'':'🃏'}</div><div><b>${esc(pre?((ST[v]||{}).name||v):v)}</b><small>${pre?v+' · Starter':'เด็คของฉัน'} · แตะเพื่อเปลี่ยนเด็ค</small></div></button>`}
+function deckPicker(){if(!ME)return;md.className='dpk';const my=Object.keys(ME.decks||{}),st=['SD01','SD02','SD03'],bo=(ME.bought||[]).filter(k=>!st.includes(k)),cu=MYDK,
+tS=k=>`<button class="dtile${cu=='pre:'+k?' on':''}" onclick="pickD('pre','${k}')"><div class="dimg"><img src="/${k}.webp" onerror="this.remove()"></div><b>${esc((ST[k]||{}).name||k)}</b><small>${k}</small></button>`,
+tM=n=>{const a=dkArt(n);return`<button class="dtile${cu=='mine:'+n?' on':''}" data-d="${esc(n)}" onclick="pickD('mine',this.dataset.d)"><div class="dimg" style="${a}">${a?'':'🃏'}</div><b>${esc(n)}</b><small>เด็คของฉัน</small></button>`};
+$('md').innerHTML=`<div class="in wide"><div class="bh1" style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:1.2em">🃏 เลือกเด็ค</b><button class="xb" onclick="md.hidden=true">✕</button></div>
+${my.length?`<div class="dsec"><h3>🃏 เด็คของฉัน (${my.length})</h3><div class="dgrid">${my.map(tM).join('')}</div></div>`:''}
+<div class="dsec"><h3>📘 Starter Deck</h3><div class="dgrid">${st.map(tS).join('')}</div></div>
+${bo.length?`<div class="dsec"><h3>🛒 เด็คที่ซื้อ (${bo.length})</h3><div class="dgrid">${bo.map(tS).join('')}</div></div>`:''}
+<small style="opacity:.7">อยากได้เด็คใหม่: หน้าหลัก → จัดเด็ค (เด็คที่จัดเองจะแสดงเป็นรูปการ์ด Only #1)</small></div>`;md.hidden=false}
+const NEWT={};
+function nwFx(){const now=Date.now();[...$('hand').querySelectorAll('.c.nw')].forEach(c=>{const w=NEWT[+c.dataset.u];if(!w)return;const r=c.getBoundingClientRect();c.style.setProperty('--fx',(innerWidth-r.left+40)+'px');c.style.setProperty('--fy',(-(r.top*.5))+'px');c.style.setProperty('--dl',(w.d-(now-w.t))+'ms')})}
+let OPN=null;
 const RW={C:0,R:1,SR:2,UR:3,SCR:4,SEC:5,UBR:6,CBR:7,PR:8};
 let BAN=null;fetch('/banlist.json').then(r=>r.json()).then(j=>{if(j&&j.ban){BAN=j;if(typeof bd!='undefined'&&bd&&!$('md').hidden&&md.className=='dkb')bdr()}}).catch(()=>{});
 const bsync=()=>{bd.m={};bd.l={};Object.entries(bd.v||{}).forEach(([k,n])=>{if(n<=0)return;const i=k.split('|')[0],c=C[i];if(!c)return;const o=c.t=='Life'?bd.l:bd.m;o[i]=(o[i]||0)+n})};
@@ -368,7 +414,7 @@ tile=k=>{const[i,r]=k.split('|'),c=C[i],a=art(i,r),v=bd.v[k]||0,tot=(c.t=='Life'
 $('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><b>จัดเด็ค</b><div class="bars"><div class="bar2"><i class="${mn==50?'ok':''}" style="width:${Math.min(100,mn*2)}%"></i><span>Main ${mn}/50</span></div><div class="bar2"><i class="${ln==5?'ok':''}" style="width:${Math.min(100,ln*20)}%"></i><span>LIFE ${ln}/5</span></div></div><button class="xb" onclick="md.hidden=true">✕</button></div>
 <div class="bh2"><input class="pill" value="${esc(bd.n)}" placeholder="ชื่อเด็ค" maxlength="20" onchange="bd.n=this.value;bdr()"><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button>${ME.decks[(bd.n||'').trim()]?'<button class="dng xb" onclick="delDeck()">🗑</button>':''}</div>
 ${okk?'<div class="okb">✔ เด็คนี้ถูกกฎและแบนลิสต์ บันทึกได้</div>':`<div class="mis"><b>⚠ ยังบันทึกไม่ได้ — แก้ตามนี้:</b><ul>${P.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`}
-<div class="chips"><span class="lab">โหลดเด็ค:</span>${Object.keys(ME.decks).map(n=>`<button class="chip${n==bd.n?' on':''}" data-d="${esc(n)}" onclick="ldd(this.dataset.d)">${esc(n)}</button>`).join('')||'<small>ยังไม่มีเด็คที่บันทึก</small>'}</div>
+<div class="myd"><span class="lab">เด็คของฉัน (แตะเพื่อโหลด):</span><div class="mydg">${Object.keys(ME.decks).map(n=>`<button class="mdt${n==bd.n?' on':''}" data-d="${esc(n)}" onclick="ldd(this.dataset.d)"><div class="mdi" style="${dkArt(n)}">${dkArt(n)?'':'🃏'}</div><small>${esc(n)}</small></button>`).join('')||'<small>ยังไม่มีเด็คที่บันทึก</small>'}</div></div>
 <div class="srch"><span>🔍</span><input placeholder="ค้นหาชื่อ/รหัสการ์ด" value="${esc(bd.q)}" onchange="bd.q=this.value;bd.lim=60;bdr()"></div>
 <div class="chips">${[['','ทั้งหมด'],['Avatar','Avatar'],['Magic','Magic'],['Construct','Construct'],['Life','LIFE']].map(([a,b])=>`<button class="chip${bd.t==a?' on':''}" onclick="bd.t='${a}';bd.lim=60;bdr()">${b}</button>`).join('')}</div>
 <div class="seg"><button class="${bd.tab=='own'?'on':''}" onclick="bd.tab='own';bd.lim=60;bdr()">การ์ดที่มี</button><button class="${bd.tab=='deck'?'on':''}" onclick="bd.tab='deck';bd.lim=60;bdr()">ในเด็ค</button></div><small style="opacity:.7">พบ ${keys.length} รายการ (แยกตามเรทติ้ง แต่นับกฎรวมตามชื่อ) · แตะรูป = ดูรายละเอียด</small></div><div class="dg">${L.map(tile).join('')||'<p>ไม่พบการ์ด</p>'}</div>${keys.length>L.length?`<p style="text-align:center"><button onclick="bd.lim+=60;bdr()">แสดงเพิ่ม</button></p>`:''}</div>`;$('md').scrollTop=sc}
@@ -381,7 +427,7 @@ let FST=[],INV=null;
 const frHtml=()=>{const m={};FST.forEach(f=>m[f.name]=f);return ME.fr.map(n=>{const f=m[n]||{},tx=f.st=='play'?'🎮 กำลังแข่ง':f.st=='room'?'🚪 อยู่ในห้อง':f.on?'🟢 ออนไลน์':'⚫ ออฟไลน์';return`<div class="join" style="margin:4px 0"><b style="flex:1">👤 ${esc(n)}<br><small>${tx}</small></b><button class="pri" ${f.on&&!f.st?'':'disabled'} data-n="${esc(n)}" onclick="invF(this.dataset.n)">🎮 เชิญ</button><button ${f.st=='play'?'':'disabled'} data-n="${esc(n)}" onclick="send({t:'spec',name:this.dataset.n})">👁 ดู</button></div>`}).join('')||'<small>ยังไม่มีเพื่อน</small>'};
 const invF=n=>{INV=n;mkroom()};
 const showInv=(from,code)=>{const e=$('inv');e.innerHTML=`<b>${esc(from)}</b> ชวนเล่นห้อง <b>${esc(code)}</b><br><button class="pri" onclick="acceptInv('${esc(code)}')">เข้าร่วม</button><button onclick="$('inv').hidden=true">ไม่ไป</button>`;e.hidden=false;sfx('turn')};
-const acceptInv=code=>{$('inv').hidden=true;if(cur)return;music();wake();cur=code;send({t:'join',room:code})};
+const acceptInv=code=>{$('inv').hidden=true;if(cur)return;music(1);wake();cur=code;send({t:'join',room:code})};
 setInterval(()=>{if(!$('md').hidden&&$('md').dataset.pg=='room')send({t:'fstat'})},5000)
 function fillSv(){const e=$('sv');if(!e||!ME)return;e.innerHTML=['SD01','SD02','SD03',...ME.bought].map(k=>`<button class="chip" onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(ME.decks).map(n=>`<button class="chip" data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">🃏 ${esc(n)}</button>`).join('')}
 function roomUI(){const m=RM;if(!m||!ME)return;const own=m.owner==ME.name,two=m.players.length>1,rdy=two&&m.players.every(p=>p.ready);
@@ -389,7 +435,7 @@ const seg=(k,vals,cu)=>`<div class="seg">${vals.map(([v,t])=>`<button class="${c
 $('room').innerHTML=`<div class="rmh"><button class="xb" onclick="location.reload()">←</button><div><small>รหัสห้อง (แตะเพื่อคัดลอก)</small><div class="rcode" onclick="copyCode()">${esc((cur||'').toUpperCase())}</div></div><span id="rexp"></span></div>
 <div class="plr">${[0,1].map(i=>{const p=m.players[i];return p?`<div class="pc2${p.ready?' rdy':''}"><div class="av">${esc((p.name||'?')[0])}</div><b>${esc(p.name)}</b><small>${i==0?'เจ้าห้อง · ':''}${p.ready?'✓ เลือกเด็คแล้ว':'กำลังเลือกเด็ค…'}</small></div>`:`<div class="pc2 wt"><div class="av spin">⏳</div><b>รอผู้เล่นเข้าห้อง…</b><small>ส่งรหัสให้เพื่อน</small></div>`}).join('<div class="vs">VS</div>')}</div>
 <div class="cardx"><h3>⚙ กติกาห้อง ${own?'':'<small>(เจ้าห้องเป็นคนตั้ง)</small>'}</h3><div class="row3"><span>⏱ เวลาต่อฝ่าย</span>${seg('clock',[[0,'ไม่จำกัด'],[5,'5 นาที'],[10,'10 นาที'],[20,'20 นาที']],m.clock)}</div><div class="row3"><span>⚡ เวลา React</span>${seg('react',[[0,'ไม่จำกัด'],[10,'10 วิ'],[20,'20 วิ'],[30,'30 วิ']],m.react)}</div><div class="row3"><div class="pair"><div><span>🚫 แบนลิสต์ (การ์ดบาป)</span>${seg('ban',[[1,'เปิด'],[0,'ปิด']],m.ban?1:0)}</div><div><span>🛡 ยกเว้นเด็ค Starter</span>${seg('exs',[[1,'เปิด'],[0,'ปิด']],m.exs===false?0:1)}</div></div></div>${m.ban&&m.exs===false?'<small style="opacity:.75">ห้องนี้ไม่ยกเว้น Starter — เด็ค Starter ที่ผิดแบนลิสต์ (เช่น SD01, SD02) จะเลือกเล่นไม่ได้</small>':''}</div>
-<div class="cardx"><h3>🃏 เลือกเด็คของคุณ</h3><div id="sv" class="chips"></div></div>
+<div class="cardx"><h3>🃏 เด็คที่ใช้เล่น</h3>${deckBtn()}</div>
 <div class="cta">${own?`<button class="pri big" ${rdy?'':'disabled'} onclick="send({t:'start'})">▶ เริ่มเกม</button><small>${rdy?'ทั้งสองฝ่ายพร้อมแล้ว':two?'รอผู้เล่นทั้งสองเลือกเด็คให้ครบ':'รอผู้เล่นอีกฝ่ายเข้าห้อง'}</small>`:`<div class="wait">${rdy?'⏳ รอเจ้าห้องกดเริ่มเกม…':'เลือกเด็คของคุณให้พร้อม'}</div>`}</div>`;fillSv();rexp()}
 const rexp=()=>{const e=$('rexp');if(!e)return;if(RM&&RM.players.length<2&&RMX){const t=Math.max(0,Math.ceil((RMX-Date.now())/1e3));e.textContent='⏳ รหัสหมดอายุใน '+Math.floor(t/60)+':'+String(t%60).padStart(2,'0')}else e.textContent=''};setInterval(rexp,1000);
 function skinAp(){document.body.dataset.board=(ME&&ME.eq&&ME.eq.board)||'classic';document.body.dataset.cback=(ME&&ME.eq&&ME.eq.card)||'black'}
@@ -451,9 +497,9 @@ const piles=(p,o)=>{const dk=p.dk||[],t=p.hell[p.hell.length-1],d=dk[dk.length-1
 return`<div class="z pl" data-l="นรก" data-h="${o?1:0}" style="${zpos('hell',o)};--n:1"><div class="zin">${pc(t)}</div><b>${p.hell.length}</b></div><div class="z pl" data-l="มิติมืด" data-dk="${o?1:0}" style="${zpos('dk',o)};--n:1"><div class="zin">${pc(d)}</div>${dk.length?`<b>${dk.length}</b>`:''}</div><div class="z pl" data-l="Deck" data-dp="${o?1:0}" style="${zpos('dp',o)};--n:1"><div class="zin"><div class="c bk"></div></div><b>${p.deck}</b></div>`};
 const landZ=o=>{const L=S.land&&((S.land.o==S.i)!=!!o)?S.land:null;return`<div class="z" data-l="Land" style="${zpos('land',o)};--n:1"><div class="zin">${L?cd(L.c,'land',o):''}</div></div>`};
 const mat=(p,o)=>`<div class="mw"><div class="mat ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}"><div class="mimg"></div>${life(p,o)}${landZ(o)}${[['co',p.co],['av',p.av],['mg',p.mg]].map(([z,a])=>row(a,z,o)).join('')}${piles(p,o)}</div></div>`;
-const opHand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12);return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${Array.from({length:k},(_,i)=>`<div class="c bk" style="--r:${((i-(k-1)/2)*3).toFixed(1)}deg"></div>`).join('')}</div><span class="ohn">✋ ${n}</span></div>`};
+const opHand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12),add=OPN!=null&&n>OPN?Math.min(n-OPN,k):0;OPN=n;return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${Array.from({length:k},(_,i)=>`<div class="c bk${i>=k-add?' nw':''}" style="--r:${((i-(k-1)/2)*3).toFixed(1)}deg;${i>=k-add?`--fx:55vw;--fy:10vh;--dl:${(i-(k-add))*140}ms`:''}"></div>`).join('')}</div><span class="ohn">✋ ${n}</span></div>`};
 const pi=(p,o)=>`<div class="pi">${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
-function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u);NEW=new Set(handSeen?hs.filter(u=>!handSeen.has(u)):[]);handSeen=new Set(hs)}
+function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u),now=Date.now();let ki=0;if(handSeen)hs.forEach(u=>{if(!handSeen.has(u))NEWT[u]={t:now,d:ki++*140}});NEW=new Set(hs.filter(u=>NEWT[u]&&now-NEWT[u].t<750+NEWT[u].d));handSeen=new Set(hs)}
 $('tb').innerHTML=tbHtml();
 $('mid').innerHTML=`<div class="orow">${opHand(o)}${pi(o,1)}</div>`+mat(o,1)+mat(m,0)+pi(m,0);
 $('hand').innerHTML=m.hand.filter(x=>!(mode=='pay'&&pay.includes(x.u))).map(x=>cd(x,'hand',0)).join('');ptrUI();if(hovK>=0&&!(dg&&dg.on)){const hc=$('hand').children[hovK];hc&&hc.classList.add('h')}
@@ -462,7 +508,7 @@ document.querySelectorAll('.p').forEach(s=>{const u=s.dataset.k,v=+s.textContent
 if(S.mine&&lastMine===false)sfx('turn');lastMine=S.mine;
 if(S.log.length>lastLog&&/LIFE หงาย|สู้|ตาย/.test(S.log.slice(lastLog).join()))sfx('hit');lastLog=S.log.length;
 if(S.ev&&S.ev.n!=lastEv){lastEv=S.ev.n;zoom(S.ev.id,2400);sfx('play')}
-if(sel&&!find(sel))sel=null;diceUI();akUI();if((!sel&&S.phase!='mull')||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI();handFit();playFx();updPos()}
+if(sel&&!find(sel))sel=null;diceUI();akUI();if((!sel&&S.phase!='mull')||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI();handFit();nwFx();playFx();updPos()}
 let tt;const toast=t=>{const e=$('ts');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,1600)};
 function drt(){const d=S.dr;if(!d||d.n==lastDr)return;lastDr=d.n;if(d.c>0){toast((d.who==S.i?'คุณ':'ศัตรู')+'จั่ว '+d.c+' ใบ');sfx('draw')}}
 function rx(){const e=$('rx'),p=S.pend,R=S.me.hand.filter(x=>{const c=info(x);return c.t=='Magic'&&c.st=='React'});
@@ -478,7 +524,7 @@ const ld=b.res=='lose'||b.res=='both',rd=b.res=='win'||b.res=='both',L=cv(b.aid,
 if(b.tg=='life'){const a=b.cid?art(b.cid):'';R=`<div class="bk2 ra"><div class="bcd${a?'':' nt'}" style="${a}">${a?'':esc(b.cid?(C[b.cid]||{}).n||'LIFE':'LIFE')}</div><s class="bp">LIFE</s></div>`;t=b.res=='ko'?'LIFE หมด! จบเกม':b.res=='life'?esc(b.an)+' ทำให้ LIFE หงาย!':'Power 0 ไม่สร้างความเสียหาย'}
 else{R=cv(b.did,b.dn,b.pd,'ra'+(rd?' dead':''));t={win:esc(b.an)+' ชนะ!',lose:esc(b.an)+' พ่ายแพ้',both:'ตายทั้งคู่!',none:'เสมอ ไม่มีใครตาย'}[b.res]}
 const e=$('bt2');e.innerHTML=`<div class="bw"><div class="bs2">${L}<div class="vs">⚔</div>${R}</div><div class="tx">${t}</div></div>`;e.hidden=false;clearTimeout(btl.t);btl.t=setTimeout(()=>e.hidden=true,2400)}
-function endUI(){const e=$('end');if(!S||!S.over){e.hidden=true;e.dataset.k='';endHide=false;GAIN=0;RMQ=0;MYRM=0;return}
+function endUI(){if(S&&S.over&&musWant)musOff();const e=$('end');if(!S||!S.over){e.hidden=true;e.dataset.k='';endHide=false;GAIN=0;RMQ=0;MYRM=0;return}
 if(S.spec){e.className='';e.hidden=false;e.innerHTML='<div class="eb"><div class="et">🏁</div><h1>จบการแข่ง</h1><div>'+esc(S.over)+'</div><button onclick="location.reload()">🏠 ออก</button></div>';return}
 if(endHide){e.hidden=true;return}
 const w=S.won,m=S.me,o=S.op,lf=p=>p.life.filter(l=>!l.up).length;
@@ -640,10 +686,10 @@ function rjUI(){const e=$('rjp');if(!RJ){e.hidden=true;e.dataset.on='';return}e.
 e.innerHTML=`<div class="rji"><div class="rjh">🚨 รีบเข้าด่วน!!!</div><div class="rjs">คุณหลุดจากเกม — กลับเข้าให้ทันภายใน</div><div class="rjt" id="rjt">${fmt(RJ.end-Date.now())}</div><div class="rjm">ไม่กลับภายในเวลา = ปรับแพ้อัตโนมัติ</div><div class="rjb"><button class="pri" onclick="rjGo()">🔄 รีจอย</button><button class="dng" onclick="rjFF()">🏳 ยอมแพ้</button></div></div>`}
 function rjTick(){if(!RJ)return;const t=Math.max(0,Math.ceil((RJ.end-Date.now())/1e3)),e=$('rjt');if(e){e.textContent=fmt(RJ.end-Date.now());e.classList.toggle('urg',t<=30)}
 if(t<=0){RJ=null;ffPending=0;$('rjp').hidden=true;$('rjp').dataset.on='';try{sessionStorage.lostShown='1'}catch(x){}missedUI({over:'หลุดการเชื่อมต่อเกิน 3 นาที — แพ้อัตโนมัติ',won:false,gain:0})}}
-function rjGo(){if(!RJ)return;const code=RJ.room||cur;if(!code)return;cur=code;music();wake();const b=document.querySelector('#rjp .pri');b&&(b.textContent='⏳ กำลังเชื่อมต่อ…');if(ws&&ws.readyState==1)send({t:'join',room:code});else if(!ws||ws.readyState>1)conn()}
+function rjGo(){if(!RJ)return;const code=RJ.room||cur;if(!code)return;cur=code;music(1);wake();const b=document.querySelector('#rjp .pri');b&&(b.textContent='⏳ กำลังเชื่อมต่อ…');if(ws&&ws.readyState==1)send({t:'join',room:code});else if(!ws||ws.readyState>1)conn()}
 function rjFF(){if(!confirm('ยืนยันยอมแพ้ ?'))return;ffPending=1;rjGo()}
 function missedUI(m){const e=$('end'),w=m.won;e.className=w?'win':'lose';e.hidden=false;e.dataset.k='missed';
-e.innerHTML=`<div class="eb pop"><div class="et">${w?'🏆':'💀'}</div><h1>${w?'ชนะ!':'พ่ายแพ้'}</h1><div>${esc(m.over||'')}</div>${m.gain?`<div class="gm">💎 +${m.gain}</div>`:''}<div class="rjm" style="margin:8px 0">${w?'ผลแมตช์ที่คุณไม่ได้อยู่ตอนจบ':'คุณกลับเข้าเกมไม่ทันภายใน 3 นาที'}</div><button class="pri" onclick="$('end').hidden=true;$('end').dataset.k='';if(S)location.reload()">🏠 กลับหน้าหลัก</button></div>`;sfx(w?'win':'lose')}
+e.innerHTML=`<div class="eb pop"><div class="et">${w?'🏆':'💀'}</div><h1>${w?'ชนะ!':'พ่ายแพ้'}</h1><div>${esc(m.over||'')}</div>${m.gain?`<div class="gm">💎 +${m.gain}</div>`:''}<div class="rjm" style="margin:8px 0">${w?'ผลแมตช์ที่คุณไม่ได้อยู่ตอนจบ':'คุณกลับเข้าเกมไม่ทันภายใน 3 นาที'}</div><button class="pri" onclick="$('end').hidden=true;$('end').dataset.k='';if(S)location.reload()">🏠 กลับหน้าหลัก</button></div>`;sfx(w?'win':'lose');musOff()}
 setInterval(()=>{rjTick();const e=$('dcc');if(e&&S&&S.dl&&!S.spec)e.textContent=fmt(S.dl[1-S.i]-(Date.now()-DLAT))},1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!ws||ws.readyState>1))conn()});
 conn();
