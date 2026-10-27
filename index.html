@@ -300,6 +300,24 @@ body.dragging #hand .c.h{transform:none}
 #md.dkb .dg{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 #md.dkb .dc{gap:2px}#md.dkb .dc>b{font-size:.7em;line-height:1.15}#md.dkb .dc small{font-size:.6em}#md.dkb .fl{font-size:.58em;padding:0 3px}
 #md.dkb .ct{gap:2px}#md.dkb .ct button{padding:2px 8px;margin:0}#md.dkb .ct span{font-size:.8em}
+
+/* ===== v10 ===== */
+.flt{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+.fpan{border:1px solid #8884;border-radius:12px;padding:8px;margin:4px 0;display:flex;flex-direction:column;gap:8px;background:#0001}
+.fg{display:flex;flex-wrap:wrap;gap:5px;align-items:center}.fg .lab{flex-basis:100%;opacity:.7;font-size:.8em;font-weight:700}
+.fb{margin:0;padding:4px 10px;border-radius:9px;font-size:.85em;display:inline-flex;align-items:center;gap:5px}.fb i{font-style:normal;font-size:.8em;opacity:.6;background:#8883;border-radius:999px;padding:0 6px}
+.fb.on{background:#3b82f6;color:#fff;border-color:#3b82f6}.fb.on i{background:#fff3;opacity:1}
+#md.dvw .vg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.vt{display:flex;flex-direction:column;gap:2px;cursor:pointer}.vt small{font-size:.65em;line-height:1.15;text-align:center}
+.vi{position:relative;aspect-ratio:5/7;border-radius:6px;background-color:#0003;background-repeat:no-repeat;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.7em;text-align:center}
+.vn{position:absolute;right:3px;bottom:3px;background:#000c;color:#fff;border-radius:999px;padding:0 6px;font-size:.95em}
+.vbtn{font-size:.72em;background:#3b82f633;border:1px solid #3b82f688;border-radius:999px;padding:2px 10px;margin-top:2px}
+.mat.act::after{content:'';position:absolute;inset:-4px;border-radius:14px;border:4px solid var(--tc);box-shadow:0 0 16px var(--tc),inset 0 0 16px var(--tc);pointer-events:none;animation:tnp 1.2s ease-in-out infinite;z-index:6}
+.mat.me.act{--tc:#3df08a}.mat.op.act{--tc:#ff5468}
+.mat.act.tfl::after{animation:tnf 1.8s linear var(--fd,0ms) 1,tnp 1.2s ease-in-out calc(1.8s + var(--fd,0ms)) infinite}
+@keyframes tnp{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes tnf{0%,20%,40%,60%,80%{opacity:1;filter:brightness(1.9)}10%,30%,50%,70%,90%,100%{opacity:.12}}
+@media(min-width:900px){#md.dvw .vg{grid-template-columns:repeat(6,minmax(0,1fr))}}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -374,8 +392,8 @@ if(!dk)return`<button class="dbtn" onclick="deckPicker()"><div class="dth">🃏<
 const [kind,v]=dk.split(/:(.*)/s),pre=kind=='pre';
 return`<button class="dbtn set" onclick="deckPicker()"><div class="dth" style="${pre?'':dkArt(v)}">${pre?`<img src="/${v}.webp" onerror="this.remove()">`:dkArt(v)?'':'🃏'}</div><div><b>${esc(pre?((ST[v]||{}).name||v):v)}</b><small>${pre?v+' · Starter':'เด็คของฉัน'} · แตะเพื่อเปลี่ยนเด็ค</small></div></button>`}
 function deckPicker(){if(!ME)return;md.className='dpk';const my=Object.keys(ME.decks||{}),st=['SD01','SD02','SD03'],bo=(ME.bought||[]).filter(k=>!st.includes(k)),cu=MYDK,
-tS=k=>`<button class="dtile${cu=='pre:'+k?' on':''}" onclick="pickD('pre','${k}')"><div class="dimg"><img src="/${k}.webp" onerror="this.remove()"></div><b>${esc((ST[k]||{}).name||k)}</b><small>${k}</small></button>`,
-tM=n=>{const a=dkArt(n);return`<button class="dtile${cu=='mine:'+n?' on':''}" data-d="${esc(n)}" onclick="pickD('mine',this.dataset.d)"><div class="dimg" style="${a}">${a?'':'🃏'}</div><b>${esc(n)}</b><small>เด็คของฉัน</small></button>`};
+tS=k=>`<button class="dtile${cu=='pre:'+k?' on':''}" onclick="pickD('pre','${k}')"><div class="dimg"><img src="/${k}.webp" onerror="this.remove()"></div><b>${esc((ST[k]||{}).name||k)}</b><small>${k}</small><span class="vbtn" onclick="event.stopPropagation();viewDeck('pre','${k}','pick')">👁 ดูการ์ด</span></button>`,
+tM=n=>{const a=dkArt(n);return`<button class="dtile${cu=='mine:'+n?' on':''}" data-d="${esc(n)}" onclick="pickD('mine',this.dataset.d)"><div class="dimg" style="${a}">${a?'':'🃏'}</div><b>${esc(n)}</b><small>เด็คของฉัน</small><span class="vbtn" onclick="event.stopPropagation();viewDeck('mine',this.parentNode.dataset.d,'pick')">👁 ดูการ์ด</span></button>`};
 $('md').innerHTML=`<div class="in wide"><div class="bh1" style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:1.2em">🃏 เลือกเด็ค</b><button class="xb" onclick="md.hidden=true">✕</button></div>
 ${my.length?`<div class="dsec"><h3>🃏 เด็คของฉัน (${my.length})</h3><div class="dgrid">${my.map(tM).join('')}</div></div>`:''}
 <div class="dsec"><h3>📘 Starter Deck</h3><div class="dgrid">${st.map(tS).join('')}</div></div>
@@ -384,6 +402,18 @@ ${bo.length?`<div class="dsec"><h3>🛒 เด็คที่ซื้อ (${bo.
 const NEWT={};
 function nwFx(){const now=Date.now();[...$('hand').querySelectorAll('.c.nw')].forEach(c=>{const w=NEWT[+c.dataset.u];if(!w)return;const r=c.getBoundingClientRect();c.style.setProperty('--fx',(innerWidth-r.left+40)+'px');c.style.setProperty('--fy',(-(r.top*.5))+'px');c.style.setProperty('--dl',(w.d-(now-w.t))+'ms')})}
 let OPN=null;
+const tgf=(g,v)=>{const a=bd.f[g],i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);bd.lim=60;bdr()},clrf=()=>{bd.f={s:[],c:[],g:[],k:[]};bd.lim=60;bdr()};
+
+let VB=null;
+function viewDeck(kind,v,back){VB=back;let main=[],life=[],title;
+if(kind=='pre'){const d=ST[v];if(!d)return;title=v+' '+d.name;main=d.main.map(([id,n,r])=>({id,n,r}));life=d.life.map(([id,n,r])=>({id,n,r}))}
+else{const d=(ME.decks||{})[v];if(!d)return;title=v;if(d.vr)Object.entries(d.vr).forEach(([k,n])=>{const[i,r]=k.split('|');(C[i]&&C[i].t=='Life'?life:main).push({id:i,n,r})});else{const c={};d.main.forEach(i=>c[i]=(c[i]||0)+1);Object.entries(c).forEach(([id,n])=>main.push({id,n}));const l={};d.life.forEach(i=>l[i]=(l[i]||0)+1);Object.entries(l).forEach(([id,n])=>life.push({id,n}))}}
+const srt=a=>a.filter(x=>C[x.id]).sort((p,q)=>p.id<q.id?-1:p.id>q.id?1:0),tot=a=>a.reduce((x,y)=>x+y.n,0),
+tl=x=>{const c=C[x.id],a=art(x.id,x.r||undefined);return`<div class="vt" onclick="zoom('${x.id}',6000,'${x.r||''}')"><div class="vi${a?'':' nt'}" style="${a}">${a?'':esc(c.n)}<b class="vn">×${x.n}</b>${x.r?`<span class="rb r${x.r}">${x.r}</span>`:''}</div><small>${esc(c.n)}${c.o=='Only #1'?' ⭐':''}</small></div>`};
+main=srt(main);life=srt(life);md.className='dvw';md.dataset.pg='';
+$('md').innerHTML=`<div class="in wide"><div class="bh1" style="display:flex;align-items:center;gap:8px"><button class="xb" onclick="vBack()">←</button><b style="flex:1">👁 ${esc(title)}</b><button class="xb" onclick="md.hidden=true">✕</button></div>
+<h3>Main · ${tot(main)} ใบ</h3><div class="vg">${main.map(tl).join('')}</div><h3>LIFE · ${tot(life)} ใบ</h3><div class="vg">${life.map(tl).join('')}</div><small style="opacity:.7">แตะการ์ดเพื่อดูรายละเอียด</small></div>`;md.hidden=false;md.scrollTop=0}
+const vBack=()=>{VB=='shop'?shop():VB=='pick'?deckPicker():md.hidden=true};
 const RW={C:0,R:1,SR:2,UR:3,SCR:4,SEC:5,UBR:6,CBR:7,PR:8};
 let BAN=null;fetch('/banlist.json').then(r=>r.json()).then(j=>{if(j&&j.ban){BAN=j;if(typeof bd!='undefined'&&bd&&!$('md').hidden&&md.className=='dkb')bdr()}}).catch(()=>{});
 const bsync=()=>{bd.m={};bd.l={};Object.entries(bd.v||{}).forEach(([k,n])=>{if(n<=0)return;const i=k.split('|')[0],c=C[i];if(!c)return;const o=c.t=='Life'?bd.l:bd.m;o[i]=(o[i]||0)+n})};
@@ -408,8 +438,15 @@ if(c.onlySymbol&&(!only||C[only].s!==c.onlySymbol)){P.push(c.msg+' (หรือ
 if(c.ifOnlyName&&only&&C[only].n.includes(c.ifOnlyName)&&c.avatarsSymbol){const b=av.filter(d=>d.s!==c.avatarsSymbol&&!(d.e||'').includes('symbol '+c.avatarsSymbol));if(b.length){P.push(c.msg+' — เอา Avatar เหล่านี้ออก: '+lst(b));b.forEach(d=>bad.add(d.n));bad.add(C[only].n)}}})}
 return{P,bad}}
 function bdr(){const sc=$('md').scrollTop;bd.v=bd.v||{};bd.tab=bd.tab||'own';bd.lim=bd.lim||60;const q=bd.q.toLowerCase(),{P,bad}=bchk(),mn=sm(bd.m),ln=sm(bd.l),okk=!P.length,
-keys=(bd.tab=='own'?Object.keys(ME.cards).filter(k=>ME.cards[k]>0):Object.keys(bd.v).filter(k=>bd.v[k]>0)).filter(k=>{const c=C[k.split('|')[0]];return c&&(!bd.t||c.t==bd.t)&&(!q||c.n.toLowerCase().includes(q)||c.id.toLowerCase().includes(q))}).sort((a,b)=>{const[x,r]=a.split('|'),[y,t]=b.split('|');return x<y?-1:x>y?1:(RW[r]??9)-(RW[t]??9)}),L=keys.slice(0,bd.lim),
+ff=bd.f||(bd.f={s:[],c:[],g:[],k:[]}),bkt=c=>c.c==null?'-':String(Math.min(c.c,7)),fv=(g,c)=>g=='s'?c.s:g=='c'?bkt(c):g=='g'?String(c.g):c.gc,
+tk=bd.tab=='own'?Object.keys(ME.cards).filter(k=>ME.cards[k]>0):Object.keys(bd.v).filter(k=>bd.v[k]>0),
+bs=tk.filter(k=>{const c=C[k.split('|')[0]];return c&&(!bd.t||c.t==bd.t)&&(!q||c.n.toLowerCase().includes(q)||c.id.toLowerCase().includes(q))}),
+ffn=k=>{const c=C[k.split('|')[0]];return(!ff.s.length||ff.s.includes(c.s))&&(!ff.c.length||ff.c.includes(bkt(c)))&&(!ff.g.length||ff.g.includes(String(c.g)))&&(!ff.k.length||ff.k.includes(c.gc))},
+nf=ff.s.length+ff.c.length+ff.g.length+ff.k.length,
+keys=bs.filter(ffn).sort((a,b)=>{const[x,r]=a.split('|'),[y,t]=b.split('|');return x<y?-1:x>y?1:(RW[r]??9)-(RW[t]??9)}),L=keys.slice(0,bd.lim),
 fl=c=>{const a=[];if(BAN){if(BAN.ban.includes(c.n))a.push('🚫 แบน');else if(BAN.lim[c.n])a.push('⚠ จำกัด '+BAN.lim[c.n])}if(c.o=='Only #1')a.push('⭐ Only #1');return a.map(x=>`<em class="fl">${x}</em>`).join('')},
+fch=(g,vals,lab,fmt)=>{const L2=vals.map(v=>[v,bs.filter(k=>fv(g,C[k.split('|')[0]])===v).length]).filter(([v,n])=>n>0||ff[g].includes(v));return L2.length?`<div class="fg"><span class="lab">${lab}</span>${L2.map(([v,n])=>`<button class="fb${ff[g].includes(v)?' on':''}" data-v="${esc(v)}" onclick="tgf('${g}',this.dataset.v)">${fmt?fmt(v):esc(v)}<i>${n}</i></button>`).join('')}</div>`:''},
+symL=()=>{const m={};bs.forEach(k=>{const c=C[k.split('|')[0]];c.s&&(m[c.s]=(m[c.s]||0)+1)});ff.s.forEach(x=>m[x]=m[x]||0);return Object.keys(m).sort((a,b)=>m[b]-m[a])},
 tile=k=>{const[i,r]=k.split('|'),c=C[i],a=art(i,r),v=bd.v[k]||0,tot=(c.t=='Life'?bd.l:bd.m)[i]||0;return`<div class="dc${bad.has(c.n)?' bad':''}"><div class="di${a?'':' nt'}" onclick="zoom('${i}',0)" style="${a}">${a?'':esc(c.n)}<span class="rb r${r}">${r}</span></div><b>${esc(c.n)}</b><div>${fl(c)}</div><small>${c.t}${c.t!='Magic'&&c.c!=null?' · COST '+c.c:''}${c.p!=null?' · POWER '+c.p:''}</small><div class="ct"><button onclick="bdc('${k}',-1)">−</button><span>${v}<small> / ${ME.cards[k]||0}</small></span><button onclick="bdc('${k}',1)">+</button></div><small>ชื่อนี้ในเด็ค (รวมทุกเรทติ้ง): <b>${tot}</b></small></div>`};
 $('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><b>จัดเด็ค</b><div class="bars"><div class="bar2"><i class="${mn==50?'ok':''}" style="width:${Math.min(100,mn*2)}%"></i><span>Main ${mn}/50</span></div><div class="bar2"><i class="${ln==5?'ok':''}" style="width:${Math.min(100,ln*20)}%"></i><span>LIFE ${ln}/5</span></div></div><button class="xb" onclick="md.hidden=true">✕</button></div>
 <div class="bh2"><input class="pill" value="${esc(bd.n)}" placeholder="ชื่อเด็ค" maxlength="20" onchange="bd.n=this.value;bdr()"><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button>${ME.decks[(bd.n||'').trim()]?'<button class="dng xb" onclick="delDeck()">🗑</button>':''}</div>
@@ -417,6 +454,8 @@ ${okk?'<div class="okb">✔ เด็คนี้ถูกกฎและแบ�
 <div class="myd"><span class="lab">เด็คของฉัน (แตะเพื่อโหลด):</span><div class="mydg">${Object.keys(ME.decks).map(n=>`<button class="mdt${n==bd.n?' on':''}" data-d="${esc(n)}" onclick="ldd(this.dataset.d)"><div class="mdi" style="${dkArt(n)}">${dkArt(n)?'':'🃏'}</div><small>${esc(n)}</small></button>`).join('')||'<small>ยังไม่มีเด็คที่บันทึก</small>'}</div></div>
 <div class="srch"><span>🔍</span><input placeholder="ค้นหาชื่อ/รหัสการ์ด" value="${esc(bd.q)}" onchange="bd.q=this.value;bd.lim=60;bdr()"></div>
 <div class="chips">${[['','ทั้งหมด'],['Avatar','Avatar'],['Magic','Magic'],['Construct','Construct'],['Life','LIFE']].map(([a,b])=>`<button class="chip${bd.t==a?' on':''}" onclick="bd.t='${a}';bd.lim=60;bdr()">${b}</button>`).join('')}</div>
+<div class="flt"><button class="chip${nf?' on':''}" onclick="bd.fo=!bd.fo;bdr()">🔎 ตัวช่วยหา (เผ่า / Cost / Gem)${nf?' · '+nf:''} ${bd.fo?'▲':'▼'}</button>${nf?'<button class="chip" onclick="clrf()">✕ ล้างตัวกรอง</button>':''}</div>
+${bd.fo?`<div class="fpan">${fch('s',symL(),'เผ่า')}${fch('c',['0','1','2','3','4','5','6','7'],'COST',v=>v=='7'?'7+':v)}${fch('g',['0','1','2','3','4'],'GEM ◆',v=>'◆'+v)}${fch('k',['แดง','ฟ้า','ม่วง','เขียว'],'สี GEM',v=>`<span style="color:${KC[v]||'#999'}">●</span> ${v}`)}</div>`:''}
 <div class="seg"><button class="${bd.tab=='own'?'on':''}" onclick="bd.tab='own';bd.lim=60;bdr()">การ์ดที่มี</button><button class="${bd.tab=='deck'?'on':''}" onclick="bd.tab='deck';bd.lim=60;bdr()">ในเด็ค</button></div><small style="opacity:.7">พบ ${keys.length} รายการ (แยกตามเรทติ้ง แต่นับกฎรวมตามชื่อ) · แตะรูป = ดูรายละเอียด</small></div><div class="dg">${L.map(tile).join('')||'<p>ไม่พบการ์ด</p>'}</div>${keys.length>L.length?`<p style="text-align:center"><button onclick="bd.lim+=60;bdr()">แสดงเพิ่ม</button></p>`:''}</div>`;$('md').scrollTop=sc}
 function roomPg(){md.className='';$('md').dataset.pg='room';const q=ME.rq.length?`<h4>คำขอเป็นเพื่อน</h4>`+ME.rq.map(n=>`<div class="join" style="margin:4px 0"><b style="flex:1">${esc(n)}</b><button class="pri" data-n="${esc(n)}" onclick="send({t:'facc',name:this.dataset.n,ok:1})">รับ</button><button data-n="${esc(n)}" onclick="send({t:'facc',name:this.dataset.n,ok:0})">ปฏิเสธ</button></div>`).join(''):'';
 $('md').innerHTML=`<div class="in pg"><div class="ph2"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><h2>เล่นกับเพื่อน</h2></div>
@@ -455,7 +494,7 @@ const sbox=k=>{const u=((ST[k]||{}).main||[]).find(x=>x[2]=='UR');return`<div cl
 function shop(t){const y=t?0:$('md').scrollTop;if(t)SHT=t;md.className='dkb';$('md').dataset.pg='shop';const S_=['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
 const tabs=[['box','📦 BOX SET'],['st','🃏 STARTER'],['code','🎟 โค้ด'],['bsk','🗺 บอร์ด'],['csk','🂠 สกินการ์ด']];let body='';
 if(SHT=='box')body=`<div class="shg">`+S_.map(s=>`<div class="sh"><div class="bw">${bimg(s,box(s))}<button class="mgf" onclick="rates('${s}')">🔍</button></div><div><b>${s}</b><br><button onclick="buy('${s}',1)">1 ซอง 100💎</button><button onclick="buy('${s}',10)">10 ซอง 900💎</button></div></div>`).join('')+`</div>`;
-else if(SHT=='st')body=`<p>เด็คสำเร็จรูป ใบละ 1,500💎 (SD01–03 แจกฟรีตอนสมัคร)</p><div class="shg">`+Object.entries(ST).filter(([k])=>!/^SD0[123]$/.test(k)).map(([k,v])=>`<div class="sh">${bimg(k,sbox(k))}<div><b>${k}</b> ${esc(v.name)}<br>${(ME.bought||[]).includes(k)?'<span class="tagx">ซื้อแล้ว</span>':`<button class="pri" onclick="send({t:'buyst',set:'${k}'})">ซื้อ 1,500💎</button>`}</div></div>`).join('')+'</div><small>SD09 เร็วๆ นี้ (รอข้อมูล Cost/Gem/Power)</small>';
+else if(SHT=='st')body=`<p>เด็คสำเร็จรูป ใบละ 1,500💎 (SD01–03 แจกฟรีตอนสมัคร)</p><div class="shg">`+Object.entries(ST).filter(([k])=>!/^SD0[123]$/.test(k)).map(([k,v])=>`<div class="sh">${bimg(k,sbox(k))}<div><b>${k}</b> ${esc(v.name)}<br><button onclick="viewDeck('pre','${k}','shop')">👁 ดูการ์ดในเด็ค</button><br>${(ME.bought||[]).includes(k)?'<span class="tagx">ซื้อแล้ว</span>':`<button class="pri" onclick="send({t:'buyst',set:'${k}'})">ซื้อ 1,500💎</button>`}</div></div>`).join('')+'</div><small>SD09 เร็วๆ นี้ (รอข้อมูล Cost/Gem/Power)</small>';
 else if(SHT=='code')body=`<div class="cardx"><h3>🎟 ใช้โค้ด</h3><div class="join"><input id="cdi" class="pill" placeholder="กรอกโค้ด"><button class="pri" onclick="send({t:'code',c:cdi.value})">ใช้โค้ด</button></div></div>`;
 else body=`<div class="shg">${skinTab(SHT=='bsk'?'board':'card')}</div>`;
 $('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><b style="flex:1">🛒 ร้านค้า</b><span class="gm">💎 <b id="sgm">${ME.gems}</b></span></div><div class="gar">🎯 การันตี UR+ ในอีก <b>${Math.max(1,20-ME.pity)}</b> ซอง</div><div class="tabs">${tabs.map(([k,n])=>`<button class="${SHT==k?'on':''}" onclick="shop('${k}')">${n}</button>`).join('')}</div></div><div class="shb">${body}</div></div>`;$('md').hidden=false;$('md').scrollTop=y;const on=document.querySelector('.tabs .on');on&&on.scrollIntoView({inline:'center',block:'nearest'})}
@@ -496,10 +535,12 @@ const ZNm={hand:'มือ',av:'สนาม',hell:'นรก',deck:'Deck',mg:'M
 const piles=(p,o)=>{const dk=p.dk||[],t=p.hell[p.hell.length-1],d=dk[dk.length-1],pc=x=>x?`<div class="c im" style="${art(x.id)||''}">${art(x.id)?'':esc(info(x).n)}</div>`:'';
 return`<div class="z pl" data-l="นรก" data-h="${o?1:0}" style="${zpos('hell',o)};--n:1"><div class="zin">${pc(t)}</div><b>${p.hell.length}</b></div><div class="z pl" data-l="มิติมืด" data-dk="${o?1:0}" style="${zpos('dk',o)};--n:1"><div class="zin">${pc(d)}</div>${dk.length?`<b>${dk.length}</b>`:''}</div><div class="z pl" data-l="Deck" data-dp="${o?1:0}" style="${zpos('dp',o)};--n:1"><div class="zin"><div class="c bk"></div></div><b>${p.deck}</b></div>`};
 const landZ=o=>{const L=S.land&&((S.land.o==S.i)!=!!o)?S.land:null;return`<div class="z" data-l="Land" style="${zpos('land',o)};--n:1"><div class="zin">${L?cd(L.c,'land',o):''}</div></div>`};
-const mat=(p,o)=>`<div class="mw"><div class="mat ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}"><div class="mimg"></div>${life(p,o)}${landZ(o)}${[['co',p.co],['av',p.av],['mg',p.mg]].map(([z,a])=>row(a,z,o)).join('')}${piles(p,o)}</div></div>`;
+const actSide=o=>{if(S.over||S.phase=='dice'||S.phase=='pick')return false;const m0=S.spec?!S.tp:S.mine;return o?!m0:m0};
+let tfK=null,tfT=0;
+const mat=(p,o)=>{const ac=actSide(o),fl=ac&&Date.now()-tfT<1800;return`<div class="mw"><div class="mat ${o?'op':'me'}${ac?' act':''}${fl?' tfl':''}" ${fl?`style="--fd:${-(Date.now()-tfT)}ms"`:''} data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}"><div class="mimg"></div>${life(p,o)}${landZ(o)}${[['co',p.co],['av',p.av],['mg',p.mg]].map(([z,a])=>row(a,z,o)).join('')}${piles(p,o)}</div></div>`};
 const opHand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12),add=OPN!=null&&n>OPN?Math.min(n-OPN,k):0;OPN=n;return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${Array.from({length:k},(_,i)=>`<div class="c bk${i>=k-add?' nw':''}" style="--r:${((i-(k-1)/2)*3).toFixed(1)}deg;${i>=k-add?`--fx:55vw;--fy:10vh;--dl:${(i-(k-add))*140}ms`:''}"></div>`).join('')}</div><span class="ohn">✋ ${n}</span></div>`};
 const pi=(p,o)=>`<div class="pi">${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
-function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u),now=Date.now();let ki=0;if(handSeen)hs.forEach(u=>{if(!handSeen.has(u))NEWT[u]={t:now,d:ki++*140}});NEW=new Set(hs.filter(u=>NEWT[u]&&now-NEWT[u].t<750+NEWT[u].d));handSeen=new Set(hs)}
+function render(){const m=S.me,o=S.op;{const k=S.tn+'|'+(S.spec?S.tp:+S.mine);if(k!==tfK){tfK=k;tfT=Date.now()}}{const hs=m.hand.map(x=>x.u),now=Date.now();let ki=0;if(handSeen)hs.forEach(u=>{if(!handSeen.has(u))NEWT[u]={t:now,d:ki++*140}});NEW=new Set(hs.filter(u=>NEWT[u]&&now-NEWT[u].t<750+NEWT[u].d));handSeen=new Set(hs)}
 $('tb').innerHTML=tbHtml();
 $('mid').innerHTML=`<div class="orow">${opHand(o)}${pi(o,1)}</div>`+mat(o,1)+mat(m,0)+pi(m,0);
 $('hand').innerHTML=m.hand.filter(x=>!(mode=='pay'&&pay.includes(x.u))).map(x=>cd(x,'hand',0)).join('');ptrUI();if(hovK>=0&&!(dg&&dg.on)){const hc=$('hand').children[hovK];hc&&hc.classList.add('h')}
@@ -555,7 +596,7 @@ function akUI(){const e=$('akp'),a=S&&S.ask;const key=a&&a.mine?a.text+a.opts.jo
 if(!a||!a.mine){e.hidden=true;return}
 const off=(a.cards||[]).filter(c=>!['av','co','mg','hand'].includes(c.z));
 e.innerHTML=`<h4>🎯 ${esc(a.text)}</h4>`+(off.length?`<div class="akr">${off.map(c=>{const ar=c.id&&c.id!='TK'?art(c.id):'';return`<div class="akc${akSel.includes(c.u)?' sel':''}" data-ak="${c.u}"><div class="c im" style="${ar}">${ar?'':esc(c.tk||(C[c.id]||{}).n||'')}</div>${c.i==null?'':(c.i==S.i?'เรา':'ศัตรู')+' · '+(ZNm[c.z]||c.z||'')}</div>`}).join('')}</div>`:'');e.hidden=false}
-function zoom(id,ms){const c=C[id];if(!c)return;const a=art(id);$('zm').innerHTML=a?`<div class="zw"><div class="zi" style="${a}"></div><div class="zt">${bigHtml(c)}</div></div>`:`<div class="big">${bigHtml(c)}</div>`;$('zm').hidden=false;clearTimeout(zoom.t);zoom.t=setTimeout(()=>$('zm').hidden=true,ms||3000)}
+function zoom(id,ms,r){const c=C[id];if(!c)return;const a=art(id,r||undefined);$('zm').innerHTML=a?`<div class="zw"><div class="zi" style="${a}"></div><div class="zt">${bigHtml(c)}</div></div>`:`<div class="big">${bigHtml(c)}</div>`;$('zm').hidden=false;clearTimeout(zoom.t);zoom.t=setTimeout(()=>$('zm').hidden=true,ms||3000)}
 $('zm').onclick=()=>$('zm').hidden=true;
 /* เมาส์ชี้การ์ดบนมือ: คำนวณจากตำแหน่งจริงของการ์ดที่ซ้อนกัน (ไม่ใช้ตำแหน่งหลังขยาย) + กันสั่นที่ขอบ */
 let hovK=-1;
