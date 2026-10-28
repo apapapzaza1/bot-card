@@ -297,9 +297,9 @@ body.dragging #hand .c.h{transform:none}
 .myd .lab{opacity:.7;font-size:.85em}.mydg{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .mdt{width:76px;margin:0;padding:4px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px}.mdt.on{border-color:#3b82f6;background:#3b82f622}
 .mdi{width:100%;aspect-ratio:5/7;border-radius:5px;background-color:#0003;background-repeat:no-repeat;display:flex;align-items:center;justify-content:center}.mdt small{font-size:.7em;line-height:1.1;word-break:break-all}
-#md.dkb .dg{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-#md.dkb .dc{gap:2px}#md.dkb .dc>b{font-size:.7em;line-height:1.15}#md.dkb .dc small{font-size:.6em}#md.dkb .fl{font-size:.58em;padding:0 3px}
-#md.dkb .ct{gap:2px}#md.dkb .ct button{padding:2px 8px;margin:0}#md.dkb .ct span{font-size:.8em}
+#md.dkb .dg{grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px}
+#md.dkb .dc{gap:2px}#md.dkb .dc>b{font-size:.8em;line-height:1.2}#md.dkb .dc small{font-size:.7em}#md.dkb .fl{font-size:.66em;padding:0 3px}
+#md.dkb .ct{gap:2px}#md.dkb .ct button{padding:4px 12px;margin:0}#md.dkb .ct span{font-size:.8em}
 
 /* ===== v10 ===== */
 .flt{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
@@ -317,7 +317,7 @@ body.dragging #hand .c.h{transform:none}
 .mat.act.tfl::after{animation:tnf 1.8s linear var(--fd,0ms) 1,tnp 1.2s ease-in-out calc(1.8s + var(--fd,0ms)) infinite}
 @keyframes tnp{0%,100%{opacity:.4}50%{opacity:1}}
 @keyframes tnf{0%,20%,40%,60%,80%{opacity:1;filter:brightness(1.9)}10%,30%,50%,70%,90%,100%{opacity:.12}}
-@media(min-width:900px){#md.dvw .vg{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(min-width:900px){#md.dvw .vg{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -501,7 +501,7 @@ if(SHT=='box')body=`<div class="shg">`+S_.map(s=>`<div class="sh"><div class="bw
 else if(SHT=='st')body=`<p>เด็คสำเร็จรูป ใบละ 1,500💎 (SD01–03 แจกฟรีตอนสมัคร) · กด 👁 ดูการ์ดได้ทุกเด็ค</p><div class="shg">`+Object.entries(ST).map(([k,v])=>`<div class="sh">${bimg(k,sbox(k))}<div><b>${k}</b> ${esc(v.name)}<br><button onclick="viewDeck('pre','${k}','shop')">👁 ดูการ์ดในเด็ค</button><br>${/^SD0[123]$/.test(k)?'<span class="tagx">แจกฟรี</span>':(ME.bought||[]).includes(k)?'<span class="tagx">ซื้อแล้ว</span>':`<button class="pri" onclick="send({t:'buyst',set:'${k}'})">ซื้อ 1,500💎</button>`}</div></div>`).join('')+'</div><small>SD09 เร็วๆ นี้ (รอข้อมูล Cost/Gem/Power)</small>';
 else if(SHT=='code')body=`<div class="cardx"><h3>🎟 ใช้โค้ด</h3><div class="join"><input id="cdi" class="pill" placeholder="กรอกโค้ด"><button class="pri" onclick="send({t:'code',c:cdi.value})">ใช้โค้ด</button></div></div>`;
 else body=`<div class="shg">${skinTab(SHT=='bsk'?'board':'card')}</div>`;
-$('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><b style="flex:1">🛒 ร้านค้า</b><span class="gm">💎 <b id="sgm">${ME.gems}</b></span></div><div class="gar">🎯 การันตี UR+ ในอีก <b>${Math.max(1,20-ME.pity)}</b> ซอง</div><div class="tabs">${tabs.map(([k,n])=>`<button class="${SHT==k?'on':''}" onclick="shop('${k}')">${n}</button>`).join('')}</div></div><div class="shb">${body}</div></div>`;$('md').hidden=false;$('md').scrollTop=y;const on=document.querySelector('.tabs .on');on&&on.scrollIntoView({inline:'center',block:'nearest'})}
+$('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><b style="flex:1">🛒 ร้านค้า</b><span class="gm">💎 <b id="sgm">${ME.gems}</b></span></div><div class="gar">🎯 การันตี UR+ ในอีก <b>${Math.max(1,((typeof RT!='undefined'&&RT?RT.pity.after:30))-ME.pity)}</b> ซอง</div><div class="tabs">${tabs.map(([k,n])=>`<button class="${SHT==k?'on':''}" onclick="shop('${k}')">${n}</button>`).join('')}</div></div><div class="shb">${body}</div></div>`;$('md').hidden=false;$('md').scrollTop=y;const on=document.querySelector('.tabs .on');on&&on.scrollIntoView({inline:'center',block:'nearest'})}
 let LB=null;const buy=(set,n)=>{LB={set,n};send({t:'open',set,n})};
 const RO=['USEC','UBR','SEC','UR','SR','R','C','PR'],RC={USEC:'#f6f',UBR:'#e0a',SEC:'#f55',UR:'#fc3',SR:'#6af',R:'#9d9',C:'#ccc',PR:'#f96'};
 let RT=null;fetch('/rates.json').then(r=>r.json()).then(j=>RT=j).catch(()=>{});

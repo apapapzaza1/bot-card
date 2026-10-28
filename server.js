@@ -50,7 +50,7 @@ const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => {
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
-let RATES; try { RATES = JSON.parse(fs.readFileSync(path.join(__dirname, 'rates.json'), 'utf8')); } catch (e) { console.log('rates.json missing, using defaults'); RATES = { commons: 3, rare: { R: 90, SR: 10 }, hit: { R: 50, SR: 32, UR: 11, SEC: 5.8, UBR: 1.2 }, pity: { after: 20, table: { UR: 70, SEC: 27, UBR: 3 } } }; }
+let RATES; try { RATES = JSON.parse(fs.readFileSync(path.join(__dirname, 'rates.json'), 'utf8')); } catch (e) { console.log('rates.json missing, using defaults'); RATES = { commons: 3, rare: { R: 94, SR: 6 }, hit: { R: 70, SR: 22, UR: 5.5, SEC: 2.2, UBR: 0.3 }, pity: { after: 30, table: { UR: 78, SEC: 21, UBR: 1 } } }; }
 const ORDER = ['C', 'R', 'SR', 'UR', 'SEC', 'UBR', 'USEC'], HIGH = ['UR', 'SEC', 'UBR', 'USEC'];
 const wpick = t => { const e = Object.entries(t); let x = Math.random() * e.reduce((q, [, w]) => q + w, 0); for (const [k, w] of e) if ((x -= w) < 0) return k; return e[e.length - 1][0]; };
 function pack(set, gar) {
