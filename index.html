@@ -348,7 +348,7 @@ addEventListener('pagehide',stopMusic);
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
 const info=x=>x.tk?{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'}:C[x.id]||{n:'?',t:'',e:''};
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
-let AT=null;fetch('/atlas.json').then(r=>r.json()).then(a=>{AT=a;if(S&&!$('game').hidden)render()}).catch(e=>{});
+let AT=null,atTry=0;const loadAT=()=>fetch('/atlas.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(a=>{if(!a||!a.k)throw 0;AT=a;if(S&&!$('game').hidden)render();try{if(typeof ME!=='undefined'&&ME&&typeof cur!=='undefined'&&cur&&window.refreshUI)refreshUI()}catch(e){}}).catch(e=>{if(++atTry<=12)setTimeout(loadAT,Math.min(1000*atTry,8000));else console.warn('atlas.json โหลดไม่ได้ ดู /_img')});loadAT();
 const art=(id,r)=>{if(!AT||!cfg.img||!id)return'';const k=r&&AT.k[id+'-'+r]!=null?id+'-'+r:id,n=AT.k[k];if(n==null)return'';const j=n%AT.per,c=j%AT.cols,w=Math.floor(j/AT.cols);return`background-image:url(/a${String(Math.floor(n/AT.per)).padStart(2,'0')}.webp);background-size:${AT.cols*100}% ${AT.rows*100}%;background-position:${c/(AT.cols-1)*100}% ${w/(AT.rows-1)*100}%`};
 const ZL={av:'Avatar Zone',co:'Construct Zone',mg:'Magic Zone'},ZS={av:'มี Avatar บนสนามได้สูงสุด 4 ใบ',co:'มี Construct ได้สูงสุด 3 ใบ',mg:'เล่น Magic ได้ประเภทละครั้ง'};
 function conn(){clearTimeout(rcT);if(ws){ws.onclose=ws.onmessage=ws.onopen=null;try{ws.close()}catch(e){}}ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);

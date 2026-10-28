@@ -18,18 +18,22 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
         const name = path.basename(b.toString('utf8', p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
         if (!/\.(webp|json|png)$/i.test(name)) continue;
         const d = lo + 30 + b.readUInt16LE(lo + 26) + b.readUInt16LE(lo + 28), raw = b.subarray(d, d + cs);
-        fs.writeFileSync(path.join(IMG, name), m === 8 ? require('zlib').inflateRawSync(raw) : raw); ok++;
+        try { if (m !== 0 && m !== 8) { console.log('unzip skip (method ' + m + ')', name); continue; } const out = m === 8 ? require('zlib').inflateRawSync(raw) : raw, dst = path.join(IMG, name), tmp = dst + '.' + process.pid + '.tmp'; fs.writeFileSync(tmp, out); fs.renameSync(tmp, dst); ok++; } catch (e2) { console.log('unzip file error', name, e2.message); }
       }
       console.log('unzip', zf, ok);
     }
   } catch (err) { console.log('unzip error', err.message); }
 })();
 const srv = http.createServer((q, r) => {
-  let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
+  const u = q.url.split('?')[0];
+  if (u === '/_img') { let n = 0, a = false; try { n = fs.readdirSync(IMG).length; a = fs.existsSync(path.join(IMG, 'atlas.json')) || fs.existsSync(path.join(__dirname, 'atlas.json')); } catch (e) {} r.writeHead(200, { 'Content-Type': 'application/json' }); return r.end(JSON.stringify({ tmp: IMG, files: n, atlas: a, zips: fs.readdirSync(__dirname).filter(x => /^imgs.*\.zip$/i.test(x)) })); }
+  let f = path.basename(u) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
-  if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
-  r.writeHead(200, path.extname(f) === '.webp' ? { 'Content-Type': MT['.webp'], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
-  fs.createReadStream(path.join(dir, f)).pipe(r);
+  const ext = path.extname(f);
+  if (f !== 'index.html' && ext && /^\.(webp|png|jpg|json|mp4|webm|mp3)$/.test(ext) && (f === 'package.json' || !fs.existsSync(path.join(dir, f)))) { r.writeHead(404, { 'Content-Type': 'text/plain' }); return r.end('not found'); }
+  if (!MT[ext] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
+  r.writeHead(200, path.extname(f) === '.webp' ? { 'Content-Type': MT['.webp'], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)], 'Cache-Control': 'no-cache' });
+  const st = fs.createReadStream(path.join(dir, f)); st.on('error', () => r.destroy()); st.pipe(r);
 });
 const crypto = require('crypto');
 const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY, SEC = process.env.SECRET || crypto.createHash('sha256').update('bot:' + (process.env.SUPABASE_KEY || 'dev')).digest('hex'), ADMIN = (process.env.ADMIN_USER || '').toLowerCase();
