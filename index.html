@@ -318,6 +318,7 @@ body.dragging #hand .c.h{transform:none}
 @keyframes tnp{0%,100%{opacity:.4}50%{opacity:1}}
 @keyframes tnf{0%,20%,40%,60%,80%{opacity:1;filter:brightness(1.9)}10%,30%,50%,70%,90%,100%{opacity:.12}}
 @media(min-width:900px){#md.dvw .vg{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}}
+#md.dkb .bh{transition:transform .22s ease,box-shadow .22s}#md.dkb.hb:not([data-pg=shop]) .bh{transform:translateY(-110%);box-shadow:none;pointer-events:none}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -409,6 +410,7 @@ let OPN=null;
 const tgf=(g,v)=>{const a=bd.f[g],i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);bd.lim=60;bdr()},clrf=()=>{bd.f={s:[],c:[],g:[],k:[]};bd.lim=60;bdr()};
 
 let VB=null;
+(()=>{const init=()=>{const m=document.getElementById('md');if(!m)return;let ly=0;m.addEventListener('scroll',()=>{const y=m.scrollTop,d=y-ly;ly=y;if(!m.classList.contains('dkb')||m.dataset.pg=='shop'){m.classList.remove('hb');return}if(Date.now()-(window.__bdt||0)<300)return;if(y<60)m.classList.remove('hb');else if(d>6)m.classList.add('hb');else if(d<-6)m.classList.remove('hb')},{passive:true})};document.readyState=='loading'?document.addEventListener('DOMContentLoaded',init):init()})();
 function viewDeck(kind,v,back){VB=back;let main=[],life=[],title;if(!Object.keys(C).length||!Object.keys(ST).length){toast('กำลังโหลดข้อมูลการ์ด ลองใหม่อีกครั้ง');return}
 if(kind=='pre'){const d=ST[v];if(!d)return;title=v+' '+d.name;main=d.main.map(([id,n,r])=>({id,n,r}));life=d.life.map(([id,n,r])=>({id,n,r}))}
 else{const d=(ME.decks||{})[v];if(!d)return;title=v;if(d.vr)Object.entries(d.vr).forEach(([k,n])=>{const[i,r]=k.split('|');(C[i]&&C[i].t=='Life'?life:main).push({id:i,n,r})});else{const c={};d.main.forEach(i=>c[i]=(c[i]||0)+1);Object.entries(c).forEach(([id,n])=>main.push({id,n}));const l={};d.life.forEach(i=>l[i]=(l[i]||0)+1);Object.entries(l).forEach(([id,n])=>life.push({id,n}))}}
@@ -441,7 +443,7 @@ if(c.if&&cnt[c.if]){if(c.avatarsText){const b=av.filter(d=>!d.n.includes(c.avata
 if(c.onlySymbol&&(!only||C[only].s!==c.onlySymbol)){P.push(c.msg+' (หรือเอา "'+c.if+'" ออก)');bad.add(c.if)}}
 if(c.ifOnlyName&&only&&C[only].n.includes(c.ifOnlyName)&&c.avatarsSymbol){const b=av.filter(d=>d.s!==c.avatarsSymbol&&!(d.e||'').includes('symbol '+c.avatarsSymbol));if(b.length){P.push(c.msg+' — เอา Avatar เหล่านี้ออก: '+lst(b));b.forEach(d=>bad.add(d.n));bad.add(C[only].n)}}})}
 return{P,bad}}
-function bdr(){const sc=$('md').scrollTop;bd.v=bd.v||{};bd.tab=bd.tab||'own';bd.lim=bd.lim||60;const q=bd.q.toLowerCase(),{P,bad}=bchk(),mn=sm(bd.m),ln=sm(bd.l),okk=!P.length,
+function bdr(){window.__bdt=Date.now();const sc=$('md').scrollTop;bd.v=bd.v||{};bd.tab=bd.tab||'own';bd.lim=bd.lim||60;const q=bd.q.toLowerCase(),{P,bad}=bchk(),mn=sm(bd.m),ln=sm(bd.l),okk=!P.length,
 ff=bd.f||(bd.f={s:[],c:[],g:[],k:[]}),bkt=c=>c.c==null?'-':String(Math.min(c.c,7)),fv=(g,c)=>g=='s'?c.s:g=='c'?bkt(c):g=='g'?String(c.g):c.gc,
 tk=bd.tab=='own'?Object.keys(ME.cards).filter(k=>ME.cards[k]>0):Object.keys(bd.v).filter(k=>bd.v[k]>0),
 bs=tk.filter(k=>{const c=C[k.split('|')[0]];return c&&(!bd.t||c.t==bd.t)&&(!q||c.n.toLowerCase().includes(q)||c.id.toLowerCase().includes(q))}),
