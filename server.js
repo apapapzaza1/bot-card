@@ -27,7 +27,8 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
 const srv = http.createServer((q, r) => {
   const u = q.url.split('?')[0];
   if (u === '/_img') { let n = 0, a = false; try { n = fs.readdirSync(IMG).length; a = fs.existsSync(path.join(IMG, 'atlas.json')) || fs.existsSync(path.join(__dirname, 'atlas.json')); } catch (e) {} r.writeHead(200, { 'Content-Type': 'application/json' }); return r.end(JSON.stringify({ tmp: IMG, files: n, atlas: a, zips: fs.readdirSync(__dirname).filter(x => /^imgs.*\.zip$/i.test(x)) })); }
-  let f = path.basename(u) || 'index.html', dir = __dirname;
+  if (u === '/_imgs.json') { let L = []; try { L = [...new Set([...fs.readdirSync(IMG), ...fs.readdirSync(__dirname)])].filter(x => /\.(webp|png|jpg)$/i.test(x)); } catch (e) {} r.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(L)); }
+  let f; try { f = path.basename(decodeURIComponent(u)) || 'index.html'; } catch (e) { f = 'index.html'; } let dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
   const ext = path.extname(f);
   if (f !== 'index.html' && ext && /^\.(webp|png|jpg|json|mp4|webm|mp3)$/.test(ext) && (f === 'package.json' || !fs.existsSync(path.join(dir, f)))) { r.writeHead(404, { 'Content-Type': 'text/plain' }); return r.end('not found'); }
