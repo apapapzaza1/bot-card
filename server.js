@@ -59,9 +59,10 @@ function pack(set, gar) {
   const g = r => { const i = ORDER.indexOf(r); let a = []; for (let k = i; k >= 0 && !a.length; k--) a = by(ORDER[k]); for (let k = i + 1; k < ORDER.length && !a.length; k++) a = by(ORDER[k]); return pick(a.length ? a : R); };
   return [g('C'), g('C'), g('C'), g(wpick(RATES.rare)), g(wpick(gar ? RATES.pity.table : RATES.hit))];
 }
-function preDeck(s) { const x = ST[s]; return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id) }; }
+function preDeck(s) { const x = ST[s]; return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id), mr: x.main.flatMap(([id, n, r]) => Array(n).fill(r)), lr: x.life.map(([id, n, r]) => r) }; }
+const rarArr = (ids, vr) => { const pool = {}; Object.entries(vr).forEach(([key, n]) => { const [i, r] = key.split('|'); pool[i] = pool[i] || []; for (let j = 0; j < n; j++) pool[i].push(r); }); return ids.map(i => (pool[i] || []).shift()); };
 async function pickDeck(m, user, ban, exs) {
-  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban); }
+  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); const dk = mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban); if (k.vr) { dk.mr = rarArr(dk.main, k.vr); dk.lr = rarArr(dk.life, k.vr); } return dk; }
   if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); const pd = preDeck(m.pre); if (ban && exs === false) { try { checkBan(pd.main); } catch (e) { E('เด็ค Starter ' + m.pre + ' ผิดแบนลิสต์ (ห้องนี้ไม่ได้ยกเว้น Starter): ' + e); } } return pd; }
   if (!process.env.BOT_TEST) E('ปิดใช้งานเด็ควางลิสต์/เด็คทดสอบแล้ว');
   return mkDeck(m.text || '', m.rand, m.skip, ban);
@@ -75,7 +76,7 @@ const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const REJOIN_MS = 3 * 60 * 1000; // หลุดเกิน 3 นาที = แพ้
 const MISSED = {}; // ผลแมตช์ที่ผู้เล่นไม่อยู่ตอนจบ (หลุด/ออฟไลน์) -> แจ้งตอนกลับเข้าเว็บ
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const inst = id => ({ u: UID++, id, pw: 0, tired: false });
+const inst = (id, rar) => ({ u: UID++, id, pw: 0, tired: false, ...(rar ? { rar } : {}) });
 const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
 /* ===== เอฟเฟกต์ให้ฝั่งไคลเอนต์เล่นอนิเมชัน + กวาดอุปกรณ์ที่ไม่มีเจ้าของ ===== */
@@ -126,7 +127,7 @@ const bounce = (r, u) => { const f = take(r, u); fx({ k: 'bounce', u }); if (!f.
 function summonFree(r, i, c) {
   const p = r.p[i]; if (p.av.filter(x => !x.tk).length >= 4 || p.av.length >= 6) { log(r, 'Avatar เต็ม อัญเชิญไม่ได้'); return false; }
   const k = p.hell.findIndex(h => h.u === c.u); if (k < 0) return false; p.hell.splice(k, 1);
-  c.tired = false; c.pw = 0; c.tp = 0; c.bp = 0; p.av.push(c); ev(r, c.id); log(r, '✨ ' + p.name + ': อัญเชิญ ' + B[c.id].n + ' จากนรก'); return true;
+  c.tired = false; c.pw = 0; c.tp = 0; c.bp = 0; p.av.push(c); ev(r, c.id, c.rar); log(r, '✨ ' + p.name + ': อัญเชิญ ' + B[c.id].n + ' จากนรก'); return true;
 }
 function mill(r, i, n, src) {
   const p = r.p[i]; if (src) p.av.forEach(a => { if (a.id === 'SD03-004' && src.id !== 'SD03-004') n += 2; });
@@ -216,7 +217,7 @@ function castFinal(r, i, card, c, def, ctx, steps) {
   if (def.mod) { t = find(r, ctx.pick.tg[0]); if (!t || t.z !== 'av') E('เป้าหมายหาย'); card.at = t.c.u; me.mg.push(card); }
   else if (c.st === 'Land') { if (g.land) r.p[g.land.o].hell.push(g.land.c); g.land = { c: card, o: i, n: g.n }; }
   else me.hell.push(card);
-  ev(r, c.id); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + (t ? ' → ' + nmOf(t.c) : ''));
+  ev(r, c.id, c.rar); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + (t ? ' → ' + nmOf(t.c) : ''));
   if (c.st === 'React') { def.run && def.run(r, i, ctx); const p = g.pend; if (p && p.who === i) { g.pend = null; if (p.k === 'atk') resolveAtk(r, p); } }
   else { if (def.run) { const fn = () => def.run(r, i, ctx); fn.cu = card.u; g.q.push(fn); } open(r, { who: 1 - i, k: 'ev', ev: { k: 'cast', id: c.id, i, cu: card.u } }); }
 }
@@ -244,7 +245,7 @@ function scout(r, i, n, pred, label) {
 }
 function summonDeck(r, i, u) {
   const p = r.p[i]; if (!slotsOK(p)) return false; const k = p.deck.findIndex(c => c.u === u); if (k < 0) return false;
-  const [c] = p.deck.splice(k, 1); c.tired = false; c.pw = 0; c.tp = 0; c.bp = 0; p.av.push(c); ev(r, c.id); log(r, '✨ ' + p.name + ': อัญเชิญ ' + B[c.id].n + ' จาก Deck'); return true;
+  const [c] = p.deck.splice(k, 1); c.tired = false; c.pw = 0; c.tp = 0; c.bp = 0; p.av.push(c); ev(r, c.id, c.rar); log(r, '✨ ' + p.name + ': อัญเชิญ ' + B[c.id].n + ' จาก Deck'); return true;
 }
 function steal(r, i, u) {
   const f = find(r, u), me = r.p[i]; if (!f || f.z !== 'av' || f.i === i) return false;
@@ -268,7 +269,7 @@ function guardAsk(r, list, done) {
   const owners = Object.keys(by).map(Number);
   const nx = () => { if (!owners.length) return done(); const i = owners.shift(), xs = by[i];
     ask(r, i, { yn: true, text: 'ใช้ หมอมาแล้ววว (React) ไม่ให้ ' + xs.map(nmOf).join(', ') + ' ถูกทำลาย?', cb: y => {
-      if (y && !r.g.used[i].React) { const p = r.p[i], k = p.hand.findIndex(c => c.id === 'BT01-040'); if (k >= 0) { const [c] = p.hand.splice(k, 1); p.hell.push(c); r.g.used[i].React = 1; r.g.prot = r.g.prot || {}; xs.forEach(x => r.g.prot[x.u] = 1); ev(r, c.id); log(r, '✨ ' + p.name + ' ใช้ React: ' + B[c.id].n); } }
+      if (y && !r.g.used[i].React) { const p = r.p[i], k = p.hand.findIndex(c => c.id === 'BT01-040'); if (k >= 0) { const [c] = p.hand.splice(k, 1); p.hell.push(c); r.g.used[i].React = 1; r.g.prot = r.g.prot || {}; xs.forEach(x => r.g.prot[x.u] = 1); ev(r, c.id, c.rar); log(r, '✨ ' + p.name + ' ใช้ React: ' + B[c.id].n); } }
       nx(); } }); };
   nx();
 }
@@ -280,7 +281,7 @@ function postBattle(r, list) {
     ask(r, i, { yn: true, text: 'Avatar ของเราถูกทำลายจากการต่อสู้ — ใช้ ริกกี้ นักปลอมแปลง (React) ยึด Avatar สภาพนอนของศัตรู 1 ใบ?', cb: y => { if (!y) return nx();
       ask(r, i, { text: 'เลือก Avatar สภาพนอนของศัตรู ที่จะยึด', opts: T.map(a => a.u), cancel: true, onCancel: nx, cb: us => {
         const kk = p.hand.findIndex(c => c.id === 'BT01-042'); if (kk < 0) return nx(); const [c] = p.hand.splice(kk, 1); g.used[i].React = 1;
-        if (steal(r, i, us[0])) { c.at = us[0]; p.mg.push(c); ev(r, c.id); log(r, '✨ ' + p.name + ' ใช้ React: ' + B[c.id].n); } else p.hand.push(c);
+        if (steal(r, i, us[0])) { c.at = us[0]; p.mg.push(c); ev(r, c.id, c.rar); log(r, '✨ ' + p.name + ' ใช้ React: ' + B[c.id].n); } else p.hand.push(c);
         nx(); } }); } }); };
   nx();
 }
@@ -388,7 +389,7 @@ const bc0 = r => r.p.forEach((p, i) => {
   if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, exs: r.cfg.exs !== false, players: r.p.map(x => ({ name: x.name, ready: !!x.deck, dk: x.last ? (x.last.pre ? 'pre:' + x.last.pre : 'mine:' + x.last.mine) : null })) }));
 });
 const log = (r, s) => r.g.log.push(s);
-const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
+const ev = (r, id, rar) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id, r: rar }; };
 const draw = (r, p, n) => { for (let k = 0; k < n && p.deck.length; k++) p.hand.push(p.deck.pop()); if (!p.deck.length && !r.g.over) { r.g.over = p.name + ' เด็คหมด แพ้!'; r.g.win = r.p ? 1 - r.p.indexOf(p) : null; } };
 const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
@@ -396,7 +397,7 @@ const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 
 const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') release(r, u); delete f.c.at; return f; };
 const kill = (r, i, u) => {
   if (r.g.prot && r.g.prot[u]) { delete r.g.prot[u]; const f0 = find(r, u); log(r, '🛡 ' + (f0 ? nmOf(f0.c) : 'Avatar') + ' ไม่ถูกทำลาย'); return false; }
-  const f = take(r, u); fx({ k: 'die', u, id: f.c.tk ? null : f.c.id, nm: f.c.tk ? f.c.tk.n : null }); const h = homeOf(f);
+  const f = take(r, u); fx({ k: 'die', u, id: f.c.tk ? null : f.c.id, ra: f.c.rar, nm: f.c.tk ? f.c.tk.n : null }); const h = homeOf(f);
   if (!f.c.tk) { r.p[h].hell.push(f.c); delete f.c.oo; r.g.q.push(() => destroyTrig(r, f.c, h)); } return true; };
 
 function payOK(c, pay, me) {
@@ -420,7 +421,7 @@ function startTurn(r) {
 function hit(r, d, atk) {
   const k = d.life.findIndex(l => !l.up);
   if (k < 0) { r.g.over = atk.name + ' ชนะ!'; r.g.win = r.p.indexOf(atk); return 'KO'; }
-  d.life[k].up = 1; fx({ k: 'life', i: r.p.indexOf(d) }); (d.lf = d.lf || []).push(d.life[k].id); const c = B[d.life[k].id];
+  d.life[k].up = 1; r.g.lcr = d.life[k].rar; fx({ k: 'life', i: r.p.indexOf(d) }); (d.lf = d.lf || []).push(d.life[k].id); const c = B[d.life[k].id];
   log(r, d.name + ' LIFE: ' + c.n + ' — ' + c.e);
   if (d.life.every(l => l.up)) log(r, d.name + ' สาหัส!');
   return d.life[k].id;
@@ -466,7 +467,7 @@ function act(r, i, m) {
       const ps = pays(); payOK(c, ps, me);
       ps.forEach(p => { take(r, p.u); me.hell.push(p); }); take(r, m.u); me[av ? 'av' : 'co'].push(f.c);
       if (av) g.q.push(() => fxSummon(r, i, f.c));
-      ev(r, c.id); log(r, me.name + (av ? ' อัญเชิญ ' : ' ก่อสร้าง ') + c.n); open(r, { who: 1 - i, k: 'ev', ev: { k: av ? 'summon' : 'build', u: f.c.u, i, cost: c.c, id: c.id } }); break;
+      ev(r, c.id, c.rar); log(r, me.name + (av ? ' อัญเชิญ ' : ' ก่อสร้าง ') + c.n); open(r, { who: 1 - i, k: 'ev', ev: { k: av ? 'summon' : 'build', u: f.c.u, i, cost: c.c, id: c.id } }); break;
     }
     case 'cast': {
       const f = own(m.u), c = B[f.c.id]; if (c.t !== 'Magic') E('ไม่ใช่ Magic');
@@ -542,18 +543,18 @@ function resolveAtk(r, p) {
       if (dead.some(x => guardable(r, x))) { p.chk = 1; return guardAsk(r, dead, () => r.g.q.unshift(() => resolveAtk(r, p))); } }
   }
   if (r.g.over) return;
-  const pa = P(r, a), base = { ai: p.ai, aid: a.tk ? null : a.id, an, pa };
+  const pa = P(r, a), base = { ai: p.ai, aid: a.tk ? null : a.id, ar: a.rar, an, pa };
   if (p.tg === 'life') {
     if (op.av.length && !kick(r, a)) return log(r, 'ตี LIFE ไม่ได้');
     log(r, an + ' (' + pa + ') โจมตี LIFE');
-    if (pa > 0) { const x = hit(r, op, me); setBt(r, { ...base, tg: 'life', res: x === 'KO' ? 'ko' : 'life', cid: x === 'KO' ? null : x }); }
+    if (pa > 0) { const x = hit(r, op, me); setBt(r, { ...base, tg: 'life', res: x === 'KO' ? 'ko' : 'life', cid: x === 'KO' ? null : x, cr: x === 'KO' ? null : r.g.lcr }); }
     else { log(r, 'Power 0 ไม่เสียหาย'); setBt(r, { ...base, tg: 'life', res: 'zero' }); }
   } else if (p.tk === 'co') {
     const d = op.co.find(x => x.u === p.tg); if (!d) return log(r, 'เป้าหาย');
     const pd = (B[d.id].p || 0) + (d.pw || 0), dn = B[d.id].n; let res = 'none';
     log(r, an + ' (' + pa + ') โจมตี Construct ' + dn + ' (' + pd + ')');
-    if (pa > pd) { take(r, d.u); fx({ k: 'die', u: d.u, id: d.id }); op.hell.push(d); log(r, dn + ' ถูกทำลาย'); res = 'win'; } else log(r, 'Power ไม่เกิน Construct — ไม่มีอะไรเกิดขึ้น');
-    setBt(r, { ...base, tg: 'av', dn, did: d.id, pd, res });
+    if (pa > pd) { take(r, d.u); fx({ k: 'die', u: d.u, id: d.id, ra: d.rar }); op.hell.push(d); log(r, dn + ' ถูกทำลาย'); res = 'win'; } else log(r, 'Power ไม่เกิน Construct — ไม่มีอะไรเกิดขึ้น');
+    setBt(r, { ...base, tg: 'av', dn, did: d.id, dr: d.rar, pd, res });
   } else {
     const d = op.av.find(x => x.u === p.tg); if (!d) return log(r, 'เป้าหาย');
     const pd = P(r, d), dn = nmOf(d); let res; const dd = [];
@@ -563,7 +564,7 @@ function resolveAtk(r, p) {
         if (a.rt !== r.g.n && r.p.some(q => q.mg.some(m => m.at === a.u && m.id === 'BT01-046'))) { a.tired = false; a.rt = r.g.n; log(r, '✨ ตีพ่อ: ' + an + ' กลับมาสภาพตื่น'); } } res = 'win'; }
     else { if (kill(r, p.ai, a.u)) dd.push(p.ai); log(r, an + ' ตาย'); res = 'lose'; }
     dd.length && r.g.q.push(() => postBattle(r, dd.slice()));
-    setBt(r, { ...base, tg: 'av', dn, did: d.tk ? null : d.id, pd, res });
+    setBt(r, { ...base, tg: 'av', dn, did: d.tk ? null : d.id, dr: d.rar, pd, res });
   }
   a.bp = 0;
 }
@@ -575,7 +576,7 @@ function begin(r) {
 async function rematch(r, i) {
   r.p[i].rm = 1; if (!r.rmT) r.rmT = Date.now();
   if (r.p.every(x => x.rm)) {
-    for (const x of r.p) { const d = await pickDeck(x.last, x.name, r.cfg.ban, r.cfg.exs); x.deck = shuf(d.main.map(inst)); x.life = shuf(d.life.map(id => ({ ...inst(id), up: 0 }))); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
+    for (const x of r.p) { const d = await pickDeck(x.last, x.name, r.cfg.ban, r.cfg.exs); x.deck = shuf(d.main.map((id, k) => inst(id, d.mr && d.mr[k]))); x.life = shuf(d.life.map((id, k) => ({ ...inst(id, d.lr && d.lr[k]), up: 0 }))); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
     r.rmT = 0; begin(r);
   } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
   bc(r);
@@ -712,7 +713,7 @@ wss.on('connection', ws => {
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban, r.cfg.exs), p = r.p[i];
-        p.last = m; p.deck = shuf(d.main.map(inst)); p.life = shuf(d.life.map(id => ({ ...inst(id), up: 0 }))); p.hand = [];
+        p.last = m; p.deck = shuf(d.main.map((id, k) => inst(id, d.mr && d.mr[k]))); p.life = shuf(d.life.map((id, k) => ({ ...inst(id, d.lr && d.lr[k]), up: 0 }))); p.hand = [];
         bc(r);
       } else if (m.t === 'rcfg') {
         if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องตั้งกติกาได้');
