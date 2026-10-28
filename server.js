@@ -79,7 +79,7 @@ async function pickDeck(m, user, ban) {
   return mkDeck(m.text || '', m.rand, m.skip, ban);
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const d = await dbGet(w.user); d.gems += k === g.win ? 150 : 50; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: k === g.win ? 150 : 50 })); } }
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -770,7 +770,7 @@ const view = (r, i) => {
 const sview = r => { const v = view(r, 0); v.spec = 1; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
 const bc0 = r => r.p.forEach((p, i) => {
-  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
+  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', code: r.code, bot: r.bot ? r.bot.lv : 0, owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
@@ -1039,10 +1039,10 @@ function begin(r) {
   r.g = { turn: 0, phase: 'dice', pend: null, ask: null, q: [], n: 0, used: [{}, {}], land: null, log: ['เริ่มเกม!'], over: null };
 }
 async function rematch(r, i) {
-  r.p[i].rm = 1; if (!r.rmT) r.rmT = Date.now();
+  r.p[i].rm = 1; r.p.forEach(x => x.bot && (x.rm = 1)); if (!r.rmT) r.rmT = Date.now();
   if (r.p.every(x => x.rm)) {
-    for (const x of r.p) { const d = await pickDeck(x.last, x.name, r.cfg.ban); x.deck = shuf(d.main.map(id => inst2(id, d.art))); x.life = shuf(d.life.map(id => ({ ...inst2(id, d.art), up: 0 }))); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
-    r.rmT = 0; begin(r);
+    for (const x of r.p) { const d = x.bot ? botDeck() : await pickDeck(x.last, x.name, r.cfg.ban); x.deck = shuf(d.main.map(id => inst2(id, d.art))); x.life = shuf(d.life.map(id => ({ ...inst2(id, d.art), up: 0 }))); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
+    r.rmT = 0; if (r.bot) { r.bot.tn = -1; r.bot.fail = 0; } begin(r);
   } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
   bc(r);
 }
@@ -1166,6 +1166,16 @@ wss.on('connection', ws => {
         if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','UBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: X.gems ? 'ได้ ' + X.gems + ' Gem' : '' })); return;
       }
+      if (m.t === 'bot') {
+        if (rjRoom(ws.user)) E('มีเกมค้างอยู่ กดกลับเข้าเกมก่อน');
+        Object.keys(rooms).filter(c => rooms[c].bot && !rooms[c].g && rooms[c].p[0] && rooms[c].p[0].name === ws.user).forEach(c => dropRoom(c));
+        const lv = [1, 2, 3].includes(+m.lvl) ? +m.lvl : 2, code = 'BOT' + Math.random().toString(36).slice(2, 6).toUpperCase();
+        const mkP = name => ({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] });
+        r = rooms[code] = { p: [mkP(ws.user), mkP('บอท (' + BOT_LV[lv].n + ')')], g: null, code, exp: Date.now() + 18e5, cfg: { clock: 0, react: 0, ban: true }, bot: { lv, tried: new Set(), at: 0, fail: 0, tn: -1 } };
+        i = 0; const bp = r.p[1], bd = botDeck(); bp.bot = 1; bp.eq = {}; bp.deck = shuf(bd.main.map(inst)); bp.life = shuf(bd.life.map(id => ({ ...inst(id), up: 0 })));
+        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; }
+        bc(r); return;
+      }
       if (m.t === 'join') {
         const code = String(m.room || '').toUpperCase().slice(0, 8), name = ws.user;
         if (!code) E('ใส่รหัสห้อง');
@@ -1183,7 +1193,7 @@ wss.on('connection', ws => {
         if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องตั้งกติกาได้');
         if (m.clock != null) r.cfg.clock = [5, 10, 20].includes(+m.clock) ? +m.clock : 0;
         if (m.react != null) r.cfg.react = [10, 20, 30].includes(+m.react) ? +m.react : 0;
-        if (m.ban != null) { const nb = String(m.ban) !== '0'; if (nb !== r.cfg.ban) r.p.forEach(x => { x.deck = null; }); r.cfg.ban = nb; }
+        if (m.ban != null) { const nb = String(m.ban) !== '0'; if (nb !== r.cfg.ban) r.p.forEach(x => { if (!x.bot) x.deck = null; }); r.cfg.ban = nb; }
         bc(r);
       } else if (m.t === 'start') {
         if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องเริ่มเกมได้');
@@ -1194,5 +1204,153 @@ wss.on('connection', ws => {
     } catch (e) { err(e && e.message ? 'ผิดพลาด' : e); }
   });
 });
+/* ===== BOT: โหมดเล่นกับบอท (ง่าย/กลาง/ยาก) =====
+   บอทเป็นผู้เล่นฝั่ง 2 ที่ไม่มี WebSocket รันในเซิร์ฟเวอร์ และสั่งงานผ่าน act() ตัวเดียวกับผู้เล่นจริง
+   จึงถูกบังคับด้วยกฎเกมชุดเดียวกัน (ถ้า act() โยน error บอทจะลองทางเลือกสำรองแทน) */
+const BOT_LV = { 1: { n: 'ง่าย', win: 30 }, 2: { n: 'กลาง', win: 50 }, 3: { n: 'ยาก', win: 80 } }, BOT_LOSE = 10;
+const botDeck = () => preDeck(pick(Object.keys(ST).filter(k => /^SD0[1-8]$/.test(k))));
+const botIdx = r => r.p.findIndex(p => p.bot);
+// คะแนนความ "มีค่า" ของการ์ด (ใช้เทียบเป้าหมาย / เลือกใบที่จะจ่ายเป็น Cost)
+const botCv = (r, x) => { if (x.tk) return (x.tk.p || 0) + 1; const d = B[x.id]; if (!d) return 0; const f = find(r, x.u);
+  return (f && f.z === 'av' ? P(r, x) : (d.p || 0)) + (d.c || 0) * .6 + (d.t === 'Avatar' ? 1 : 0); };
+const botSync = r => { bc(r); settle(r).catch(() => { }); };
+function botAct(r, k, m) {
+  const bt = r.bot;
+  try { act(r, k, m); bt.fail = 0; botSync(r); return true; }
+  catch (e) { bt.fail++; if (typeof e !== 'string') console.error('bot', e); botSync(r); return false; }
+}
+// เลือกการ์ดบนมือจ่ายเป็น Cost: ชุดที่ Gem พอและ "เสียของน้อยที่สุด"
+function botPay(r, k, card) {
+  const c = B[card.id], me = r.p[k]; if (!c.c) return { us: [], keep: 0 };
+  const av = c.t === 'Avatar';
+  const pool = me.hand.filter(h => h.u !== card.u && B[h.id].g && !(B[h.id].gc && B[h.id].gc !== c.col) && !(me.noCost || []).includes(B[h.id].n) && !(h.id === 'SD08-010' && !(av && isRat(card)))).slice(0, 10);
+  let best = null;
+  for (let m = 1; m < (1 << pool.length); m++) {
+    let sum = 0, keep = 0, n = 0;
+    for (let j = 0; j < pool.length; j++) if (m >> j & 1) { sum += B[pool[j].id].g; keep += botCv(r, pool[j]); n++; }
+    if (sum < c.c) continue;
+    const sc = keep + (sum - c.c) * 1.5 + n * .2;
+    if (!best || sc < best.sc) best = { sc, keep, us: pool.filter((_, j) => m >> j & 1).map(h => h.u) };
+  }
+  return best;
+}
+function botMull(r, k) {
+  const me = r.p[k], us = r.bot.lv === 1 ? [] : me.hand.filter(h => B[h.id].t === 'Avatar' && B[h.id].c >= 5).slice(0, 2).map(h => h.u);
+  return botAct(r, k, { t: 'mull', us });
+}
+function botMain(r, k) {
+  const g = r.g, me = r.p[k], bt = r.bot, lv = bt.lv, T = bt.tried, ops = [];
+  me.hand.forEach(h => {
+    const d = B[h.id]; if (!d || T.has('s' + h.u)) return;
+    if (d.t === 'Avatar') { if (h.id === 'SD03-003' || (g.lim && g.lim[k] && d.s !== g.lim[k]) || !canPlaceAv(r, k, h)) return; }
+    else if (d.t === 'Construct') { if (me.co.length >= 3 || me.co.some(x => B[x.id].n === d.n)) return; }
+    else return;
+    const pay = botPay(r, k, h); if (!pay) return;
+    ops.push({ h, d, pay, gain: botCv(r, h) - pay.keep * .45 + (d.t === 'Avatar' && me.av.length < 3 ? 2 : 0) - (d.t === 'Construct' ? 1.5 : 0) });
+  });
+  ops.sort((a, b) => b.gain - a.gain);
+  const o = lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 : -2.5));
+  if (o) { T.add('s' + o.h.u); return botAct(r, k, { t: o.d.t === 'Avatar' ? 'summon' : 'build', u: o.h.u, pay: o.pay.us }); }
+  if (lv >= 2) {
+    for (const h of me.hand) {   // ร่าย Magic (เฉพาะที่ระบบรองรับ ไม่ใช่ React)
+      const d = B[h.id]; if (!d || d.t !== 'Magic' || d.st === 'React' || T.has('m' + h.u)) continue;
+      if (!(MG[d.id] || d.st === 'Modification') || g.used[k][d.st]) continue;
+      T.add('m' + h.u); if (lv === 2 && Math.random() < .4) continue;
+      if (botAct(r, k, { t: 'cast', u: h.u })) return true;
+    }
+    for (const [x, z] of [...me.av.map(x => [x, 'av']), ...me.mg.map(x => [x, 'mg']), ...me.co.map(x => [x, 'co'])]) {   // ใช้ความสามารถ
+      if (T.has('u' + x.u) || !abOf(r, k, x, z)) continue;
+      T.add('u' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true;
+    }
+  }
+  return botAct(r, k, { t: 'next' });
+}
+function botBattle(r, k) {
+  const g = r.g, me = r.p[k], op = r.p[1 - k], bt = r.bot, lv = bt.lv, T = bt.tried, opts = [];
+  const ready = me.av.filter(a => !a.tired && !T.has('a' + a.u)).length;   // ตัวที่ยังตีได้ในเทิร์นนี้
+  const stall = g.n >= 14;                                                  // เกมนิ่งนานแล้ว -> ต้องกดดัน
+  const ahead = me.av.length > op.av.length;                                // เรามี Avatar มากกว่า -> แลกได้
+  me.av.forEach(a => {
+    if (a.tired || T.has('a' + a.u)) return;
+    if ((a.id === 'BT02-024' && !noFx(r, a)) || ((a.id === 'BT02-029' || a.id === 'SD04-004') && !(a.wr && a.wr.length))) return;
+    const pa = P(r, a), my = botCv(r, a);
+    if (!a.nolife && pa > 0 && (!op.av.length || kick(r, a)) && !(a.id === 'SD06-003' && !hasCamp(r, k)))
+      opts.push({ a, tg: 'life', sc: op.life.every(l => l.up) ? 1000 : 8 + pa });   // LIFE หงายหมด = ชนะทันที
+    op.av.forEach(d => {
+      const pd = P(r, d), dv = botCv(r, d), clear = lv === 3 && op.av.length <= ready ? 3 : 0;   // ยาก: ถ้ากวาดสนามได้ จะเปิดทางตี LIFE
+      if (pa > pd) opts.push({ a, tg: d.u, sc: 2 + dv + clear });                                  // ชนะและไม่ตาย
+      else if (pa === pd && pa > 0 && lv >= 2 && (dv >= my - .5 || ahead || stall || (lv === 3 && clear))) opts.push({ a, tg: d.u, sc: 1 + dv - my * .5 + clear });  // กลาง/ยาก: แลกเมื่อคุ้ม/ได้เปรียบ/เกมนิ่ง
+      else if (lv === 1 && Math.random() < .3) opts.push({ a, tg: d.u, sc: .1 });                 // ง่าย: บางทีก็ตีมั่ว
+    });
+    op.co.forEach(d => { const pd = (B[d.id].p || 0) + (d.pw || 0); if (pa > pd) opts.push({ a, tg: d.u, sc: 1.5 + pd * .3 }); });
+  });
+  if (!opts.length) { me.av.forEach(a => T.add('a' + a.u)); return false; }
+  opts.sort((x, y) => y.sc - x.sc);
+  const o = lv === 1 ? pick(opts.slice(0, 3)) : opts[0];
+  T.add('a' + o.a.u); botAct(r, k, { t: 'atk', u: o.a.u, tg: o.tg, sup: [] }); return true;
+}
+function botEnd(r, k) {
+  const me = r.p[k];
+  if (me.hand.length > 7) return botAct(r, k, { t: 'discardm', us: me.hand.slice().sort((a, b) => botCv(r, a) - botCv(r, b)).slice(0, me.hand.length - 7).map(c => c.u) });
+  return botAct(r, k, { t: 'next' });
+}
+// เลือกเป้าหมายตอบคำถามของสกิล: จ่าย Cost -> ใบของเราที่ไม่สำคัญ / ทำลาย-ลด POWER -> ศัตรูที่แรงสุด / อื่นๆ -> ใบของเราที่ดีสุด
+function botSel(r, k, a) {
+  const cs = a.cards || [], own = u => { const c = cs.find(x => x.u === u); return c ? c.i === k : true; };
+  const val = u => { const f = allCards(r, u); return f ? botCv(r, f.c) : 0; };
+  const t = a.text || '', n = a.n, min = a.min;
+  const cost = /ฝ่ายเรา|ทิ้ง|ส่ง.*ลงนรก|เซ่นไหว้|เป็น Cost/.test(t), harm = !cost && /ทำลาย|POWER -|ยึด|ศัตรู|กลับขึ้นมือ/.test(t);
+  let pool = a.opts.slice(), cnt;
+  if (cost) { const o = pool.filter(own); if (o.length >= min) pool = o; pool.sort((x, y) => val(x) - val(y)); cnt = min; }
+  else if (harm) { const e = pool.filter(u => !own(u)); if (e.length) { pool = e.sort((x, y) => val(y) - val(x)); cnt = n; } else { pool.sort((x, y) => val(x) - val(y)); cnt = min; } }
+  else { const o = pool.filter(own); if (o.length) pool = o; pool.sort((x, y) => val(y) - val(x)); cnt = n; }
+  cnt = Math.max(min, Math.min(n, cnt));
+  if (pool.length < cnt) pool = a.opts.slice();
+  const bm = t.match(/Cost รวมไม่เกิน\s*(\d+)/);   // มีงบ Cost -> เลือกตามลำดับความสำคัญแต่ไม่เกินงบ
+  if (bm) { let sum = 0; const out = []; for (const u of pool) { const f = allCards(r, u), cc = f && B[f.c.id] ? (B[f.c.id].c || 0) : 0; if (out.length < n && sum + cc <= +bm[1]) { out.push(u); sum += cc; } } return out; }
+  return pool.slice(0, cnt);
+}
+function botAsk(r, k) {
+  const a = r.g.ask, lv = r.bot.lv, rnd = lv === 1 && Math.random() < .4, bt = r.bot;
+  bt.ar = (bt.ak === a.text ? bt.ar + 1 : 1); bt.ak = a.text;   // คำถามเดิมวนซ้ำ = คำตอบเราไม่ผ่านเงื่อนไขในใจเซิร์ฟเวอร์ -> ตอบแบบ "ไม่เลือก" กันลูป
+  if (bt.ar >= 3 && !a.yn && !a.choices) { bt.ar = 0; if (botAct(r, k, { t: 'pick', us: a.opts.slice(0, a.min) })) return; if (a.cancel) return botAct(r, k, { t: 'pick', cancel: 1 }); }
+  let m;
+  if (a.choices) m = { t: 'pick', i: rnd ? Math.floor(Math.random() * a.choices.length) : 0 };
+  else if (a.yn) m = { t: 'pick', yes: /ทิ้งการ์ดทั้งหมด/.test(a.text || '') ? 0 : (rnd ? +(Math.random() < .5) : 1) };
+  else m = { t: 'pick', us: botSel(r, k, a) };
+  if (botAct(r, k, m)) return;
+  if (a.cancel) return botAct(r, k, { t: 'pick', cancel: 1 });           // ตอบไม่ได้ -> ยกเลิก ไม่ให้เกมค้าง
+  if (!a.yn && !a.choices) return botAct(r, k, { t: 'pick', us: a.opts.slice(0, a.min) });
+  if (a.yn) botAct(r, k, { t: 'pick', yes: 0 });
+}
+function botStep(r, k) {
+  const g = r.g, bt = r.bot, me = r.p[k];
+  if (g.ask) { if (g.ask.who === k) botAsk(r, k); return; }
+  if (g.pend) {
+    if (g.pend.who === k) botAct(r, k, { t: 'pass' });
+    else if (!hasReact(r, g.pend.who)) { passReact(r); botSync(r); }   // ผู้เล่นไม่มี React บนมือ -> ข้ามช่วงตอบโต้ให้ ไม่ต้องรอ/กด Pass
+    return;
+  }
+  if (g.phase === 'pick') { if (g.dw === k) botAct(r, k, { t: 'first', v: bt.lv === 1 ? +(Math.random() < .5) : 1 }); return; }
+  if (g.phase === 'mull') { if (!me.m && (g.turn === k || r.p[g.turn].m)) botMull(r, k); return; }
+  if (g.turn !== k) return;
+  if (g.phase === 'main') return botMain(r, k);
+  if (g.phase === 'battle') { if (!botBattle(r, k)) botAct(r, k, { t: 'next' }); return; }
+  if (g.phase === 'end') return botEnd(r, k);
+}
+function botTick() {
+  const now = Date.now();
+  for (const c in rooms) {
+    const r = rooms[c], g = r.g; if (!r.bot || !g || g.over) continue;
+    const bt = r.bot, k = botIdx(r), hu = r.p[1 - k];
+    if (!hu.ws || hu.ws.readyState !== 1 || hu.dc || now < bt.at) continue;
+    bt.at = now + (bt.lv === 3 ? 500 : 800) + Math.random() * 500;
+    CR = r; if (bt.tn !== g.n) { bt.tn = g.n; bt.tried = new Set(); }
+    try { botStep(r, k); } catch (e) { console.error('bot', e); bt.fail++; }
+    if (bt.fail >= 10 && !g.over) { bt.fail = 0; console.error('bot stuck -> surrender', c); botAct(r, k, { t: 'surrender' }); }
+  }
+}
+setInterval(botTick, 300);
+
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig, pushFst, friendStat, userWs };
