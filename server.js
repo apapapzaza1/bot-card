@@ -50,11 +50,14 @@ const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => {
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11'];
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
+let RATES; try { RATES = JSON.parse(fs.readFileSync(path.join(__dirname, 'rates.json'), 'utf8')); } catch (e) { console.log('rates.json missing, using defaults'); RATES = { commons: 3, rare: { R: 90, SR: 10 }, hit: { R: 50, SR: 32, UR: 11, SEC: 5.8, UBR: 1.2 }, pity: { after: 20, table: { UR: 70, SEC: 27, UBR: 3 } } }; }
+const ORDER = ['C', 'R', 'SR', 'UR', 'SEC', 'UBR', 'USEC'], HIGH = ['UR', 'SEC', 'UBR', 'USEC'];
+const wpick = t => { const e = Object.entries(t); let x = Math.random() * e.reduce((q, [, w]) => q + w, 0); for (const [k, w] of e) if ((x -= w) < 0) return k; return e[e.length - 1][0]; };
 function pack(set, gar) {
-  const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
-  const by = r => R.filter(x => x.r === r), w = () => { const x = Math.random(); return gar ? (x < .7 ? 'UR' : 'SCR') : x < .62 ? 'R' : x < .9 ? 'SR' : x < .98 ? 'UR' : 'SCR'; };
-  const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
-  return [g('C'), g('C'), g('C'), g('R'), g(w())];
+  const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => ORDER.includes(r) && R.push({ id: c.id, r })));
+  const by = r => R.filter(x => x.r === r);
+  const g = r => { const i = ORDER.indexOf(r); let a = []; for (let k = i; k >= 0 && !a.length; k--) a = by(ORDER[k]); for (let k = i + 1; k < ORDER.length && !a.length; k++) a = by(ORDER[k]); return pick(a.length ? a : R); };
+  return [g('C'), g('C'), g('C'), g(wpick(RATES.rare)), g(wpick(gar ? RATES.pity.table : RATES.hit))];
 }
 function preDeck(s) { const x = ST[s]; return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id) }; }
 async function pickDeck(m, user, ban, exs) {
@@ -687,15 +690,15 @@ wss.on('connection', ws => {
       }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
-        if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= 20); if (['UR','SCR'].includes(p[4].r)) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        if (!SETS.includes(m.set) || !CARDS.some(c => c.id.startsWith(m.set + '-'))) E('ชุดนี้ยังไม่เปิดขาย'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
+        const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= RATES.pity.after); if (HIGH.includes(p[4].r)) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
       if (m.t === 'code') {
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, BUGFIXALOT: { gems: 5555, art: 2 }, ...((await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); d.codes.push(c);
         let ps = []; d.gems += X.gems || 0;
-        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','CBR','SCR'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
+        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','UBR','USEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: X.gems ? 'ได้ ' + X.gems + ' Gem' : '' })); return;
       }
       if (m.t === 'join') {
