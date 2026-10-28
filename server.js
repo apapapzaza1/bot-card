@@ -132,7 +132,7 @@ function summonFree(r, i, c) {
 function mill(r, i, n, src) {
   const p = r.p[i]; if (src) p.av.forEach(a => { if (a.id === 'SD03-004' && src.id !== 'SD03-004') n += 2; });
   const cs = []; for (let k = 0; k < n && p.deck.length; k++) cs.push(p.deck.pop());
-  cs.forEach(c => p.hell.push(c)); cs.length && fx({ k: 'mill', i, ids: cs.map(c => c.id) }); log(r, '🕳 ' + p.name + ': ธรณีสูบ ' + cs.length + ' ใบ (' + cs.map(c => B[c.id].n).join(', ') + ')');
+  cs.forEach(c => p.hell.push(c)); cs.length && fx({ k: 'mill', i, ids: cs.map(c => c.id), rs: cs.map(c => c.rar || null) }); log(r, '🕳 ' + p.name + ': ธรณีสูบ ' + cs.length + ' ใบ (' + cs.map(c => B[c.id].n).join(', ') + ')');
   cs.forEach(c => { if (c.id === 'SD03-018') c.mh = r.g.n; });
   if (cs.some(c => c.id === 'BT01-018')) { cs.filter(c => c.id === 'BT01-018').forEach(c => { const k = p.hell.indexOf(c); if (k >= 0) { p.hell.splice(k, 1); p.deck.push(c); } }); shuf(p.deck); log(r, '✨ นีโม่ กลับเข้า Deck แล้วสับ'); }
   cs.filter(c => c.id === 'BT01-015').forEach(() => r.g.q.push(() => { mill(r, i, 2); mill(r, 1 - i, 2); }));
