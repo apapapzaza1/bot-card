@@ -243,7 +243,7 @@ details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck i
 #rj{position:fixed;left:0;right:0;top:0;height:33.34dvh;z-index:50;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:linear-gradient(180deg,#b91c1c,#7f1d1d);color:#fff;border-bottom:4px solid #fecaca;border-radius:0 0 22px 22px;box-shadow:0 12px 40px #000c;animation:rjd .65s cubic-bezier(.2,1.4,.4,1)}
 #rj[hidden]{display:none}@keyframes rjd{from{transform:translateY(-110%)}}
 @media(min-width:900px){#rj{left:33.333vw;right:auto;width:33.334vw;height:33.334vh}}
-#rj .rjb{text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}#rj h2{margin:0;font-size:1.5em;text-shadow:0 0 14px #f88}
+#rj .rjx{position:absolute;top:calc(8px + env(safe-area-inset-top));right:10px;width:30px;height:30px;padding:0;margin:0;border:0;border-radius:50%;background:#0007;color:#fff;font-size:15px;line-height:30px;cursor:pointer}#rj .rjx:active{background:#000b}#rj .rjb{text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}#rj h2{margin:0;font-size:1.5em;text-shadow:0 0 14px #f88}
 #rj .rjt{font-size:3em;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}#rj .rjt.hot{animation:bl2 .6s infinite}@keyframes bl2{50%{color:#fde047;transform:scale(1.12)}}
 #rj .rjbt{display:flex;gap:10px;margin-top:4px}#rj .rjbt button{margin:0;padding:10px 20px;font-weight:700;font-size:1.05em}
 #mid .c .wb,#mid .c .ab{position:absolute;text-decoration:none;font-size:max(9px,1.9cqw);font-weight:800;color:#fff;background:#000b;border-radius:6px;padding:0 3px;line-height:1.3}#mid .c .wb{left:1px;bottom:1px}#mid .c .ab{right:1px;top:1px;color:#fde047;animation:bl2 1s infinite}
@@ -308,7 +308,7 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 #bar .br2 button.endb.sm{min-height:38px;font-size:.95em;padding:6px 10px;box-shadow:0 3px 0 #7f1d1d}
 #mlg{position:fixed;inset:0;z-index:12;background:radial-gradient(circle at 50% 30%,#1d2f6bee,#05060ff5);backdrop-filter:blur(6px);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;overflow:auto}#mlg[hidden]{display:none}#mlg h2{margin:0}
 #mlg .mlr{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;--w:min(27vw,128px);max-width:640px}#mlg .mlr .c{margin:0;position:relative;cursor:pointer;transition:transform .15s}#mlg .mlr .c.pay{transform:translateY(-10px);outline:3px solid #ff5252;box-shadow:0 0 16px #f55}#mlg .mlr .c.pay::after{content:'เปลี่ยน';position:absolute;left:0;right:0;bottom:0;background:#d32f2f;color:#fff;font-size:12px;font-weight:700;padding:2px 0;border-radius:0 0 6px 6px}
-#mlg .mlb{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}#mlg .mlb button{margin:0;min-height:52px;padding:10px 20px;font-size:1.1em;font-weight:700;border-radius:12px}#mlg .mlb button:disabled{opacity:.45}
+#mlg .mlb{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:min(100% - 24px,420px);margin:0 auto;padding:0 6px;box-sizing:border-box}#mlg .mlb button{margin:0;width:100%;min-width:0;min-height:44px;padding:8px 6px;font-size:.95em;font-weight:700;border-radius:12px;white-space:nowrap;box-sizing:border-box}#mlg .mlb button:disabled{opacity:.45}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -339,7 +339,7 @@ const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C
 const ZL={av:'Avatar Zone',co:'Construct Zone',mg:'Magic Zone'},ZS={av:'มี Avatar บนสนามได้สูงสุด 4 ใบ',co:'มี Construct ได้สูงสุด 3 ใบ',mg:'เล่น Magic ได้ประเภทละครั้ง'};
 function conn(){if(ws&&ws.readyState<2)return;const w=ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
 w.onopen=()=>cfg.tok&&send({t:'tok',tok:cfg.tok});w.onclose=()=>{if(w!==ws)return;dropped();setTimeout(conn,2000)};
-w.onmessage=e=>{const m=JSON.parse(e.data);if(m.err){if(/เซสชัน/.test(m.err)){cfg.tok='';ap();$('ld').hidden=true;$('auth').hidden=false;return}return alert(m.err)}
+w.onmessage=e=>{const m=JSON.parse(e.data);if(m.err){if(/เซสชัน/.test(m.err)){cfg.tok='';ap();$('ld').hidden=true;$('auth').hidden=false;return}if((RJ||RJX||FFQ)&&/ไม่พบห้อง|ไม่มีเกมที่ค้างอยู่/.test(m.err))return rjLobby('เกมนี้จบไปแล้ว หรือห้องถูกปิด');return alert(m.err)}
 if(m.t=='auth'){cfg.tok=m.tok;ap();me(m.me);$('auth').hidden=true;$('ld').hidden=true;$('lobby').hidden=false;if(FFQ){FFQ=0;send({t:'rjff'})}else if(cur)send({t:'join',room:cur})}
 if(m.t=='me'){if(m.gain)GAIN=m.gain;me(m.me);if(S&&S.over)endUI()}if(m.note&&m.t!='packs')toast(m.note);
 if(m.t=='clk')m.a.forEach((v,k)=>{const e=$('ck'+k);if(e)e.textContent=' ⏱'+Math.floor(v/6e4)+':'+String(Math.floor(v/1e3)%60).padStart(2,'0')});if(m.t=='dv'){DV=m.cards;dvs()}if(m.t=='rmq'){RMQ=Date.now()+10000;if(S&&S.over)endUI()}if(m.t=='rmx'){alert('ไม่มีการตอบรับ กลับหน้าหลัก');location.reload()}if(m.t=='packs'){me(m.me);packs(m.ps,m.note)}
@@ -652,7 +652,7 @@ else if(f.k=='summon'){const p=pos(f.u);if(!p)return;fxEl('<div class="fxsum"></
 else if(f.k=='exile'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxexv"></div>',p.x,p.y,1300);fxEl(`<div class="c im fxexc" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,1300);fxEl('<div class="fxbn ex">🌀 เนรเทศ!</div>',innerWidth/2,innerHeight*.4,1500);sfx('hit')}
 else if(f.k=='scout'){const w=f.i==S.i?'0':'1',a=rc(document.querySelector('[data-dp="'+w+'"]'))||{x:innerWidth/2,y:innerHeight/2};fxEl('<div class="fxbn sc">🔎 สอดแนม '+f.ids.length+' ใบ</div>',innerWidth/2,innerHeight*.36,1700);const n=f.ids.length;f.ids.forEach((id,k)=>{const ar=art(id),dx=(k-(n-1)/2)*70;setTimeout(()=>fxEl(`<div class="c im fxsc" style="--w:62px;--dx:${dx}px;${ar}">${ar?'':esc((C[id]||{}).n||'')}</div>`,a.x,a.y,1500),k*180)});sfx('play')}
 else if(f.k=='say'){const n=(C[f.id]||{}).n||'';fxEl(`<div class="fxsay"><b>${esc(n)}</b><span>${esc(f.t||'')}</span></div>`,innerWidth/2,innerHeight*.28,1700)}}
-let ODC=0,RJ=null,FFQ=0,FT='all',DISC=0;
+let ODC=0,RJ=null,RJX=0,FFQ=0,FT='all',DISC=0;
 const ophand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12);return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${'<div class="c bk"></div>'.repeat(k)}</div><span class="ohn">✋ ${n}</span></div>`};
 function tbUI(){const e=$('tb'),pre=['dice','pick','mull'].includes(S.phase);
 const mine=S.spec?!S.tp:S.mine,nm=S.spec?(S.tp?S.op:S.me).name:mine?S.me.name:S.op.name,pi_={main:1,battle:2,end:3}[S.phase];
@@ -672,13 +672,16 @@ function feedOpen(o){const e=$('lgs');e.classList.toggle('open',!!o);if(o&&S){fe
 function feedOpenT(k){FT=k;feedOpen(1)}
 function feedSend(i){const x=i.value.trim();if(x){send({t:'chat',x});i.value=''}}
 function rjMsg(t){const e=$('rjs');if(e)e.textContent=t}
-function rjShow(){const e=$('rj'),was=!e.hidden;e.innerHTML=`<div class="rjb"><h2>🚨 รีบเข้าด่วน!!!</h2><div class="rjt" id="rjt">3:00</div><small id="rjs">หลุดออกจากเกม — กลับเข้าให้ทันก่อนหมดเวลา ไม่งั้นปรับแพ้</small><div class="rjbt"><button class="pri" onclick="rjGo()">🔄 รีจอย</button><button class="dng" onclick="rjFf()">🏳 ยอมแพ้</button></div></div>`;e.hidden=false;if(!was){e.style.animation='none';void e.offsetWidth;e.style.animation=''}rjTick()}
+function rjShow(){const e=$('rj'),was=!e.hidden;e.innerHTML=`<button class="rjx" onclick="rjX()" title="ปิดและยอมแพ้" aria-label="ปิดและยอมแพ้">✕</button><div class="rjb"><h2>🚨 รีบเข้าด่วน!!!</h2><div class="rjt" id="rjt">3:00</div><small id="rjs">หลุดออกจากเกม — กลับเข้าให้ทันก่อนหมดเวลา ไม่งั้นปรับแพ้</small><div class="rjbt"><button class="pri" onclick="rjGo()">🔄 รีจอย</button><button class="dng" onclick="rjFf()">🏳 ยอมแพ้</button></div></div>`;e.hidden=false;if(!was){e.style.animation='none';void e.offsetWidth;e.style.animation=''}rjTick()}
 function dropped(){if(!S||S.over||S.spec||$('game').hidden||RJ)return;RJ={until:Date.now()+18e4,room:cur,own:1};rjShow()}
 function rjGo(){const r=(RJ&&RJ.room)||cur;if(!r)return;cur=r;if(ws&&ws.readyState==1){send({t:'join',room:r})}else{rjMsg('กำลังเชื่อมต่อใหม่…');if(!ws||ws.readyState>1)conn()}}
+function rjHide(){RJ=null;FFQ=0;$('rj').hidden=true}
+function rjLobby(msg){rjHide();RJX=0;cur=null;S=null;['game','room','end'].forEach(k=>{const x=$(k);x&&(x.hidden=true)});$('lobby').hidden=false;document.body.classList.remove('ing');msg&&toast(msg)}
+function rjX(){if(!confirm('ปิดแถบนี้และยอมแพ้เกมนี้ ?'))return;RJX=1;if(ws&&ws.readyState==1)send({t:'rjff'});else{FFQ=1;if(!ws||ws.readyState>1)conn()}rjHide();setTimeout(()=>{if(RJX)rjLobby()},4000)}
 function rjFf(){if(!confirm('ยืนยันยอมแพ้ ?'))return;if(ws&&ws.readyState==1)send({t:'rjff'});else{FFQ=1;rjMsg('กำลังเชื่อมต่อเพื่อยอมแพ้…');if(!ws||ws.readyState>1)conn()}}
 function rjTick(){if(!RJ)return;const l=RJ.until-Date.now(),t=$('rjt');if(l>0){const s=Math.ceil(l/1e3);if(t){t.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');t.classList.toggle('hot',s<=30)}return}
 if(t){t.textContent='0:00'}rjMsg('หมดเวลา — กำลังตรวจสอบกับเซิร์ฟเวอร์…');if(!RJ.exp){RJ.exp=Date.now();send({t:'rjq'})}else if(Date.now()-RJ.exp>15000)lostUI({op:RJ.op})}
-function lostUI(m){const e=$('end');RJ=null;$('rj').hidden=true;e.className='lose';e.hidden=false;e.dataset.k='lost';sfx('lose');e.innerHTML=`<div class="eb pop"><div class="et">💀</div><h1>พ่ายแพ้</h1><div>${m&&m.self?'คุณยอมแพ้':'หลุดจากเกมเกิน 3 นาที'}${m&&m.op?' · คู่แข่ง: '+esc(m.op):''}</div><button class="pri" onclick="send({t:'lostack'});location.reload()">🏠 กลับหน้าหลัก</button></div>`}
+function lostUI(m){const e=$('end');RJ=null;RJX=0;$('rj').hidden=true;e.className='lose';e.hidden=false;e.dataset.k='lost';sfx('lose');e.innerHTML=`<div class="eb pop"><div class="et">💀</div><h1>พ่ายแพ้</h1><div>${m&&m.self?'คุณยอมแพ้':'หลุดจากเกมเกิน 3 นาที'}${m&&m.op?' · คู่แข่ง: '+esc(m.op):''}</div><button class="pri" onclick="send({t:'lostack'});location.reload()">🏠 กลับหน้าหลัก</button></div>`}
 setInterval(()=>{rjTick();odcTick()},250);
 addEventListener('online',()=>{if(!ws||ws.readyState>1)conn()});
 $('lg').innerHTML=$('lgs').innerHTML=feedSkel();
