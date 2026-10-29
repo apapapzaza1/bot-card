@@ -290,6 +290,7 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 #bar .srb{min-height:30px;font-size:.85em}
 #tb{padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:3px;font-size:.78em;gap:2px 8px}
 }
+.dfx{left:0;top:0;animation:none!important;width:min(11vw,46px);opacity:0}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -473,7 +474,7 @@ if(S.log.length>lastLog&&/LIFE หงาย|สู้|ตาย/.test(S.log.slic
 if(S.ev&&S.ev.n!=lastEv){lastEv=S.ev.n;zoom(S.ev.id,2400);sfx('play')}
 if(sel&&!find(sel))sel=null;diceUI();akUI();if((!sel&&S.phase!='mull')||(S.ask&&S.ask.mine))hidePv();detail();bar();rx();btl();drt();endUI();handFit();fitZones();playFx();updPos()}
 let tt;const toast=t=>{const e=$('ts');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,1600)};
-function drawFx(me,n){for(let k=0;k<Math.min(n,6);k++){const e=document.createElement('div');e.className='bk dfx '+(me?'dme':'dop');e.style.animationDelay=(k*.16)+'s';document.body.append(e);setTimeout(()=>e.remove(),1400+k*160)}}
+function drawFx(me,n){const sds=document.querySelectorAll('#mid .sd'),sd=sds.length?(me?sds[sds.length-1]:sds[0]):null,a=rc(sd&&sd.querySelector('.z-dk'))||{x:innerWidth*(me?.85:.15),y:innerHeight*(me?.6:.25)},b=rc(me?$('hand'):document.querySelector('#mid .oh'))||{x:innerWidth/2,y:me?innerHeight*.9:30};for(let k=0;k<Math.min(n,6);k++){const e=document.createElement('div');e.className='bk dfx';document.body.append(e);const w=e.offsetWidth,h=e.offsetHeight,f=(q,sc)=>`translate(${q.x-w/2}px,${q.y-h/2}px) scale(${sc})`;const an=e.animate([{transform:f(a,.6),opacity:0},{transform:f(a,.8),opacity:1,offset:.12},{transform:f(b,1),opacity:.2}],{duration:750,delay:k*170,easing:'ease-in-out',fill:'both'});an.onfinish=()=>e.remove();setTimeout(()=>e.remove(),2500+k*170)}}
 function drt(){const d=S.dr;if(!d||d.n==lastDr)return;lastDr=d.n;if(d.c>0){drawFx(d.who==S.i,d.c);toast((d.who==S.i?'คุณ':'ศัตรู')+'จั่ว '+d.c+' ใบ');sfx('draw')}}
 function rx(){const e=$('rx'),p=S.pend,R=S.me.hand.filter(x=>{const c=info(x);return c.t=='Magic'&&c.st=='React'});
 if(S.over||!p||!p.mine||S.ru||S.ask){e.hidden=true;rxSel=null;return}
