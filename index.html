@@ -605,7 +605,7 @@ const f=sel&&find(sel),c=f&&info(f.x);
 if(mode=='atk'){const ok=lifeT();BM.insertAdjacentHTML('beforeend','<div class="hint">⚔ แตะ Avatar/Construct ศัตรูที่จะโจมตี'+(ok?' หรือแตะแถว LIFE':' (ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar)')+' · แตะ Avatar ของเราที่มี สามัคคี เพื่อเสริมพลัง ('+supl.length+')</div>');A('🎯 ตี LIFE',()=>send({t:'atk',u:atk,tg:'life',sup:supl})).disabled=!ok}
 if(mode){return A('ยกเลิก',()=>{mode=null;pay=[];supl=[];render()})}
 if(f&&!f.o){if(f.z=='hand'){if(c.t=='Avatar'||c.t=='Construct')A(c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',()=>{if(c.c&&gemSum(f)<c.c)return toast(gemMsg(f));c.c?(mode='pay',pay=[],render()):send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:[]})});
-if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}))}
+if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}));if(f.x.ab&&S.mine&&S.phase=='main'&&!S.pend&&!S.ask)A('⚡ ใช้ความสามารถ',()=>send({t:'use',u:sel})).className='atkb'}
 else{if(f.x.ab&&S.mine&&S.phase=='main'&&!S.pend&&!S.ask)A('⚡ ใช้ความสามารถ',()=>send({t:'use',u:sel})).className='atkb';if(f.z=='av'&&(S.phase=='battle'||S.phase=='main'&&S.tn>0)&&S.mine&&!S.pend){const e=A(f.x.tired?'💤 นอนอยู่ โจมตีไม่ได้':'⚔ โจมตี',()=>{atk=sel;mode='atk';render()});e.disabled=!!f.x.tired;e.className='atkb'}}}
 if(S.mine){const fin=()=>{if(S.me.hand.length>7){DISC=1;pay=[];render()}else send({t:'next',fin:1})};
 if(S.phase=='main'&&S.tn>0&&!S.pend){A('⚔ Battle',()=>send({t:'next'}),BR).className='btlb';A('จบเทิร์น',fin,BR).className='endb sm'}

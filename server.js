@@ -84,7 +84,8 @@ const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 /* ===== KD: การ์ดพิมพ์ซ้ำ (reprint) ใช้สกิลเดิมของการ์ดต้นฉบับ: instance เก็บ id ต้นฉบับ + kd = id จริง (ใช้แสดงรูป) ===== */
-const CANON = { 'KD01-006': 'SD01-002', 'KD01-008': 'BT02-008', 'KD01-010': 'BT01-004', 'KD01-013': 'BT01-038', 'KD01-014': 'BT02-045', 'KD01-015': 'SD08-013', 'KD01-017': 'SD01-017', 'KD01-018': 'BT02-054', 'KD01-019': 'SD01-020', 'KD01-020': 'BT02-060' };
+const CANON = { 'KD01-006': 'SD01-002', 'KD01-008': 'BT02-008', 'KD01-010': 'BT01-004', 'KD01-013': 'BT01-038', 'KD01-014': 'BT02-045', 'KD01-015': 'SD08-013', 'KD01-017': 'SD01-017', 'KD01-018': 'BT02-054', 'KD01-019': 'SD01-020', 'KD01-020': 'BT02-060',
+  'KD02-003': 'SD03-001', 'KD02-004': 'BT01-016', 'KD02-006': 'SD03-002', 'KD02-007': 'SD03-003', 'KD02-008': 'SD03-004', 'KD02-009': 'BT01-015', 'KD02-015': 'BT02-046', 'KD02-016': 'SD08-013', 'KD02-018': 'BT01-041', 'KD02-020': 'BT02-058' };
 const inst = id => CANON[id] ? { u: UID++, id: CANON[id], kd: id, pw: 0, tired: false } : { u: UID++, id, pw: 0, tired: false };
 const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
@@ -109,7 +110,7 @@ const isRat1 = x => isRat(x) && B[x.id].c === 1 && B[x.id].g === 1 && B[x.id].p 
 const guanOn = (r, i) => r.p[i].av.some(a => a.id === 'SD07-001');
 const protectedFrom = (r, who, x) => who !== undefined && !x.tk && ((isKP(x) && x.id !== 'SD07-001' && guanOn(r, r.p.findIndex(p => p.av.includes(x))) && r.p.findIndex(p => p.av.includes(x)) !== who) || (x.hero === r.g.n && r.p.findIndex(p => p.av.includes(x)) !== who));
 const allAvT = (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x)).map(a => a.x.u);
-const canPlaceAv = (r, i, c) => { const p = r.p[i], L = r.g.land, cap = (L && L.o === i && L.c.id === 'SD08-017' && p.av.every(isRat) && isRat(c)) ? 6 : 4; return p.av.filter(x => !x.tk).length < cap && p.av.length < 6; };
+const canPlaceAv = (r, i, c) => { if (c.id === 'KD02-001' && !c.kdOK) return false; const p = r.p[i], L = r.g.land, cap = (L && L.o === i && L.c.id === 'SD08-017' && p.av.every(isRat) && isRat(c)) ? 6 : 4; return p.av.filter(x => !x.tk).length < cap && p.av.length < 6; };
 const addHold = (x, v, until) => { (x.hd = x.hd || []).push({ v, until }); fx({ k: 'buff', u: x.u, v }); };
 function endTurnFx(r) {
   const g = r.g;
@@ -180,7 +181,7 @@ function P(r, x) {
     v += mod456(r, x, f) + mod03(r, x, f) + mod04(r, x, f) + mod05(r, x, f);
     r.p.forEach(q => q.mg.forEach(m => { if (m.at === x.u) {
       if (m.id === 'SD01-016') v += 1;
-      if (m.id === 'SD03-018' && s === 'นรก') v += 1;
+      if ((m.id === 'SD03-018' || m.id === 'KD02-019') && s === 'นรก') v += 1;
       if (m.id === 'SD07-018') v += B[x.id].n.startsWith('กวนอู') ? 2 : 1;
       if (m.id === 'SD08-016') v += p.av.filter(isRat).length;
     } }));
@@ -190,7 +191,7 @@ function P(r, x) {
       if (k.id === 'SD08-019' && isRat1(x)) v += 1;
     });
     (x.hd || []).forEach(h => { if (h.until >= r.g.n) v += h.v; });
-    if (x.id === 'SD03-005') v += new Set(p.hell.filter(h => isAv(h) && B[h.id].n.startsWith('นายนิรยบาล')).map(h => B[h.id].n)).size;
+    if (x.id === 'SD03-005') v += new Set(p.hell.filter(h => isAv(h) && isNir(h)).map(h => B[h.id].n)).size;
   }
   v -= neg053(r, x);
   return Math.max(0, v);
@@ -218,11 +219,12 @@ function mill(r, i, n, src) {
   const p = r.p[i]; if (src) p.av.forEach(a => { if (a.id === 'SD03-004' && src.id !== 'SD03-004') n += 2; });
   const cs = []; for (let k = 0; k < n && p.deck.length; k++) cs.push(p.deck.pop());
   cs.forEach(c => p.hell.push(c)); cs.length && fx({ k: 'mill', i, ids: cs.map(c => c.id) }); log(r, '🕳 ' + p.name + ': ธรณีสูบ ' + cs.length + ' ใบ (' + cs.map(c => B[c.id].n).join(', ') + ')');
-  cs.forEach(c => { if (c.id === 'SD03-018') c.mh = r.g.n; });
+  cs.forEach(c => { if (c.id === 'SD03-018' || c.id === 'KD02-019') c.mh = r.g.n; });
   const nemo = cs.filter(c => c.id === 'BT01-018'); if (nemo.length) { nemo.forEach(c => { const k = p.hell.indexOf(c); if (k >= 0) { p.hell.splice(k, 1); p.deck.push(c); } }); shuf(p.deck); log(r, '🔁 นีโม่ กลับเข้า Deck แล้วสับ'); }
   if (cs.some(c => c.id === 'BT01-015')) r.g.q.unshift(() => { log(r, '💀 นายนิรยบาล เต๋า: ทั้งสองฝ่ายธรณีสูบ 2 ใบ'); mill(r, 0, 2); mill(r, 1, 2); });
   if (!p.deck.length) return lose(r, i, 'เด็คหมด');
   cs.filter(c => c.id === 'SD03-003').forEach(c => r.g.q.unshift(() => ask(r, i, { yn: true, text: 'นายนิรยบาล แว่น ถูกธรณีสูบ — อัญเชิญลง Avatar Zone จากนรกไหม?', cb: y => y && summonFree(r, i, c) })));
+  kdMill(r, i, cs);
 }
 function tutor(r, i, pred, label) {
   const p = r.p[i], L = p.deck.filter(pred).map(c => c.u);
@@ -248,7 +250,7 @@ function fxSummon0(r, i, x) {
     case 'SD02-004': { const fin = us => { us.forEach(u => { const k = me.hell.findIndex(c => c.u === u); me.deck.push(...me.hell.splice(k, 1)); }); shuf(me.deck); draw(r, me, 1); log(r, '✨ ' + me.name + ': คืน ' + us.length + ' ใบเข้า Deck แล้วจั่ว 1'); };
       ask(r, i, { text: 'จุติ: เลือก กุ่ย/ฮอล/นาย จากนรก ได้สูงสุด 3 ใบ กลับเข้า Deck', opts: trioHell(r, i), n: 3, min: 0, cb: fin, none: () => fin([]) }); break; }
     case 'SD02-005': ask(r, i, { text: 'จุติ: เลือก กุ่ย/ฮอล/นาย จากนรก ได้สูงสุด 3 ใบ ขึ้นมือ', opts: trioHell(r, i), n: 3, min: 0, cb: us => { us.forEach(u => { const k = me.hell.findIndex(c => c.u === u); me.hand.push(...me.hell.splice(k, 1)); }); log(r, '✨ ' + me.name + ': นำ ' + us.length + ' ใบจากนรกขึ้นมือ'); } }); break;
-    case 'SD03-001': ask(r, i, { text: 'จุติ: เลือก Avatar นายนิรยบาล ในนรก 1 ใบ อัญเชิญลงสนาม', opts: me.hell.filter(c => isAv(c) && B[c.id].n.startsWith('นายนิรยบาล')).map(c => c.u), cb: us => { const c = me.hell.find(h => h.u === us[0]); c && summonFree(r, i, c); } }); break;
+    case 'SD03-001': ask(r, i, { text: 'จุติ: เลือก Avatar นายนิรยบาล ในนรก 1 ใบ อัญเชิญลงสนาม', opts: me.hell.filter(c => isAv(c) && isNir(c)).map(c => c.u), cb: us => { const c = me.hell.find(h => h.u === us[0]); c && summonFree(r, i, c); } }); break;
     default: if (SUM[x.id]) { fx({ k: 'say', id: x.id, t: 'จุติ' }); SUM[x.id](r, i, x); }
   }
 }
@@ -278,7 +280,7 @@ const MG = {
   'SD02-019': { react: 1, steps: [{ key: 'c', pay: 1, text: 'ส่ง กุ่ย/ฮอล/นาย 1 ใบ จากมือ/สนามเรา ลงนรก', opts: trioAny }, { key: 't', text: 'เลือก Avatar บนสนาม 1 ใบ นำกลับขึ้นมือ', opts: (r, i) => allAvT(r, i) }],
     run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t && t.z === 'av') { log(r, '✨ นำ ' + nmOf(t.c) + ' กลับขึ้นมือ'); bounce(r, t.c.u); } } },
   'SD03-016': { steps: [{ key: 'c', pay: 1, text: 'ส่ง Avatar นรก จากมือ 1 ใบ ลงนรก', opts: handAv(c => symOf(c) === 'นรก') }], run: (r, i) => { mill(r, i, 2); draw(r, r.p[i], 2); log(r, '✨ ' + r.p[i].name + ': จั่ว 2 ใบ'); } },
-  'SD03-017': { run: (r, i) => { const p = r.p[i], L = p.deck.filter(c => isAv(c) && B[c.id].n.startsWith('นายนิรยบาล') && B[c.id].c <= 4).map(c => c.u);
+  'SD03-017': { run: (r, i) => { const p = r.p[i], L = p.deck.filter(c => isAv(c) && isNir(c) && B[c.id].c <= 4).map(c => c.u);
     const fin = u => { if (u != null) { const k = p.deck.findIndex(c => c.u === u), [c] = p.deck.splice(k, 1); p.hand.push(c); p.noCost = p.noCost || []; p.noCost.push(B[c.id].n); log(r, '✨ ' + p.name + ': นำ ' + B[c.id].n + ' ขึ้นมือ (ใช้เป็น Cost ไม่ได้อีก)'); } else log(r, '✨ ค้น Deck ไม่พบ'); shuf(p.deck); };
     if (!L.length) return fin(null); ask(r, i, { text: 'เลือก นายนิรยบาล Cost ≤ 4 จาก Deck 1 ใบ ขึ้นมือ', opts: L, cb: us => fin(us[0]) }); } },
   'SD03-020': { react: 'summon', steps: [{ key: 'c', pay: 1, text: 'ส่ง Avatar นรก จากมือ ที่ Cost ≥ Avatar ที่อัญเชิญ ลงนรก', opts: (r, i, cx) => handAv(c => symOf(c) === 'นรก' && B[c.id].c >= (cx.ev.cost || 0))(r, i) }],
@@ -316,7 +318,7 @@ function castFinal(r, i, card, c, def, ctx, steps) {
   else me.hell.push(card);
   ev(r, c.id); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + (t ? ' → ' + nmOf(t.c) : ''));
   if (c.t === 'Magic' && c.s === 'ฤษี') rishiFx(r);
-  if (c.st === 'React') { def.run && def.run(r, i, ctx); const p = g.pend; if (p && p.who === i) { g.pend = null; if (p.k === 'atk' && !p.cancel) { if (g.ask) g.pendAfter = () => resolveAtk(r, p); else resolveAtk(r, p); } } }
+  if (c.st === 'React') kdReactGate(r, i, c, cancelled => { if (!cancelled) def.run && def.run(r, i, ctx); const p = g.pend; if (p && p.who === i) { g.pend = null; if (p.k === 'atk' && !p.cancel) { if (g.ask) g.pendAfter = () => resolveAtk(r, p); else resolveAtk(r, p); } } });
   else { if (def.run) g.q.push(() => ctx.cancelled ? log(r, '❌ ' + c.n + ' ถูกยกเลิก') : def.run(r, i, ctx)); open(r, { who: 1 - i, k: 'ev', ev: { k: 'cast', id: c.id, i, cx: ctx } }); }
 }
 
@@ -654,7 +656,7 @@ const pickOp = (txt, f) => ({ steps: [{ key: 't', text: txt, opts: (r, i) => r.p
 Object.assign(AB, {
   'BT02-010': { z: 'av', can: (r, i, c) => r.p[i].av.some(a => a.u !== c.u && nmHas(a, 'ไอดอล')), steps: [{ key: 't', text: 'เลือก Avatar ชื่อ "ไอดอล" ที่จะสวมใส่', opts: (r, i, cx) => r.p[i].av.filter(a => a.u !== cx.card.u && nmHas(a, 'ไอดอล')).map(a => a.u) }], run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } },
   'BT02-028': wearUse,
-  'BT02-058': { z: 'land', steps: [{ key: 'd', pay: 1, text: 'ทิ้ง Avatar {นรก} 1 ใบจากบนมือ', opts: (r, i) => r.p[i].hand.filter(c => isAv(c) && symOf(c) === 'นรก').map(c => c.u) }, { key: 't', text: 'เลือก "นายนิรยบาล" (Cost ไม่เกิน 4) จากนรก', opts: (r, i) => r.p[i].hell.filter(c => isAv(c) && B[c.id].n.includes('นายนิรยบาล') && B[c.id].c <= 4).map(c => c.u) }], run: (r, i, cx) => { const c = fromZone(r, i, 'hell', cx.pick.t[0]); c && putAv(r, i, c); } },
+  'BT02-058': { z: 'land', steps: [{ key: 'd', pay: 1, text: 'ทิ้ง Avatar {นรก} 1 ใบจากบนมือ', opts: (r, i) => r.p[i].hand.filter(c => isAv(c) && symOf(c) === 'นรก').map(c => c.u) }, { key: 't', text: 'เลือก "นายนิรยบาล" (Cost ไม่เกิน 4) จากนรก', opts: (r, i) => r.p[i].hell.filter(c => isAv(c) && (B[c.id].n.includes('นายนิรยบาล') || c.id === 'KD02-002') && B[c.id].c <= 4).map(c => c.u) }], run: (r, i, cx) => { const c = fromZone(r, i, 'hell', cx.pick.t[0]); c && putAv(r, i, c); } },
 });
 Object.assign(SUM, {
   'BT02-001': (r, i) => lifeUp(r, i),
@@ -706,7 +708,7 @@ function fxSummon01(r, i, x) {
         ask(r, i, { text: 'จุติ: อัญเชิญ รัททาทุย จาก Deck (Cost คงเหลือ ' + left + ') — ไม่เลือก = จบ', opts, n: 1, min: 0, cb: us => { if (!us.length) { shuf(me.deck); return; } const c = me.deck.find(y => y.u === us[0]); left -= B[c.id].c; summonAny(r, i, us[0], 'deck'); step(); } }); };
       step(); break; }
     case 'BT01-011': ask(r, i, { text: 'จุติ: เลือก Magic บนสนาม 1 ใบ ทำลาย', opts: [...r.p[0].mg, ...r.p[1].mg].map(c => c.u), cb: us => { const f = find(r, us[0]); if (!f) return; take(r, us[0]); r.p[f.i].hell.push(f.c); log(r, '💥 ทำลาย Magic ' + B[f.c.id].n); } }); break;
-    case 'BT01-016': scout(r, i, 5, { text: 'จุติ: เลือก "พญายม" หรือ "นายนิรยบาล" 1 ใบ ขึ้นมือ', pred: c => nm(c) === 'พญายม' || nm(c).startsWith('นายนิรยบาล'), rest: 'bottom', then: c => c && me.hand.push(c) }); break;
+    case 'BT01-016': scout(r, i, 5, { text: 'จุติ: เลือก "พญายม" หรือ "นายนิรยบาล" 1 ใบ ขึ้นมือ', pred: c => nm(c) === 'พญายม' || nm(c).startsWith('นายนิรยบาล') || c.id === 'KD02-002' || c.id === 'KD02-001', rest: 'bottom', then: c => c && me.hand.push(c) }); break;
     case 'BT01-017': ask(r, i, { text: 'จุติ: เลือก Avatar ศัตรู 1 ใบ ยึดมาฝั่งเรา (สภาพนอน) — ไม่เลือกก็ได้', opts: r.p[1 - i].av.map(a => a.u), n: 1, min: 0, cb: us => us.length && stealCard(r, i, us[0]) }); break;
     case 'BT01-019': scout(r, i, 5, { text: 'จุติ: เลือก "สิมพลีนรก" 1 ใบ ขึ้นมือ', pred: c => nm(c) === 'สิมพลีนรก', rest: 'bottom', then: c => c && me.hand.push(c) }); break;
     case 'BT01-020': ask(r, i, { text: 'จุติ: เลือก Avatar ผี จาก Deck 1 ใบ อัญเชิญลงสนาม', opts: me.deck.filter(c => isAv(c) && symOf(c) === 'ผี').map(c => c.u), cb: us => { summonAny(r, i, us[0], 'deck'); shuf(me.deck); }, none: () => shuf(me.deck) }); break;
@@ -791,7 +793,7 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   CR = r; const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg') })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co') })), hell: p.hell, dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: g.fxl || [], tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: g.fxl || [], tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -910,6 +912,7 @@ function act(r, i, m) {
       mainOnly(); const f = own(m.u), c = B[f.c.id], av = m.t === 'summon';
       if (f.z !== 'hand' || c.t !== (av ? 'Avatar' : 'Construct')) E('ประเภทผิด');
       if (f.c.id === 'SD03-003') E('การ์ดนี้ลงสนามจากบนมือไม่ได้');
+      if (f.c.id === 'KD02-001') E('เมฟิสโตเฟเลส อัญเชิญได้ด้วยความสามารถของตัวเองเท่านั้น (สั่งใช้ จากมือ)');
       if (av && g.lim && g.lim[i] && symOf(f.c) !== g.lim[i]) E('เทิร์นนี้อัญเชิญได้เฉพาะ Avatar ' + g.lim[i]);
       if (av ? !canPlaceAv(r, i, f.c) : me.co.length >= 3) E(av ? 'Avatar เต็ม' : 'Construct เต็ม 3');
       if (!av && me.co.some(x => B[x.id].n === c.n)) E('Construct ชื่อซ้ำ');
@@ -1639,6 +1642,61 @@ Object.assign(SUM, {
   'KD01-007': (r, i) => scout(r, i, 3, { text: 'จุติ: เลือกการ์ด {Symbol เทพ} 1 ใบ จากที่สอดแนม ขึ้นมือ', pred: c => B[c.id].s === 'เทพ', rest: 'bottom', then: c => { if (c) { r.p[i].hand.push(c); log(r, '✋ นำ ' + B[c.id].n + ' ขึ้นมือ'); } } }),
 });
 Object.assign(MG, { 'KD01-016': { mod: 1 } });
+
+/* ===== KD02 พันธสัญญาโลหิต (นายนิรยบาล / ธรณีสูบ) ===== */
+const isNir = c => !c.tk && (B[c.id].n.startsWith('นายนิรยบาล') || c.id === 'KD02-002');   // ลิลิธ นับเป็นชื่อ "นายนิรยบาล"
+const hellNames = p => new Set(p.hell.filter(c => isAv(c) && B[c.id].s === 'นรก').map(c => B[c.id].n)).size;
+const KD_HAND = { 'KD02-001': 1 };
+const kdHandAb = (r, i, c) => (r.g.turn === i && r.g.phase === 'main' && !r.g.ask && !r.g.pend && ABIL[c.id] && ABIL[c.id].cond(r, i, c)) ? 1 : 0;
+function kdMill(r, i, cs) {
+  const p = r.p[i];
+  cs.filter(c => c.id === 'KD02-014').forEach(c => r.g.q.unshift(() => {
+    if (!p.hell.includes(c)) return; const L = p.hell.filter(x => isAv(x) && isNir(x)).map(x => x.u); if (!L.length) return;
+    ask(r, i, { yn: true, text: 'สัญญาเลือด ถูกธรณีสูบ — เนรเทศการ์ดนี้ แล้วอัญเชิญ "นายนิรยบาล" 1 ใบจากนรก?', cb: y => {
+      if (!y) return; const k = p.hell.indexOf(c); if (k < 0) return; p.hell.splice(k, 1); p.dk.push(c); log(r, '🌀 เนรเทศ สัญญาเลือด');
+      ask(r, i, { text: 'เลือก "นายนิรยบาล" จากนรก อัญเชิญลง Avatar Zone', opts: p.hell.filter(x => isAv(x) && isNir(x)).map(x => x.u), cb: us => { const t = p.hell.find(h => h.u === us[0]); t && summonFree(r, i, t); } });
+    } });
+  }));
+}
+// อย่าให้มีครั้งที่ 2: ยกเลิกผล React ของฝ่ายตรงข้าม (ใช้ได้แม้ใช้ React แล้วในเทิร์นนี้ / 1 ใบต่อเทิร์น)
+function kdReactGate(r, i, c, go) {
+  const g = r.g, o = 1 - i, k = r.p[o].hand.find(h => h.id === 'KD02-017');
+  if (!k || c.id === 'KD02-017' || g.used[o].kd17 || g.ask) return go(false);
+  ask(r, o, { yn: true, text: 'ฝ่ายตรงข้ามใช้ React "' + c.n + '" — ใช้ อย่าให้มีครั้งที่ 2 ยกเลิกผลของการ์ดใบนั้นไหม?', cb: y => {
+    if (!y || !r.p[o].hand.includes(k)) return go(false);
+    g.used[o].kd17 = 1; take(r, k.u); r.p[o].hell.push(k); ev(r, k.id); fx({ k: 'say', id: k.id, t: 'ยกเลิกผล React!' });
+    log(r, '🚫 ' + r.p[o].name + ' ใช้ อย่าให้มีครั้งที่ 2: ยกเลิกผลของ ' + c.n); go(true);
+  } });
+}
+Object.assign(MG, {
+  'KD02-014': { run: (r, i) => { const p = r.p[i]; mill(r, i, 3); r.g.q.push(() => { const n = hellNames(p) >= 5 ? 2 : 1; draw(r, p, n); log(r, '🩸 สัญญาเลือด: ' + p.name + ' จั่ว ' + n + ' ใบ'); }); } },
+  'KD02-017': { react: 'never' },
+  'KD02-019': { mod: 1 },
+});
+Object.assign(SUM, {
+  'KD02-005': (r, i, x) => { const p = r.p[i]; if (!p.hand.length) return;
+    ask(r, i, { text: 'จุติ: ทิ้งการ์ดบนมือ 1 ใบ เพื่อธรณีสูบ 3 ใบ แล้วอัญเชิญ Avatar {นรก} Cost ≤ 4 จากนรก (ยกเลิก = ไม่ใช้)', opts: p.hand.map(c => c.u), cancel: true, cb: us => {
+      sendHell(r, us[0]); mill(r, i, 3, x);
+      r.g.q.push(() => ask(r, i, { text: 'เลือก Avatar {นรก} Cost ≤ 4 จากนรก อัญเชิญลง Avatar Zone', opts: p.hell.filter(c => isAv(c) && B[c.id].s === 'นรก' && (B[c.id].c || 0) <= 4).map(c => c.u), cb: u2 => { const t = p.hell.find(h => h.u === u2[0]); t && summonFree(r, i, t); } }));
+    } }); },
+});
+Object.assign(ABIL, {
+  'KD02-001': { zone: 'hand', label: 'อัญเชิญเมฟิสโตเฟเลส (ทิ้งมือ 2 ใบ)', cond: (r, i, c) => hellNames(r.p[i]) >= 7 && r.p[i].hand.filter(h => h.u !== c.u).length >= 2 && canPlaceAv(r, i, { id: 'KD02-001', kdOK: 1 }),
+    run: (r, i, x) => { const p = r.p[i];
+      ask(r, i, { text: 'เมฟิสโตเฟเลส: เลือกการ์ดบนมือ 2 ใบ ที่จะทิ้ง (ยกเลิก = ไม่ใช้)', opts: p.hand.filter(h => h.u !== x.u).map(h => h.u), n: 2, min: 2, cancel: true, cb: us => {
+        us.forEach(u => sendHell(r, u)); const c = fromZone(r, i, 'hand', x.u); if (!c) return; c.kdOK = 1; fx({ k: 'say', id: c.id, t: 'ปีศาจแห่งพันธเลือด!' }); putAv(r, i, c, {});
+      } }); } },
+});
+Object.assign(AB, {
+  'KD02-001': { z: 'av', can: () => true, steps: [], run: (r, i, cx) => { const me = cx.card; mill(r, i, 5, me);
+    r.g.q.push(() => { fx({ k: 'say', id: me.id, t: 'ทำลายทุกสนาม!' }); allAv(r).filter(a => a.x.u !== me.u).forEach(a => destroyAv(r, a.x.u)); log(r, '💥 เมฟิสโตเฟเลส: ทำลาย Avatar ทุกใบ ยกเว้นตัวเอง'); }); } },
+  'KD02-002': { z: 'av', can: (r, i) => hellNames(r.p[i]) >= 4 && r.p[i].hell.length >= 2,
+    steps: [{ key: 'x', n: 2, text: 'เนรเทศการ์ดในนรกฝ่ายเรา 2 ใบ', opts: (r, i) => r.p[i].hell.map(c => c.u) }],
+    run: (r, i, cx) => { const p = r.p[i];
+      (cx.pick.x || []).forEach(u => { const k = p.hell.findIndex(h => h.u === u); if (k >= 0) { const [c] = p.hell.splice(k, 1); if (!c.tk) p.dk.push(c); } });
+      fx({ k: 'exile', u: cx.card.u, id: null, nm: 'เนรเทศ 2 ใบ' }); log(r, '🌀 ลิลิธ: เนรเทศการ์ดในนรก 2 ใบ');
+      ask(r, i, { text: 'ลิลิธ: เลือกการ์ด {นรก} จากนรก 1 ใบ ขึ้นมือ', opts: p.hell.filter(c => !c.tk && B[c.id].s === 'นรก').map(c => c.u), cb: us => { const h = fromZone(r, i, 'hell', us[0]); h && p.hand.push(h); } }); } },
+});
 
 /* ===== BOT: โหมดเล่นกับบอท (ง่าย/กลาง/ยาก) =====
    บอทเป็นผู้เล่นฝั่ง 2 ที่ไม่มี WebSocket รันในเซิร์ฟเวอร์ และสั่งงานผ่าน act() ตัวเดียวกับผู้เล่นจริง
