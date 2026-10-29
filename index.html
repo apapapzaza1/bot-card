@@ -259,6 +259,12 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 .fxsac{width:70px;height:90px;background:radial-gradient(circle at 50% 80%,#fff 0,#ffd24a 25%,#ff6a00 55%,transparent 72%);animation:sacf 1s ease-out both;filter:blur(1px)}
 @keyframes sacf{0%{transform:scale(.4) translateY(10px);opacity:0}30%{opacity:1}100%{transform:scale(1.6) translateY(-50px);opacity:0}}
 .fxsay{background:linear-gradient(90deg,#1e293bf2,#334155f2);color:#fff;border:2px solid #fc3;border-radius:12px;padding:6px 16px;text-align:center;animation:sayp 1.7s both;white-space:nowrap;box-shadow:0 6px 24px #000a}.fxsay b{display:block;font-size:.95em}.fxsay span{font-size:.8em;color:#fde68a}
+.fxsum{position:absolute;left:-40px;top:-40px;width:80px;height:80px;border-radius:50%;border:4px solid #fde047;box-shadow:0 0 22px #f59e0b,inset 0 0 18px #fde68a;animation:fxsumA .9s ease-out forwards}.fxsum.s2{border-color:#fff;animation-delay:.15s}@keyframes fxsumA{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.6);opacity:0}}
+.fxexv{position:absolute;left:-46px;top:-46px;width:92px;height:92px;border-radius:50%;background:conic-gradient(#7c3aed,#0f172a,#a78bfa,#0f172a,#7c3aed);box-shadow:0 0 28px #8b5cf6;animation:fxexvA 1.2s ease-in forwards}@keyframes fxexvA{0%{transform:scale(.2) rotate(0);opacity:0}30%{opacity:1;transform:scale(1.1) rotate(200deg)}100%{transform:scale(.1) rotate(900deg);opacity:0}}
+.fxexc{animation:fxexcA 1.2s ease-in forwards}@keyframes fxexcA{0%{transform:scale(1) rotate(0);opacity:1;filter:none}60%{filter:hue-rotate(240deg) brightness(1.4)}100%{transform:scale(.05) rotate(720deg);opacity:0}}
+.fxbn.ex{text-shadow:0 0 16px #8b5cf6,0 3px 0 #000}.fxbn.sc{text-shadow:0 0 16px #38bdf8,0 3px 0 #000;font-size:30px}
+.fxsc{animation:fxscA 1.4s ease-out forwards}@keyframes fxscA{0%{transform:translate(0,0) scale(.3) rotateY(180deg);opacity:0}30%{transform:translate(var(--dx),-70px) scale(1.1) rotateY(0);opacity:1}75%{transform:translate(var(--dx),-70px) scale(1.1);opacity:1}100%{transform:translate(var(--dx),-110px) scale(.9);opacity:0}}
+
 @keyframes sayp{0%{transform:translateY(-14px) scale(.8);opacity:0}15%,80%{transform:none;opacity:1}100%{opacity:0;transform:translateY(-8px)}}
 .chs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}.chs button{margin:0;padding:12px 0;font-weight:800}
 /* ==== Deck Picker (จาก index_merged) ==== */
@@ -319,7 +325,7 @@ let AC;const note=(f,d,v,ty)=>{try{AC=AC||new AudioContext();const o=AC.createOs
 const sfx=k=>{if(cfg.snd)({turn:()=>{note(660,.3,.06);note(880,.4,.05)},hit:()=>note(120,.25,.12,'triangle'),play:()=>note(440,.15,.05),draw:()=>note(520,.08,.04),win:()=>{note(523,.3,.07);note(659,.4,.07);note(784,.7,.07)},lose:()=>{note(220,.5,.07);note(165,.9,.07)}})[k]()};
 let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02));f();mu=setInterval(f,4000)};
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
-const info=x=>x.tk?{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'}:C[x.id]||{n:'?',t:'',e:''};
+const info=x=>x.tk?{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'}:C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
 let AM=null;fetch('/artmap.json').then(r=>r.json()).then(a=>{AM=new Set(a);if(S&&!$('game').hidden)render()}).catch(e=>{});
 const LEG={SCR:'SEC',CBR:'UBR'};
@@ -463,13 +469,13 @@ const gemSum=f=>{const c=info(f.x);return S.me.hand.reduce((a,y)=>{if(y.u==f.x.u
 const gemMsg=f=>'Gem ในมือไม่พอ ('+gemSum(f)+'/'+info(f.x).c+')';
 const supOK=x=>!x.tired&&!x.tk&&(/สามัคคี/.test(info(x).e||'')||x.sg)&&x.u!=atk;
 const can=(x,z,o)=>(S.ask&&S.ask.mine&&S.ask.opts.includes(x.u))||(mode=='atk'&&o&&(z=='av'||z=='co'))||(mode=='atk'&&!o&&z=='av'&&supOK(x))||(mode=='pay'&&z=='hand'&&x.u!=sel);
-const cd=(x,z,o)=>{const c=info(x),a=x.tk?'':art(x.id,x.ar),p=c.p!=null?(x.cp!=null?x.cp:c.p+(x.pw||0)):'';return`<div class="c${a?' im':''}${x.tired?' z':''}${sel==x.u?' sel':''}${z=='hand'&&NEW.has(x.u)?' nw':''}${pay.includes(x.u)||akSel.includes(x.u)||supl.includes(x.u)?' pay':''}${can(x,z,o)?' can':''}" data-u="${x.u}" data-z="${z}" data-o="${o?1:0}" style="--k:${KC[c.col]||'#999'};${a}">${a?'':`<b>${esc(c.n)}</b><i>${c.t=='Magic'?'':c.c??''}${c.g?'◆'+c.g:''}</i>`}${p!==''?`<s class="p ${p>c.p?'up':p<c.p?'dn':''}" data-k="${x.u}">${p}</s>`:''}${gb(x,z)}${x.wn&&x.wn.length?`<u class="wb">🪖${x.wn.length}</u>`:''}${x.ab?'<u class="ab">⚡</u>':''}</div>`};
+const cd=(x,z,o)=>{const c=info(x),a=x.tk?'':art(x.kd||x.id,x.ar),p=c.p!=null?(x.cp!=null?x.cp:c.p+(x.pw||0)):'';return`<div class="c${a?' im':''}${x.tired?' z':''}${sel==x.u?' sel':''}${z=='hand'&&NEW.has(x.u)?' nw':''}${pay.includes(x.u)||akSel.includes(x.u)||supl.includes(x.u)?' pay':''}${can(x,z,o)?' can':''}" data-u="${x.u}" data-z="${z}" data-o="${o?1:0}" style="--k:${KC[c.col]||'#999'};${a}">${a?'':`<b>${esc(c.n)}</b><i>${c.t=='Magic'?'':c.c??''}${c.g?'◆'+c.g:''}</i>`}${p!==''?`<s class="p ${p>c.p?'up':p<c.p?'dn':''}" data-k="${x.u}">${p}</s>`:''}${gb(x,z)}${x.wn&&x.wn.length?`<u class="wb">🪖${x.wn.length}</u>`:''}${x.ab?'<u class="ab">⚡</u>':''}</div>`};
 const row=(a,z,o)=>`<div class="r zr mz z-${z}" data-l="${ZL[z]}" data-s="${ZS[z]}">${(z=='mg'?a.filter(x=>!x.at||find(x.at)):a).map(x=>cd(x,z,o)).join('')}</div>`;
 const lifeT=()=>{if(mode!='atk'||!S)return false;const f=find(atk);return !S.op.av.length||/เตะไข่/.test(f?info(f.x).e||'':'')||[...S.me.mg,...S.op.mg].some(y=>y.at==atk&&/เตะไข่/.test(info(y).e||''))};
 const gb=(x,z)=>{if(z=='av'){const n=[...S.me.mg,...S.op.mg].filter(y=>y.at==x.u).length;return n?'<em>+'+n+'</em>':''}if(z=='mg'&&x.at){const f=find(x.at);return f?'<span class="at">→ '+esc(info(f.x).n)+'</span>':''}return''};
 const life=(p,o)=>`<div class="lc zr mz z-lf${o&&lifeT()?' can':''}" data-l="Life"${o?' data-lf="1"':''}>${p.life.map(l=>l.up?cd(l,'life',o):'<div class="c bk"></div>').join('')}</div>`;
 const ZNm={hand:'มือ',av:'สนาม',hell:'นรก',deck:'Deck',mg:'Magic',co:'Construct',dk:'มิติมืด'};
-const piles=(p,o)=>{const t=p.hell[p.hell.length-1],d=(p.dk||[])[(p.dk||[]).length-1],pc=(top,tx)=>top?`<div class="c im" style="${art(top.id)||''}">${art(top.id)?'':esc(info(top).n)}</div>`:`<small>${tx}</small>`,own=S.land&&((S.land.o==S.i)==!o);
+const piles=(p,o)=>{const t=p.hell[p.hell.length-1],d=(p.dk||[])[(p.dk||[]).length-1],pc=(top,tx)=>top?`<div class="c im" style="${art(top.kd||top.id)||''}">${art(top.kd||top.id)?'':esc(info(top).n)}</div>`:`<small>${tx}</small>`,own=S.land&&((S.land.o==S.i)==!o);
 return{H:`<div class="pl mz z-hl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.length}</b></div>`,K:`<div class="pl mz z-dk" data-dk="${o?1:0}">${pc(d,'มิติมืด')}${(p.dk||[]).length?`<b>${p.dk.length}</b>`:''}</div>`,D:`<div class="pl mz z-dp" data-dp="${o?1:0}"><div class="c bk"></div><b>${p.deck}</b></div>`,L:`<div class="pl mz z-ld" data-ld="${o?1:0}">${own?cd(S.land.c,'land',o):'<small>Land</small>'}</div>`}};
 const side=(p,o)=>{const P=piles(p,o);return`<div class="sd ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}">${row(p.co,'co',o)}${P.L}${P.K}${life(p,o)}${row(p.av,'av',o)}${row(p.mg,'mg',o)}${P.H}${P.D}</div>`};
 const pi=(p,o)=>`<div class="pi">${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
@@ -505,7 +511,7 @@ const w=S.won,m=S.me,o=S.op,lf=p=>p.life.filter(l=>!l.up).length;
 const first=e.dataset.k!=S.over;if(first){e.dataset.k=S.over;sfx(w===true?'win':w===false?'lose':'turn')}
 e.className=w===true?'win':w===false?'lose':'';e.hidden=false;
 e.innerHTML=`<div class="eb${first?' pop':''}"><div class="et">${w===true?'🏆':w===false?'💀':'🤝'}</div><h1>${w===true?'ชนะ!':w===false?'พ่ายแพ้':'เกมจบ'}</h1><div>${esc(S.over)}</div>${GAIN?`<div class="gm">💎 +${GAIN}</div>`:''}<div class="es"><div>เทิร์นที่เล่น<br><b>${S.tn}</b></div><div>เด็คคงเหลือ<br><b>${m.deck}</b></div><div>LIFE ของเรา<br><b>${lf(m)}/5</b></div><div>LIFE ศัตรู<br><b>${lf(o)}/5</b></div></div>${RMQ>Date.now()?`<div style="color:#fc3">${esc(o.name)} ขอเล่นซ้ำ<span id="erq"></span></div>`:''}<button class="pri" ${MYRM?'disabled':''} onclick="if(!MYRM){MYRM=1;send({t:'rm'});endUI()}">${MYRM?'⏳ รออีกฝ่ายตอบรับ…':'🔁 เล่นซ้ำ'}</button><button onclick="endHide=true;endUI()">👁 ดูกระดาน</button><button onclick="location.reload()">🏠 กลับหน้าหลัก</button><details><summary>บันทึกเกม</summary><div class="el">${S.log.slice(-25).map(esc).join('<hr>')}</div></details></div>`}
-function detail(){const f=sel&&find(sel);$('dt').innerHTML=f?(art(f.x.id,f.x.ar)?`<div class="zi" style="${art(f.x.id,f.x.ar)};width:100%"></div>`:'')+bigHtml(info(f.x))+(f.x.wn&&f.x.wn.length?'<div class="fe lg">🪖 สวมใส่: '+f.x.wn.map(i=>esc((C[i]||{}).n||i)).join(', ')+'</div>':''):'กดค้างที่การ์ดเพื่อดูรายละเอียด'}
+function detail(){const f=sel&&find(sel);$('dt').innerHTML=f?(art(f.x.kd||f.x.id,f.x.ar)?`<div class="zi" style="${art(f.x.kd||f.x.id,f.x.ar)};width:100%"></div>`:'')+bigHtml(info(f.x))+(f.x.wn&&f.x.wn.length?'<div class="fe lg">🪖 สวมใส่: '+f.x.wn.map(i=>esc((C[i]||{}).n||i)).join(', ')+'</div>':''):'กดค้างที่การ์ดเพื่อดูรายละเอียด'}
 const bigHtml=c=>`<b>${esc(c.n)}</b><br>${c.t||''} ${c.st||''} ${c.s||''}<br>${c.t=='Magic'?'':'Cost '+(c.c??'-')+' '}${c.g?'Gem '+c.g+' ':''}${c.p!=null?'Power '+c.p:''}<hr>${esc(c.e||'')}`;
 function pv(id){const c=C[id];if(!c)return hidePv();const a=art(id);$('pvw').innerHTML=(a?`<div class="zi" style="${a}"></div>`:'')+`<div class="zt2">${bigHtml(c)}</div>`;{const e=$('pvw');e.hidden=false;e.classList.remove('grow');void e.offsetWidth;e.classList.add('grow')}}
 const hidePv=()=>{$('pvw').hidden=true};$('pvw').onclick=hidePv;
@@ -543,7 +549,7 @@ const dkp=e.target.closest('[data-dk]');if(dkp&&S)return dkView(+dkp.dataset.dk)
 const ac=e.target.closest('[data-ak]');if(ac&&S&&S.ask&&S.ask.mine){const u=+ac.dataset.ak;if(S.ask.n==1)akSel=[u];else akSel.includes(u)?akSel.splice(akSel.indexOf(u),1):akSel.push(u);return render()}
 const lf=e.target.closest('[data-lf]');if(lf&&S&&mode=='atk')return send({t:'atk',u:atk,tg:'life',sup:supl});
 const c=e.target.closest('.c[data-u]');if(!c||!S)return;const u=+c.dataset.u,z=c.dataset.z,o=c.dataset.o=='1';
-if(c.closest('#md')){const f=find(u);return f&&zoom(f.x.id,0,f.x.ar)}
+if(c.closest('#md')){const f=find(u);return f&&zoom(f.x.kd||f.x.id,0,f.x.ar)}
 if(c.closest('#rx')){rxSel=u;return rx()}
 if(S.ask&&S.ask.mine){if(S.ask.opts.includes(u)){if(S.ask.n==1)akSel=[u];else akSel.includes(u)?akSel.splice(akSel.indexOf(u),1):akSel.push(u);return render()}return}
 if(S.phase=='mull'){if(!mullOK())return;pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
@@ -587,7 +593,7 @@ document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea
 document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('dragstart',e=>e.preventDefault());
 let lx=0,ly=0,lpz=0;
-document.addEventListener('pointerdown',e=>{clearTimeout(lp);lp=null;lpd=0;const c=S&&e.target.closest('.c[data-u]');if(!c||c.closest('#md'))return;lx=e.clientX;ly=e.clientY;lp=setTimeout(()=>{lp=null;const f=find(+c.dataset.u);if(f){lpd=1;lpz=1;zoom(f.x.id,0,f.x.ar);navigator.vibrate&&navigator.vibrate(15)}},400)});
+document.addEventListener('pointerdown',e=>{clearTimeout(lp);lp=null;lpd=0;const c=S&&e.target.closest('.c[data-u]');if(!c||c.closest('#md'))return;lx=e.clientX;ly=e.clientY;lp=setTimeout(()=>{lp=null;const f=find(+c.dataset.u);if(f){lpd=1;lpz=1;zoom(f.x.kd||f.x.id,0,f.x.ar);navigator.vibrate&&navigator.vibrate(15)}},400)});
 document.addEventListener('pointermove',e=>{if(lp&&Math.hypot(e.clientX-lx,e.clientY-ly)>10){clearTimeout(lp);lp=null}});
 ['pointerup','pointercancel'].forEach(k=>document.addEventListener(k,()=>{clearTimeout(lp);lp=null;if(lpz){lpz=0;$('zm').hidden=true}}));
 let dg=null,dgh=null,dgt=null,dhv=null;
@@ -632,6 +638,9 @@ f.ids.forEach((id,k)=>{const ar=art(id);setTimeout(()=>fxEl(`<div class="c im fx
 else if(f.k=='coin'){fxEl(`<div class="fxcoin">${f.h?'หัว':'ก้อย'}</div>`,innerWidth/2,innerHeight*.4,1900);sfx('play')}
 else if(f.k=='rps'){const E={r:'✊',p:'✋',s:'✌'},m=f.i==S.i;fxEl(`<div class="fxrps"><span>${E[m?f.a:f.b]}</span><i>VS</i><span>${E[m?f.b:f.a]}</span></div>`,innerWidth/2,innerHeight*.4,2200);sfx('hit')}
 else if(f.k=='sac'){const p=pos(f.u);if(!p)return;fxEl('<div class="fxsac"></div>',p.x,p.y,1000);sfx('hit')}
+else if(f.k=='summon'){const p=pos(f.u);if(!p)return;fxEl('<div class="fxsum"></div><div class="fxsum s2"></div>',p.x,p.y,1000);sfx('play')}
+else if(f.k=='exile'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxexv"></div>',p.x,p.y,1300);fxEl(`<div class="c im fxexc" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,1300);fxEl('<div class="fxbn ex">🌀 เนรเทศ!</div>',innerWidth/2,innerHeight*.4,1500);sfx('hit')}
+else if(f.k=='scout'){const w=f.i==S.i?'0':'1',a=rc(document.querySelector('[data-dp="'+w+'"]'))||{x:innerWidth/2,y:innerHeight/2};fxEl('<div class="fxbn sc">🔎 สอดแนม '+f.ids.length+' ใบ</div>',innerWidth/2,innerHeight*.36,1700);const n=f.ids.length;f.ids.forEach((id,k)=>{const ar=art(id),dx=(k-(n-1)/2)*70;setTimeout(()=>fxEl(`<div class="c im fxsc" style="--w:62px;--dx:${dx}px;${ar}">${ar?'':esc((C[id]||{}).n||'')}</div>`,a.x,a.y,1500),k*180)});sfx('play')}
 else if(f.k=='say'){const n=(C[f.id]||{}).n||'';fxEl(`<div class="fxsay"><b>${esc(n)}</b><span>${esc(f.t||'')}</span></div>`,innerWidth/2,innerHeight*.28,1700)}}
 let ODC=0,RJ=null,FFQ=0,FT='all',DISC=0;
 const ophand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12);return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${'<div class="c bk"></div>'.repeat(k)}</div><span class="ohn">✋ ${n}</span></div>`};
