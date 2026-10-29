@@ -277,6 +277,7 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 .vn{position:absolute;right:3px;bottom:3px;background:#000c;color:#fff;border-radius:999px;padding:0 6px;font-size:.95em}
 .vbtn{font-size:.72em;background:#3b82f633;border:1px solid #3b82f688;border-radius:999px;padding:2px 10px;margin-top:2px}
 @media(min-width:900px){#md.dvw .vg{grid-template-columns:repeat(6,minmax(0,1fr))}}
+#ls{display:none!important}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -519,7 +520,7 @@ if(c.closest('#md')){const f=find(u);return f&&zoom(f.x.id,0,f.x.ar)}
 if(c.closest('#rx')){rxSel=u;return rx()}
 if(S.ask&&S.ask.mine){if(S.ask.opts.includes(u)){if(S.ask.n==1)akSel=[u];else akSel.includes(u)?akSel.splice(akSel.indexOf(u),1):akSel.push(u);return render()}return}
 if(S.phase=='mull'){const f0=find(u);f0&&pv(f0.x.id);if(!mullOK())return;pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
-if(S.mine&&S.phase=='end'&&S.me.hand.length>7&&z=='hand'){pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
+if(S.mine&&(S.phase=='end'||DISC)&&S.me.hand.length>7&&z=='hand'){pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
 if(mode=='pay'&&z=='ptray'){pay.splice(pay.indexOf(u),1);return render()}
 if(mode=='pay'&&z=='hand'){if(u==sel){const f0=find(u);return f0&&pv(f0.x.id)}if(pay.includes(u))pay.splice(pay.indexOf(u),1);else{pay.push(u);flyCard(u)}return render()}
 if(mode=='tgt'&&z=='av')return send({t:'cast',u:sel,tg:u});
@@ -541,15 +542,16 @@ return a.cancel?A('ยกเลิก',()=>send({t:'pick',cancel:1})):bt}
 if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
 if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s)':''),()=>send({t:'pass'}));
 if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (ดูการ์ดบนมือเพื่อตัดสินใจได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';BM.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
+if(!S.mine)DISC=0;if(S.mine&&DISC&&S.phase!='end'){if(S.me.hand.length<=7)DISC=0;else{const ex=S.me.hand.length-7;A('ยกเลิก',()=>{DISC=0;pay=[];render()});return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') แล้วจบเทิร์น · มือเกิน 7 ใบ',()=>{if(pay.length!=ex)return alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ');const d=pay.slice();DISC=0;pay=[];send({t:'next',fin:1,disc:d})}).className='endb'}}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7){const ex=S.me.hand.length-7;return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') · มือเกิน 7 ใบ',()=>pay.length?send({t:'discardm',us:pay}):alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ'))}
 const f=sel&&find(sel),c=f&&info(f.x);
 if(mode=='pay')A('ยืนยันจ่าย ('+pay.length+')',()=>send({t:c.t=='Avatar'?'summon':'build',u:sel,pay}));
 if(mode=='atk'){const ok=lifeT();BM.insertAdjacentHTML('beforeend','<div class="hint">⚔ แตะ Avatar/Construct ศัตรูที่จะโจมตี'+(ok?' หรือแตะแถว LIFE':' (ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar)')+' · แตะ Avatar ของเราที่มี สามัคคี เพื่อเสริมพลัง ('+supl.length+')</div>');A('🎯 ตี LIFE',()=>send({t:'atk',u:atk,tg:'life',sup:supl})).disabled=!ok}
 if(mode){return A('ยกเลิก',()=>{mode=null;pay=[];supl=[];render()})}
 if(f&&!f.o){if(f.z=='hand'){if(c.t=='Avatar'||c.t=='Construct')A(c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',()=>c.c?(mode='pay',pay=[],render()):send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:[]}));
-if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}));A('ทิ้ง',()=>send({t:'discard',u:sel}))}
-else{if(f.x.ab&&S.mine&&S.phase=='main'&&!S.pend&&!S.ask)A('⚡ ใช้ความสามารถ',()=>send({t:'use',u:sel})).className='atkb';if(f.z=='av'&&S.phase=='battle'&&S.mine&&!S.pend){const e=A(f.x.tired?'💤 นอนอยู่ โจมตีไม่ได้':'⚔ โจมตี',()=>{atk=sel;mode='atk';render()});e.disabled=!!f.x.tired;e.className='atkb'}}}
-if(S.mine){const fin=S.phase!='main'||S.tn==0;A(S.phase=='main'&&S.tn>0?'→ BATTLE':'จบเทิร์น',()=>send(fin?{t:'next',fin:1}:{t:'next'}),BR).className='endb';if(S.phase=='main'&&S.tn>0)A('⏭ จบเทิร์นเลย',()=>{if(confirm('ข้าม Battle Phase และจบเทิร์น ?'))send({t:'next',fin:1})},BR).className='srb'}A('💬 แชท',()=>feedOpen(1))}
+if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}))}
+else{if(f.x.ab&&S.mine&&S.phase=='main'&&!S.pend&&!S.ask)A('⚡ ใช้ความสามารถ',()=>send({t:'use',u:sel})).className='atkb';if(f.z=='av'&&(S.phase=='battle'||S.phase=='main'&&S.tn>0)&&S.mine&&!S.pend){const e=A(f.x.tired?'💤 นอนอยู่ โจมตีไม่ได้':'⚔ โจมตี',()=>{atk=sel;mode='atk';render()});e.disabled=!!f.x.tired;e.className='atkb'}}}
+if(S.mine)A('จบเทิร์น',()=>{if(S.me.hand.length>7){DISC=1;pay=[];render()}else send({t:'next',fin:1})},BR).className='endb';A('📜 Log',()=>feedOpenT('lg'));A('💬 แชท',()=>feedOpenT('ch'))}
 $('auth').hidden=!!cfg.tok;$('ld').hidden=!cfg.tok;setInterval(()=>{if(!S)return;if(S.pend&&S.pend.mine&&S.pend.until){bar();rxT()}const q=$('erq');if(q&&RMQ>Date.now())q.textContent=' ('+Math.ceil((RMQ-Date.now())/1e3)+'s)'},1000);
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
@@ -571,7 +573,7 @@ function dropHand(u,x,y){const f=find(u);if(!f||!S)return;const mr=$('mid').getB
 const c=info(f.x);sel=u;if(c.t=='Magic'){if(!S.mine&&!(S.pend&&S.pend.mine))return toast('ยังไม่ใช่เทิร์นของคุณ');return send({t:'cast',u})}
 if(!S.mine||S.phase!='main')return toast('ลงได้เฉพาะ Main Phase ของเรา');if(S.pend)return toast('รอ React ก่อน');
 if(c.c){mode='pay';pay=[];render();pv(f.x.id)}else send({t:c.t=='Avatar'?'summon':'build',u,pay:[]})}
-function dropAtk(u,x,y){const f=find(u);if(!f||f.z!='av'||!S)return;if(!S.mine||S.phase!='battle')return toast('โจมตีได้เฉพาะ Battle Phase ของเรา');if(S.pend)return toast('รอ React ก่อน');if(f.x.tired)return toast('Avatar นอนอยู่ โจมตีไม่ได้');
+function dropAtk(u,x,y){const f=find(u);if(!f||f.z!='av'||!S)return;if(!S.mine||!(S.phase=='battle'||S.phase=='main'&&S.tn>0))return toast('โจมตีได้เฉพาะเทิร์นของเรา (เทิร์นแรกตีไม่ได้)');if(S.pend)return toast('รอ React ก่อน');if(f.x.tired)return toast('Avatar นอนอยู่ โจมตีไม่ได้');
 const el=document.elementFromPoint(x,y);if(!el)return;const t=el.closest('.c[data-u][data-o="1"]');
 if(t&&(t.dataset.z=='av'||t.dataset.z=='co'))return send({t:'atk',u,tg:+t.dataset.u,sup:[]});
 if(el.closest('.sd.op .lc')){atk=u;mode='atk';const ok=lifeT();mode=null;if(!ok)return toast('ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar');return send({t:'atk',u,tg:'life',sup:[]})}
@@ -599,23 +601,24 @@ else if(f.k=='coin'){fxEl(`<div class="fxcoin">${f.h?'หัว':'ก้อย'}
 else if(f.k=='rps'){const E={r:'✊',p:'✋',s:'✌'},m=f.i==S.i;fxEl(`<div class="fxrps"><span>${E[m?f.a:f.b]}</span><i>VS</i><span>${E[m?f.b:f.a]}</span></div>`,innerWidth/2,innerHeight*.4,2200);sfx('hit')}
 else if(f.k=='sac'){const p=pos(f.u);if(!p)return;fxEl('<div class="fxsac"></div>',p.x,p.y,1000);sfx('hit')}
 else if(f.k=='say'){const n=(C[f.id]||{}).n||'';fxEl(`<div class="fxsay"><b>${esc(n)}</b><span>${esc(f.t||'')}</span></div>`,innerWidth/2,innerHeight*.28,1700)}}
-let ODC=0,RJ=null,FFQ=0,FT='all';
+let ODC=0,RJ=null,FFQ=0,FT='all',DISC=0;
 const ophand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12);return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${'<div class="c bk"></div>'.repeat(k)}</div><span class="ohn">✋ ${n}</span></div>`};
 function tbUI(){const e=$('tb'),pre=['dice','pick','mull'].includes(S.phase);
 const mine=S.spec?!S.tp:S.mine,nm=S.spec?(S.tp?S.op:S.me).name:mine?S.me.name:S.op.name,pi_={main:1,battle:2,end:3}[S.phase];
 e.className=pre||S.over?'':mine?'mn':'en';
-const chips=pi_!=null?['DRAW','MAIN','BATTLE','END'].map((t,k)=>`<span class="tc${k==pi_?' on':''}">${t}</span>`).join('→'):`<span class="tc on">${esc(PH[S.phase]||S.phase)}</span>`;
+const chips=pi_!=null?['DRAW','MAIN','BATTLE'].map((t,k)=>`<span class="tc${k==pi_?' on':''}">${t}</span>`).join('→'):`<span class="tc on">${esc(PH[S.phase]||S.phase)}</span>`;
 e.innerHTML=(pre?'<span class="tn">เตรียมเกม</span>':`<span class="tn">เทิร์นที่ <b>${S.tn+1}</b></span><span class="tw">${mine?'🟢 เทิร์นของเรา':'🔴 เทิร์นของ'} ${esc(nm)}</span>`)+`<span>${chips}</span><span class="to" id="odc"></span>`;odcTick()}
 function odcTick(){const e=$('odc');if(!e)return;if(!S||S.over||!ODC){e.textContent='';return}const s=Math.max(0,Math.ceil((ODC-Date.now())/1e3));e.textContent='⚠ '+S.op.name+' หลุด · รอ '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
-const feedSkel=()=>`<div class="ft">${[['all','ทั้งหมด'],['ch','💬 แชท'],['lg','📜 Log']].map(([k,t])=>`<button data-f="${k}" onclick="feedTab('${k}')">${t}</button>`).join('')}<button class="fx2" onclick="feedOpen(0)">✕</button></div><div class="fd"></div><div class="fi"><input placeholder="พิมพ์ข้อความแชท…" maxlength="200" onkeydown="if(event.key=='Enter')feedSend(this)"><button class="pri" onclick="feedSend(this.previousElementSibling)">ส่ง</button></div>`;
+const feedSkel=()=>`<div class="ft">${[['ch','💬 แชท'],['lg','📜 Log']].map(([k,t])=>`<button data-f="${k}" onclick="feedTab('${k}')">${t}</button>`).join('')}<button class="fx2" onclick="feedOpen(0)">✕</button></div><div class="fd"></div><div class="fi"><input placeholder="พิมพ์ข้อความแชท…" maxlength="200" onkeydown="if(event.key=='Enter')feedSend(this)"><button class="pri" onclick="feedSend(this.previousElementSibling)">ส่ง</button></div>`;
 const feedItem=t=>{const m=/^💬 ([^:]+): ([\s\S]*)$/.exec(t);if(m)return{k:'ch',h:`<div class="fe ch ${m[1]===S.me.name?'me':'op'}"><b>${esc(m[1])}</b><span>${esc(m[2])}</span></div>`};return{k:'lg',h:`<div class="fe lg">${esc(t)}</div>`}};
 function feedUpd(){const L=S.log.slice(-40).map(feedItem);
 document.querySelectorAll('#lg .fd,#lgs .fd').forEach(d=>{const nb=d.scrollTop+d.clientHeight>=d.scrollHeight-40,it=L.filter(x=>FT=='all'||x.k==FT);d.innerHTML=it.map(x=>x.h).join('')||'<div class="fe lg">— ไม่มีรายการ —</div>';if(nb)d.scrollTop=d.scrollHeight});
 document.querySelectorAll('.ft button[data-f]').forEach(b=>b.classList.toggle('on',b.dataset.f==FT));
-document.querySelectorAll('.fi').forEach(f=>f.style.display=S.spec?'none':'');
+document.querySelectorAll('.fi').forEach(f=>f.style.display=S.spec||FT=='lg'?'none':'');
 const ls=$('ls');ls.innerHTML=L.slice(-1).map(x=>x.h).join('')+(S.over?`<div class="fe lg"><b>${esc(S.over)}</b></div>`:'')+'<i class="lm">แตะเพื่อดูทั้งหมด / พิมพ์แชท</i>';ls.scrollTop=ls.scrollHeight}
 const feedTab=k=>{FT=k;if(S)feedUpd()};
 function feedOpen(o){const e=$('lgs');e.classList.toggle('open',!!o);if(o&&S){feedUpd();const d=e.querySelector('.fd');d.scrollTop=d.scrollHeight}}
+function feedOpenT(k){FT=k;feedOpen(1)}
 function feedSend(i){const x=i.value.trim();if(x){send({t:'chat',x});i.value=''}}
 function rjMsg(t){const e=$('rjs');if(e)e.textContent=t}
 function rjShow(){const e=$('rj'),was=!e.hidden;e.innerHTML=`<div class="rjb"><h2>🚨 รีบเข้าด่วน!!!</h2><div class="rjt" id="rjt">3:00</div><small id="rjs">หลุดออกจากเกม — กลับเข้าให้ทันก่อนหมดเวลา ไม่งั้นปรับแพ้</small><div class="rjbt"><button class="pri" onclick="rjGo()">🔄 รีจอย</button><button class="dng" onclick="rjFf()">🏳 ยอมแพ้</button></div></div>`;e.hidden=false;if(!was){e.style.animation='none';void e.offsetWidth;e.style.animation=''}rjTick()}

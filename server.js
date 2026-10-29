@@ -874,7 +874,7 @@ function act(r, i, m) {
     }
     case 'next':
       if (!mine) E('ไม่ใช่เทิร์นเรา');
-      if (m.fin) { if (g.phase === 'dice' || g.phase === 'pick' || g.phase === 'mull') E('ยังจบเทิร์นไม่ได้'); if (me.hand.length > 7) { g.phase = 'end'; log(r, me.name + ': มือเกิน 7 ต้องทิ้ง ' + (me.hand.length - 7) + ' ใบ'); } else passTurn(r, i); break; }
+      if (m.fin) { if (g.phase === 'dice' || g.phase === 'pick' || g.phase === 'mull') E('ยังจบเทิร์นไม่ได้'); if (me.hand.length > 7) { const need = me.hand.length - 7, us = [...new Set((m.disc || []).map(Number))]; if (us.length === need) { us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ (มือเกิน 7)'); passTurn(r, i); } else { g.phase = 'end'; log(r, me.name + ': มือเกิน 7 ต้องทิ้ง ' + need + ' ใบ'); } } else passTurn(r, i); break; }
       if (g.phase === 'main') g.phase = g.n === 0 ? 'end' : 'battle';
       else if (g.phase === 'battle') g.phase = 'end';
       else passTurn(r, i);
@@ -912,7 +912,7 @@ function act(r, i, m) {
       g.ask = null; a.cb(us); break;
     }
     case 'atk': {
-      if (!mine || g.phase !== 'battle') E('เฉพาะ Battle Phase');
+      if (!mine) E('เฉพาะ Battle Phase'); if (g.phase === 'main' && g.n > 0) g.phase = 'battle'; if (g.phase !== 'battle') E('เฉพาะ Battle Phase');
       const a = own(m.u); if (a.z !== 'av' || a.c.tired) E('โจมตีไม่ได้');
       if (a.c.nolife && m.tg === 'life') E('Avatar นี้โจมตี LIFE ไม่ได้');
       if (a.c.id === 'BT02-024' && !noFx(r, a.c)) E('เสามงคลโจมตีไม่ได้');
