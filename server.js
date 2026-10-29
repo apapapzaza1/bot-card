@@ -1820,4 +1820,9 @@ function botTick() {
 setInterval(botTick, 300);
 
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
+// กันหลุดเอง: ส่ง ping ทุก 25 วิ ให้ proxy ไม่ตัด WebSocket ที่นิ่งๆ (เช่นเล่นกับบอท)
+setInterval(() => { try { wss.clients.forEach(w => { if (w.readyState === 1) w.ping(); }); } catch (e) { } }, 25000);
+// กัน Render หลับระหว่างมีห้องเปิดอยู่ (ห้องเก็บในหน่วยความจำ ถ้าเซิร์ฟเวอร์หลับ/รีสตาร์ท ห้องจะหาย)
+if (process.env.RENDER_EXTERNAL_URL) setInterval(() => { if (Object.keys(rooms).length) fetch(process.env.RENDER_EXTERNAL_URL + '/health').catch(() => { }); }, 6 * 60 * 1000);
+process.on('SIGTERM', () => console.log('SIGTERM: server restarting, rooms lost:', Object.keys(rooms).length));
 if (process.env.BOT_TEST) module.exports = { rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig, pushFst, friendStat, userWs, kill, resolveAtk, passTurn, startTurn, putAv, kdNarai, kdAfter, exileAv, kdLife, fxSummon, summonFree, ask, hit, setBt, open };
