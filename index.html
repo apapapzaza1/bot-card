@@ -281,6 +281,15 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 .dfx{position:fixed;left:50%;top:50%;z-index:60;width:min(18vw,72px);aspect-ratio:5/7;border-radius:6px;pointer-events:none;opacity:0;animation:dfm .85s ease-in-out both}.dfx.dop{animation-name:dfo}
 @keyframes dfm{0%{transform:translate(18vw,-6vh) scale(.5) rotate(-12deg);opacity:0}15%{opacity:1}100%{transform:translate(-50%,38vh) scale(1) rotate(0);opacity:0}}
 @keyframes dfo{0%{transform:translate(18vw,-2vh) scale(.5) rotate(12deg);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-44vh) scale(.8) rotate(0);opacity:0}}
+@media(max-width:899px){
+#game #mid{--oh:340px;padding:0 2px;gap:1px}
+#hand{--w:min(17vw,68px);padding-top:16px;min-height:calc(var(--w)*1.4 + 22px)}
+#bar{padding:2px 8px calc(4px + env(safe-area-inset-bottom));gap:6px}
+#bar button{min-height:38px;padding:6px 8px;font-size:1em}
+#bar .endb{min-height:46px;font-size:1.05em}
+#bar .srb{min-height:30px;font-size:.85em}
+#tb{padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:3px;font-size:.78em;gap:2px 8px}
+}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
