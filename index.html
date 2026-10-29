@@ -291,6 +291,9 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 #tb{padding-top:calc(3px + env(safe-area-inset-top));padding-bottom:3px;font-size:.78em;gap:2px 8px}
 }
 .dfx{left:0;top:0;animation:none!important;width:min(11vw,46px);opacity:0}
+#tb{position:relative}#tb.ic{padding-right:84px}#tb .tbi{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;gap:6px}#tb .tbi button{margin:0;width:34px;height:34px;min-height:0;padding:0;border-radius:50%;font-size:17px;line-height:1;display:grid;place-items:center;background:#0008;color:#fff;border:1px solid #fff6}
+#bar .br2 button.btlb{background:linear-gradient(#ff9800,#e65100);color:#fff;border:2px solid #ffcc80;font-weight:800;min-height:58px;font-size:1.2em;box-shadow:0 4px 0 #7a3000}#bar .br2 button.btlb:active{transform:translateY(3px);box-shadow:0 1px 0 #7a3000}
+#bar .br2 button.endb.sm{min-height:38px;font-size:.95em;padding:6px 10px;box-shadow:0 3px 0 #7f1d1d}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
@@ -452,6 +455,9 @@ e.onclick=ev=>{const d=ev.target.closest('.c[data-id]');if(d&&k>=flat.length)ret
 step()}
 const find=u=>{for(const w of['me','op'])for(const z of['hand','av','mg','co','hell','life'])for(const x of S[w][z]||[])if(x.u===u)return{x,z,o:w=='op'};if(S.land&&S.land.c.u===u)return{x:S.land.c,z:'land',o:S.land.o!=S.i}};
 const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
+const isMod=x=>{const c=info(x);return !!c&&c.t=='Magic'&&c.st=='Modification'};
+const gemSum=f=>{const c=info(f.x);return S.me.hand.reduce((a,y)=>{if(y.u==f.x.u)return a;const d=info(y);return a+((d.g&&!(d.gc&&c.col&&d.gc!=c.col))?d.g:0)},0)};
+const gemMsg=f=>'Gem ในมือไม่พอ ('+gemSum(f)+'/'+info(f.x).c+')';
 const supOK=x=>!x.tired&&!x.tk&&(/สามัคคี/.test(info(x).e||'')||x.sg)&&x.u!=atk;
 const can=(x,z,o)=>(S.ask&&S.ask.mine&&S.ask.opts.includes(x.u))||(mode=='atk'&&o&&(z=='av'||z=='co'))||(mode=='atk'&&!o&&z=='av'&&supOK(x))||(mode=='pay'&&z=='hand'&&x.u!=sel);
 const cd=(x,z,o)=>{const c=info(x),a=x.tk?'':art(x.id,x.ar),p=c.p!=null?(x.cp!=null?x.cp:c.p+(x.pw||0)):'';return`<div class="c${a?' im':''}${x.tired?' z':''}${sel==x.u?' sel':''}${z=='hand'&&NEW.has(x.u)?' nw':''}${pay.includes(x.u)||akSel.includes(x.u)||supl.includes(x.u)?' pay':''}${can(x,z,o)?' can':''}" data-u="${x.u}" data-z="${z}" data-o="${o?1:0}" style="--k:${KC[c.col]||'#999'};${a}">${a?'':`<b>${esc(c.n)}</b><i>${c.t=='Magic'?'':c.c??''}${c.g?'◆'+c.g:''}</i>`}${p!==''?`<s class="p ${p>c.p?'up':p<c.p?'dn':''}" data-k="${x.u}">${p}</s>`:''}${gb(x,z)}${x.wn&&x.wn.length?`<u class="wb">🪖${x.wn.length}</u>`:''}${x.ab?'<u class="ab">⚡</u>':''}</div>`};
@@ -496,7 +502,7 @@ const w=S.won,m=S.me,o=S.op,lf=p=>p.life.filter(l=>!l.up).length;
 const first=e.dataset.k!=S.over;if(first){e.dataset.k=S.over;sfx(w===true?'win':w===false?'lose':'turn')}
 e.className=w===true?'win':w===false?'lose':'';e.hidden=false;
 e.innerHTML=`<div class="eb${first?' pop':''}"><div class="et">${w===true?'🏆':w===false?'💀':'🤝'}</div><h1>${w===true?'ชนะ!':w===false?'พ่ายแพ้':'เกมจบ'}</h1><div>${esc(S.over)}</div>${GAIN?`<div class="gm">💎 +${GAIN}</div>`:''}<div class="es"><div>เทิร์นที่เล่น<br><b>${S.tn}</b></div><div>เด็คคงเหลือ<br><b>${m.deck}</b></div><div>LIFE ของเรา<br><b>${lf(m)}/5</b></div><div>LIFE ศัตรู<br><b>${lf(o)}/5</b></div></div>${RMQ>Date.now()?`<div style="color:#fc3">${esc(o.name)} ขอเล่นซ้ำ<span id="erq"></span></div>`:''}<button class="pri" ${MYRM?'disabled':''} onclick="if(!MYRM){MYRM=1;send({t:'rm'});endUI()}">${MYRM?'⏳ รออีกฝ่ายตอบรับ…':'🔁 เล่นซ้ำ'}</button><button onclick="endHide=true;endUI()">👁 ดูกระดาน</button><button onclick="location.reload()">🏠 กลับหน้าหลัก</button><details><summary>บันทึกเกม</summary><div class="el">${S.log.slice(-25).map(esc).join('<hr>')}</div></details></div>`}
-function detail(){const f=sel&&find(sel);$('dt').innerHTML=f?(art(f.x.id,f.x.ar)?`<div class="zi" style="${art(f.x.id,f.x.ar)};width:100%"></div>`:'')+bigHtml(info(f.x))+(f.x.wn&&f.x.wn.length?'<div class="fe lg">🪖 สวมใส่: '+f.x.wn.map(i=>esc((C[i]||{}).n||i)).join(', ')+'</div>':''):'แตะการ์ดเพื่ออ่านเอฟเฟกต์'}
+function detail(){const f=sel&&find(sel);$('dt').innerHTML=f?(art(f.x.id,f.x.ar)?`<div class="zi" style="${art(f.x.id,f.x.ar)};width:100%"></div>`:'')+bigHtml(info(f.x))+(f.x.wn&&f.x.wn.length?'<div class="fe lg">🪖 สวมใส่: '+f.x.wn.map(i=>esc((C[i]||{}).n||i)).join(', ')+'</div>':''):'กดค้างที่การ์ดเพื่อดูรายละเอียด'}
 const bigHtml=c=>`<b>${esc(c.n)}</b><br>${c.t||''} ${c.st||''} ${c.s||''}<br>${c.t=='Magic'?'':'Cost '+(c.c??'-')+' '}${c.g?'Gem '+c.g+' ':''}${c.p!=null?'Power '+c.p:''}<hr>${esc(c.e||'')}`;
 function pv(id){const c=C[id];if(!c)return hidePv();const a=art(id);$('pvw').innerHTML=(a?`<div class="zi" style="${a}"></div>`:'')+`<div class="zt2">${bigHtml(c)}</div>`;{const e=$('pvw');e.hidden=false;e.classList.remove('grow');void e.offsetWidth;e.classList.add('grow')}}
 const hidePv=()=>{$('pvw').hidden=true};$('pvw').onclick=hidePv;
@@ -533,60 +539,65 @@ const c=e.target.closest('.c[data-u]');if(!c||!S)return;const u=+c.dataset.u,z=c
 if(c.closest('#md')){const f=find(u);return f&&zoom(f.x.id,0,f.x.ar)}
 if(c.closest('#rx')){rxSel=u;return rx()}
 if(S.ask&&S.ask.mine){if(S.ask.opts.includes(u)){if(S.ask.n==1)akSel=[u];else akSel.includes(u)?akSel.splice(akSel.indexOf(u),1):akSel.push(u);return render()}return}
-if(S.phase=='mull'){const f0=find(u);f0&&pv(f0.x.id);if(!mullOK())return;pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
+if(S.phase=='mull'){if(!mullOK())return;pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
 if(S.mine&&(S.phase=='end'||DISC)&&S.me.hand.length>7&&z=='hand'){pay.includes(u)?pay.splice(pay.indexOf(u),1):pay.push(u);return render()}
 if(mode=='pay'&&z=='ptray'){pay.splice(pay.indexOf(u),1);return render()}
-if(mode=='pay'&&z=='hand'){if(u==sel){const f0=find(u);return f0&&pv(f0.x.id)}if(pay.includes(u))pay.splice(pay.indexOf(u),1);else{pay.push(u);flyCard(u)}return render()}
+if(mode=='pay'&&z=='hand'){if(u==sel)return;if(pay.includes(u))pay.splice(pay.indexOf(u),1);else{pay.push(u);flyCard(u)}return render()}
+{const sf=sel&&find(sel);if(sf&&sf.z=='hand'&&isMod(sf.x)&&z=='av'&&!mode){if(!S.mine||S.phase!='main')return toast('ใช้ไอเทมได้เฉพาะ Main Phase ของเรา');if(S.pend)return toast('รอ React ก่อน');return send({t:'cast',u:sel,tg:u})}}
 if(mode=='tgt'&&z=='av')return send({t:'cast',u:sel,tg:u});
 if(mode=='atk'&&o&&(z=='av'||z=='co'))return send({t:'atk',u:atk,tg:u,sup:supl});
 if(mode=='atk'&&!o&&z=='av'&&supOK(find(u).x)){supl.includes(u)?supl.splice(supl.indexOf(u),1):supl.push(u);return render()}
-if(z=='life'||z=='land'||z=='hell'){const f=find(u);return f&&pv(f.x.id)}
-sel=u;mode=null;render();const f=find(u);f&&pv(f.x.id)});
+if(z=='life'||z=='land'||z=='hell')return;
+sel=u;mode=null;render();{const f=find(u);if(f&&f.z=='hand'&&isMod(f.x)&&S.mine&&S.phase=='main'&&!S.pend)toast('แตะ Avatar ที่จะสวมใส่ หรือลากไอเทมไปวางบน Avatar')}});
 function hell(w){md.className='';const p=w?S.op:S.me;$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button> นรก (${p.hell.length}) แตะการ์ดเพื่ออ่าน<div class="r">${p.hell.map(x=>cd(x,'hell',w)+(!w&&S.mine&&S.phase=='main'&&x.mh===S.tn&&info(x).st=='Modification'?`<button onclick="md.hidden=true;send({t:'cast',u:${x.u}})">ใช้จากนรก</button>`:'')).join('')}</div></div>`;$('md').hidden=false}
 function dkView(w){md.className='';const p=w?S.op:S.me,a=p.dk||[];$('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button> มิติมืด (${a.length}) — การ์ดที่ถูกเนรเทศ<div class="r">${a.map(x=>cd(x,'hell',w)).join('')||'<p>ยังไม่มีการ์ด</p>'}</div></div>`;$('md').hidden=false}
 function bar(){const b=$('bar');b.innerHTML='<div class="bm"></div><div class="br2"></div>';const BM=b.children[0],BR=b.children[1];const A=(t,f,p)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;(p||BM).append(e);return e};
 if(S.spec){A('👁 กำลังรับชม — กดเพื่อออก',()=>location.reload());return}
 if(S.over){A('📊 ผลการแข่ง',()=>{endHide=false;endUI()});A(MYRM?'⏳ รออีกฝ่าย…':'เล่นซ้ำ',()=>{if(!MYRM){MYRM=1;send({t:'rm'});endUI()}});return A('กลับหน้าหลัก',()=>location.reload())}
 if(S.phase=='dice'||S.phase=='pick')return;
-A('🏳 ยอมแพ้',()=>{if(confirm('ยืนยันยอมแพ้ ?'))send({t:'surrender'})},BR).className='srb';
 if(S.ask){const a=S.ask;if(!a.mine)return A('⏳ รอฝ่ายตรงข้ามเลือก…',()=>{});if(a.choices)return;
 if(a.yn){A('✔ ใช่',()=>send({t:'pick',yes:1}));return A('✖ ไม่',()=>send({t:'pick',yes:0}))}
 const ok=akSel.length>=a.min&&akSel.length<=a.n;const bt=A('ยืนยัน ('+akSel.length+'/'+(a.min==a.n?a.n:a.min+'-'+a.n)+')',()=>send({t:'pick',us:akSel}));bt.disabled=!ok;bt.className='atkb';
 return a.cancel?A('ยกเลิก',()=>send({t:'pick',cancel:1})):bt}
 if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
 if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s)':''),()=>send({t:'pass'}));
-if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (ดูการ์ดบนมือเพื่อตัดสินใจได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';BM.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
+if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (กดค้างที่การ์ดเพื่อดูได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';BM.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
 if(!S.mine)DISC=0;if(S.mine&&DISC&&S.phase!='end'){if(S.me.hand.length<=7)DISC=0;else{const ex=S.me.hand.length-7;A('ยกเลิก',()=>{DISC=0;pay=[];render()});return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') แล้วจบเทิร์น · มือเกิน 7 ใบ',()=>{if(pay.length!=ex)return alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ');const d=pay.slice();DISC=0;pay=[];send({t:'next',fin:1,disc:d})}).className='endb'}}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7){const ex=S.me.hand.length-7;return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') · มือเกิน 7 ใบ',()=>pay.length?send({t:'discardm',us:pay}):alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ'))}
 const f=sel&&find(sel),c=f&&info(f.x);
 if(mode=='pay')A('ยืนยันจ่าย ('+pay.length+')',()=>send({t:c.t=='Avatar'?'summon':'build',u:sel,pay}));
 if(mode=='atk'){const ok=lifeT();BM.insertAdjacentHTML('beforeend','<div class="hint">⚔ แตะ Avatar/Construct ศัตรูที่จะโจมตี'+(ok?' หรือแตะแถว LIFE':' (ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar)')+' · แตะ Avatar ของเราที่มี สามัคคี เพื่อเสริมพลัง ('+supl.length+')</div>');A('🎯 ตี LIFE',()=>send({t:'atk',u:atk,tg:'life',sup:supl})).disabled=!ok}
 if(mode){return A('ยกเลิก',()=>{mode=null;pay=[];supl=[];render()})}
-if(f&&!f.o){if(f.z=='hand'){if(c.t=='Avatar'||c.t=='Construct')A(c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',()=>c.c?(mode='pay',pay=[],render()):send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:[]}));
+if(f&&!f.o){if(f.z=='hand'){if(c.t=='Avatar'||c.t=='Construct')A(c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',()=>{if(c.c&&gemSum(f)<c.c)return toast(gemMsg(f));c.c?(mode='pay',pay=[],render()):send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:[]})});
 if(c.t=='Magic')A('ร่าย',()=>send({t:'cast',u:sel}))}
 else{if(f.x.ab&&S.mine&&S.phase=='main'&&!S.pend&&!S.ask)A('⚡ ใช้ความสามารถ',()=>send({t:'use',u:sel})).className='atkb';if(f.z=='av'&&(S.phase=='battle'||S.phase=='main'&&S.tn>0)&&S.mine&&!S.pend){const e=A(f.x.tired?'💤 นอนอยู่ โจมตีไม่ได้':'⚔ โจมตี',()=>{atk=sel;mode='atk';render()});e.disabled=!!f.x.tired;e.className='atkb'}}}
-if(S.mine)A('จบเทิร์น',()=>{if(S.me.hand.length>7){DISC=1;pay=[];render()}else send({t:'next',fin:1})},BR).className='endb';A('📜 Log',()=>feedOpenT('lg'));A('💬 แชท',()=>feedOpenT('ch'))}
+if(S.mine){const fin=()=>{if(S.me.hand.length>7){DISC=1;pay=[];render()}else send({t:'next',fin:1})};
+if(S.phase=='main'&&S.tn>0&&!S.pend){A('⚔ Battle',()=>send({t:'next'}),BR).className='btlb';A('จบเทิร์น',fin,BR).className='endb sm'}
+else A('จบเทิร์น',fin,BR).className='endb'}}
+function surr(){if(confirm('ยืนยันยอมแพ้ ?'))send({t:'surrender'})}
 $('auth').hidden=!!cfg.tok;$('ld').hidden=!cfg.tok;setInterval(()=>{if(!S)return;if(S.pend&&S.pend.mine&&S.pend.until){bar();rxT()}const q=$('erq');if(q&&RMQ>Date.now())q.textContent=' ('+Math.ceil((RMQ-Date.now())/1e3)+'s)'},1000);
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('selectstart',e=>{if(!e.target.closest('input,textarea'))e.preventDefault()});
 document.addEventListener('dragstart',e=>e.preventDefault());
-let lx=0,ly=0;
-document.addEventListener('pointerdown',e=>{clearTimeout(lp);lp=null;lpd=0;const c=S&&e.target.closest('.c[data-u]');if(!c||c.closest('#md'))return;lx=e.clientX;ly=e.clientY;lp=setTimeout(()=>{const f=find(+c.dataset.u);if(f){lpd=1;zoom(f.x.id,0,f.x.ar);navigator.vibrate&&navigator.vibrate(15)}},450)});
+let lx=0,ly=0,lpz=0;
+document.addEventListener('pointerdown',e=>{clearTimeout(lp);lp=null;lpd=0;const c=S&&e.target.closest('.c[data-u]');if(!c||c.closest('#md'))return;lx=e.clientX;ly=e.clientY;lp=setTimeout(()=>{lp=null;const f=find(+c.dataset.u);if(f){lpd=1;lpz=1;zoom(f.x.id,0,f.x.ar);navigator.vibrate&&navigator.vibrate(15)}},400)});
 document.addEventListener('pointermove',e=>{if(lp&&Math.hypot(e.clientX-lx,e.clientY-ly)>10){clearTimeout(lp);lp=null}});
-['pointerup','pointercancel'].forEach(k=>document.addEventListener(k,()=>{clearTimeout(lp);lp=null}));
+['pointerup','pointercancel'].forEach(k=>document.addEventListener(k,()=>{clearTimeout(lp);lp=null;if(lpz){lpz=0;$('zm').hidden=true}}));
 let dg=null,dgh=null,dgt=null,dhv=null;
 const dgEnd=keep=>{dgh&&dgh.remove();dgh=null;dgt&&dgt.classList.remove('dropt');dgt=null;dhv&&dhv.classList.remove('hv');dhv=null;if(dg){if(dg.hid){const h=dg.hid;keep?setTimeout(()=>{h.style.visibility=''},900):h.style.visibility=''}if(dg.z=='av')dg.el.style.opacity=''}dg=null};
-function dropTarget(x,y){const el=document.elementFromPoint(x,y);if(!el)return null;if(dg.z=='av'){const t=el.closest('.c[data-u][data-o="1"]');if(t&&(t.dataset.z=='av'||t.dataset.z=='co'))return t;return el.closest('.sd.op .lc')}return null}
-document.addEventListener('pointerdown',e=>{dg=null;const c=S&&e.target.closest('.c[data-u]');if(!c||c.closest('#md,#rx,#pvw,#akp,#ptr,#pkr,#rt')||c.dataset.o=='1')return;const z=c.dataset.z;if(z!='hand'&&z!='av')return;if(S.ask||S.over)return;dg={u:+c.dataset.u,z,el:c,sx:e.clientX,sy:e.clientY,on:0}});
+function dropTarget(x,y){const el=document.elementFromPoint(x,y);if(!el)return null;if(dg.mod)return el.closest('.c[data-u][data-z="av"]');if(dg.z=='av'){const t=el.closest('.c[data-u][data-o="1"]');if(t&&(t.dataset.z=='av'||t.dataset.z=='co'))return t;return el.closest('.sd.op .lc')}return null}
+document.addEventListener('pointerdown',e=>{dg=null;const c=S&&e.target.closest('.c[data-u]');if(!c||c.closest('#md,#rx,#pvw,#akp,#ptr,#pkr,#rt')||c.dataset.o=='1')return;const z=c.dataset.z;if(z!='hand'&&z!='av')return;if(S.ask||S.over)return;const ff=find(+c.dataset.u);dg={u:+c.dataset.u,z,el:c,sx:e.clientX,sy:e.clientY,on:0,mod:!!(ff&&z=='hand'&&isMod(ff.x))}});
 document.addEventListener('pointermove',e=>{if(!dg)return;const dx=e.clientX-dg.sx,dy=e.clientY-dg.sy;
-if(!dg.on){const go=dg.z=='hand'?(dy<-26&&Math.abs(dy)>Math.abs(dx)):Math.hypot(dx,dy)>16;if(!go)return;dg.on=1;clearTimeout(lp);lp=null;hidePv();dgh=document.createElement('div');dgh.className='gh';const cl=dg.el.cloneNode(true);cl.classList.remove('h','sel','can','pay','nw','hv');dgh.append(cl);const rr=dg.el.getBoundingClientRect();dg.ox=e.clientX-(rr.left+rr.width/2);dg.oy=e.clientY-(rr.top+rr.height/2);dgh.style.setProperty('--w',dg.el.offsetWidth+'px');document.body.append(dgh);if(dg.z=='hand'){dg.el.style.visibility='hidden';dg.hid=dg.el}else dg.el.style.opacity='.45'}
-dgh.style.left=(e.clientX-(dg.ox||0))+'px';dgh.style.top=(e.clientY-(dg.oy||0))+'px';const t=dg.z=='av'?dropTarget(e.clientX,e.clientY):null;if(t!==dgt){dgt&&dgt.classList.remove('dropt');dgt=t;t&&t.classList.add('dropt')}const hc=document.elementFromPoint(e.clientX,e.clientY),hh=hc&&hc.closest('.c[data-u]');if(hh!==dhv){dhv&&dhv.classList.remove('hv');dhv=hh&&!hh.closest('#md')&&hh!==dg.el?hh:null;dhv&&dhv.classList.add('hv')}});
+if(!dg.on){const go=dg.z=='hand'?(dy<-26&&Math.abs(dy)>Math.abs(dx)):Math.hypot(dx,dy)>16;if(!go)return;dg.on=1;clearTimeout(lp);lp=null;if(lpz){lpz=0;$('zm').hidden=true}hidePv();dgh=document.createElement('div');dgh.className='gh';const cl=dg.el.cloneNode(true);cl.classList.remove('h','sel','can','pay','nw','hv');dgh.append(cl);const rr=dg.el.getBoundingClientRect();dg.ox=e.clientX-(rr.left+rr.width/2);dg.oy=e.clientY-(rr.top+rr.height/2);dgh.style.setProperty('--w',dg.el.offsetWidth+'px');document.body.append(dgh);if(dg.z=='hand'){dg.el.style.visibility='hidden';dg.hid=dg.el}else dg.el.style.opacity='.45'}
+dgh.style.left=(e.clientX-(dg.ox||0))+'px';dgh.style.top=(e.clientY-(dg.oy||0))+'px';const t=(dg.z=='av'||dg.mod)?dropTarget(e.clientX,e.clientY):null;if(t!==dgt){dgt&&dgt.classList.remove('dropt');dgt=t;t&&t.classList.add('dropt')}const hc=document.elementFromPoint(e.clientX,e.clientY),hh=hc&&hc.closest('.c[data-u]');if(hh!==dhv){dhv&&dhv.classList.remove('hv');dhv=hh&&!hh.closest('#md')&&hh!==dg.el?hh:null;dhv&&dhv.classList.add('hv')}});
 document.addEventListener('pointerup',e=>{if(!dg)return;if(!dg.on){dg=null;return}lpd=1;const d=dg,x=e.clientX,y=e.clientY,t0=SENT;try{d.z=='hand'?dropHand(d.u,x,y):dropAtk(d.u,x,y)}finally{dgEnd(SENT!=t0)}});
 document.addEventListener('pointercancel',()=>dgEnd());
-function dropHand(u,x,y){const f=find(u);if(!f||!S)return;const mr=$('mid').getBoundingClientRect();if(x<mr.left||x>mr.right||y<mr.top+mr.height*.4||y>mr.bottom)return toast('ลากลงฝั่งของเราบนกระดาน');
+function dropHand(u,x,y){const f=find(u);if(!f||!S)return;
+if(isMod(f.x)){if(!S.mine||S.phase!='main')return toast('ใช้ไอเทมได้เฉพาะ Main Phase ของเรา');if(S.pend)return toast('รอ React ก่อน');const el0=document.elementFromPoint(x,y),t0=el0&&el0.closest('.c[data-u][data-z="av"]');if(!t0)return toast('ลากไอเทมไปวางบน Avatar ที่จะสวมใส่');sel=u;return send({t:'cast',u,tg:+t0.dataset.u})}
+const mr=$('mid').getBoundingClientRect();if(x<mr.left||x>mr.right||y<mr.top+mr.height*.4||y>mr.bottom)return toast('ลากลงฝั่งของเราบนกระดาน');
 const c=info(f.x);sel=u;if(c.t=='Magic'){if(!S.mine&&!(S.pend&&S.pend.mine))return toast('ยังไม่ใช่เทิร์นของคุณ');return send({t:'cast',u})}
 if(!S.mine||S.phase!='main')return toast('ลงได้เฉพาะ Main Phase ของเรา');if(S.pend)return toast('รอ React ก่อน');
-if(c.c){mode='pay';pay=[];render();pv(f.x.id)}else send({t:c.t=='Avatar'?'summon':'build',u,pay:[]})}
+if(c.c&&gemSum(f)<c.c)return toast(gemMsg(f));if(c.c){mode='pay';pay=[];render();pv(f.x.id)}else send({t:c.t=='Avatar'?'summon':'build',u,pay:[]})}
 function dropAtk(u,x,y){const f=find(u);if(!f||f.z!='av'||!S)return;if(!S.mine||!(S.phase=='battle'||S.phase=='main'&&S.tn>0))return toast('โจมตีได้เฉพาะเทิร์นของเรา (เทิร์นแรกตีไม่ได้)');if(S.pend)return toast('รอ React ก่อน');if(f.x.tired)return toast('Avatar นอนอยู่ โจมตีไม่ได้');
 const el=document.elementFromPoint(x,y);if(!el)return;const t=el.closest('.c[data-u][data-o="1"]');
 if(t&&(t.dataset.z=='av'||t.dataset.z=='co'))return send({t:'atk',u,tg:+t.dataset.u,sup:[]});
@@ -619,9 +630,9 @@ let ODC=0,RJ=null,FFQ=0,FT='all',DISC=0;
 const ophand=o=>{const n=o.hn??o.hand.length,k=Math.min(n,12);return`<div class="oh" data-cback="${(o.eq||{}).card||'black'}"><div class="ohc">${'<div class="c bk"></div>'.repeat(k)}</div><span class="ohn">✋ ${n}</span></div>`};
 function tbUI(){const e=$('tb'),pre=['dice','pick','mull'].includes(S.phase);
 const mine=S.spec?!S.tp:S.mine,nm=S.spec?(S.tp?S.op:S.me).name:mine?S.me.name:S.op.name,pi_={main:1,battle:2,end:3}[S.phase];
-e.className=pre||S.over?'':mine?'mn':'en';
+const ic=!S.spec&&!S.over&&S.phase!='dice'&&S.phase!='pick';e.className=(pre||S.over?'':mine?'mn':'en')+(ic?' ic':'');
 const chips=pi_!=null?['DRAW','MAIN','BATTLE'].map((t,k)=>`<span class="tc${k==pi_?' on':''}">${t}</span>`).join('→'):`<span class="tc on">${esc(PH[S.phase]||S.phase)}</span>`;
-e.innerHTML=(pre?'<span class="tn">เตรียมเกม</span>':`<span class="tn">เทิร์นที่ <b>${S.tn+1}</b></span><span class="tw">${mine?'🟢 เทิร์นของเรา':'🔴 เทิร์นของ'} ${esc(nm)}</span>`)+`<span>${chips}</span><span class="to" id="odc"></span>`;odcTick()}
+e.innerHTML=(pre?'<span class="tn">เตรียมเกม</span>':`<span class="tn">เทิร์นที่ <b>${S.tn+1}</b></span><span class="tw">${mine?'🟢 เทิร์นของเรา':'🔴 เทิร์นของ'} ${esc(nm)}</span>`)+`<span>${chips}</span><span class="to" id="odc"></span>`+(ic?'<span class="tbi"><button onclick="feedOpenT(\'ch\')" title="แชท">💬</button><button onclick="surr()" title="ยอมแพ้">🏳</button></span>':'');odcTick()}
 function odcTick(){const e=$('odc');if(!e)return;if(!S||S.over||!ODC){e.textContent='';return}const s=Math.max(0,Math.ceil((ODC-Date.now())/1e3));e.textContent='⚠ '+S.op.name+' หลุด · รอ '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 const feedSkel=()=>`<div class="ft">${[['ch','💬 แชท'],['lg','📜 Log']].map(([k,t])=>`<button data-f="${k}" onclick="feedTab('${k}')">${t}</button>`).join('')}<button class="fx2" onclick="feedOpen(0)">✕</button></div><div class="fd"></div><div class="fi"><input placeholder="พิมพ์ข้อความแชท…" maxlength="200" onkeydown="if(event.key=='Enter')feedSend(this)"><button class="pri" onclick="feedSend(this.previousElementSibling)">ส่ง</button></div>`;
 const feedItem=t=>{const m=/^💬 ([^:]+): ([\s\S]*)$/.exec(t);if(m)return{k:'ch',h:`<div class="fe ch ${m[1]===S.me.name?'me':'op'}"><b>${esc(m[1])}</b><span>${esc(m[2])}</span></div>`};return{k:'lg',h:`<div class="fe lg">${esc(t)}</div>`}};

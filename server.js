@@ -289,13 +289,14 @@ function reactOK(r, i, c, def) { const p = r.g.pend; if (!p || p.who !== i) retu
   if (def.react === 'atkAv') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg);
   if (def.react === 'never') return false;
   return true; }
-function startCast(r, i, f, c, def) {
+function startCast(r, i, f, c, def, pre) {
   const g = r.g, ctx = { ev: g.pend && g.pend.ev, pend: g.pend, pick: {}, card: f.c };
   if (def.cond && !def.cond(r, i)) E('เงื่อนไขการใช้ไม่ครบ');
   const steps = def.steps || (def.mod ? [{ key: 'tg', text: 'เลือก Avatar ที่จะสวมใส่ ' + c.n, opts: (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x) && (!def.tgf || def.tgf(a.x))).map(a => a.x.u) }] : []);
   for (const s of steps) if (s.opts(r, i, ctx).length < (s.min == null ? (s.n || 1) : s.min)) E('เงื่อนไขการใช้ไม่ครบ');
+  if (pre != null) steps.forEach(s => { if (s.key === 'tg' && (s.n || 1) === 1 && s.opts(r, i, ctx).includes(pre)) ctx.pick.tg = [pre]; });   // แตะ/ลากไอเทมไปที่ Avatar ตรงๆ ข้ามขั้นเลือกเป้า
   let k = 0;
-  const next = () => { if (k >= steps.length) return castFinal(r, i, f.c, c, def, ctx, steps);
+  const next = () => { while (pre != null && k < steps.length && steps[k].key === 'tg' && ctx.pick.tg) k++; if (k >= steps.length) return castFinal(r, i, f.c, c, def, ctx, steps);
     const s = steps[k++], used = Object.values(ctx.pick).flat();
     ask(r, i, { text: s.text, opts: s.opts(r, i, ctx).filter(u => !used.includes(u)), n: s.n || 1, min: s.min, cancel: true, cb: us => { ctx.pick[s.key] = us; next(); }, none: next }); };
   next();
@@ -900,7 +901,7 @@ function act(r, i, m) {
       if (c.st === 'React') { if (!reactOK(r, i, c, def)) E('ใช้ React ตอนนี้ไม่ได้'); } else mainOnly();
       if (g.used[i][c.st]) E(c.st + ' ใช้ได้ 1 ครั้ง/เทิร์น');
       if (!MG[c.id]) log(r, '⚠ ' + c.n + ': ระบบยังไม่รองรับเอฟเฟกต์ — ทำเองตามข้อความการ์ด');
-      startCast(r, i, f, c, def); break;
+      startCast(r, i, f, c, def, m.tg != null ? Number(m.tg) : null); break;
     }
     case 'pick': {
       const a = g.ask; if (!a) E('ไม่มีให้เลือก');
