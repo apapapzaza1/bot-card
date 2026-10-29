@@ -599,8 +599,8 @@ let lastFx=-1,POS={};
 const rc=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width}};
 const fxEl=(h,x,y,ms)=>{const d=document.createElement('div');d.className='fxl';d.style.left=x+'px';d.style.top=y+'px';d.innerHTML=h;document.body.append(d);setTimeout(()=>d.remove(),ms||1300);return d};
 const cel=u=>document.querySelector('#mid [data-u="'+u+'"]'),pos=u=>rc(cel(u))||POS[u]||null;
-const updPos=()=>{POS={};document.querySelectorAll('#mid .c[data-u]').forEach(e=>POS[e.dataset.u]=rc(e))};
-function playFx(){const L=S.fx||[];if(lastFx==-1){lastFx=L.length?L[L.length-1].n:0;return}L.filter(f=>f.n>lastFx).forEach(f=>{lastFx=f.n;try{fx1(f)}catch(e){}})}
+const updPos=()=>{if(Object.keys(POS).length>300)POS={};document.querySelectorAll('#mid .c[data-u]').forEach(e=>POS[e.dataset.u]=rc(e))};
+function playFx(){const L=S.fx||[];if(lastFx==-1){lastFx=L.length?L[L.length-1].n:0;return}if(['rx','akp','bt2','zm','pkr'].some(k=>{const e=$(k);return e&&!e.hidden})){clearTimeout(playFx.t);playFx.t=setTimeout(()=>{if(S)playFx()},200);return}L.filter(f=>f.n>lastFx).forEach(f=>{lastFx=f.n;try{fx1(f)}catch(e){}})}
 function fx1(f){
 if(f.k=='buff'){const p=pos(f.u);if(!p)return;const e=cel(f.u);e&&e.classList.add(f.v>0?'fxu':'fxd');fxEl(`<div class="fxb ${f.v>0?'up':'dn'}">${f.v>0?'▲ +':'▼ '}${f.v}</div>`,p.x,p.y);sfx(f.v>0?'play':'hit')}
 else if(f.k=='die'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxboom"></div>',p.x,p.y,800);fxEl(`<div class="c im fxgd" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,900);sfx('hit')}
