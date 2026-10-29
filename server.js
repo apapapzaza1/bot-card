@@ -85,7 +85,8 @@ const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 /* ===== KD: การ์ดพิมพ์ซ้ำ (reprint) ใช้สกิลเดิมของการ์ดต้นฉบับ: instance เก็บ id ต้นฉบับ + kd = id จริง (ใช้แสดงรูป) ===== */
 const CANON = { 'KD01-006': 'SD01-002', 'KD01-008': 'BT02-008', 'KD01-010': 'BT01-004', 'KD01-013': 'BT01-038', 'KD01-014': 'BT02-045', 'KD01-015': 'SD08-013', 'KD01-017': 'SD01-017', 'KD01-018': 'BT02-054', 'KD01-019': 'SD01-020', 'KD01-020': 'BT02-060',
-  'KD02-003': 'SD03-001', 'KD02-004': 'BT01-016', 'KD02-006': 'SD03-002', 'KD02-007': 'SD03-003', 'KD02-008': 'SD03-004', 'KD02-009': 'BT01-015', 'KD02-015': 'BT02-046', 'KD02-016': 'SD08-013', 'KD02-018': 'BT01-041', 'KD02-020': 'BT02-058' };
+  'KD02-003': 'SD03-001', 'KD02-004': 'BT01-016', 'KD02-006': 'SD03-002', 'KD02-007': 'SD03-003', 'KD02-008': 'SD03-004', 'KD02-009': 'BT01-015', 'KD02-015': 'BT02-046', 'KD02-016': 'SD08-013', 'KD02-018': 'BT01-041', 'KD02-020': 'BT02-058',
+  'KD03-003': 'BT02-009', 'KD03-004': 'BT03-026', 'KD03-007': 'BT02-010', 'KD03-008': 'BT03-014', 'KD03-011': 'BT02-012', 'KD03-012': 'BT01-038', 'KD03-013': 'BT03-044', 'KD03-014': 'BT03-042', 'KD03-016': 'SD01-017' };
 const inst = id => CANON[id] ? { u: UID++, id: CANON[id], kd: id, pw: 0, tired: false } : { u: UID++, id, pw: 0, tired: false };
 const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
@@ -165,7 +166,7 @@ function fxPaid(r, i, ps, summoned) {
     if ((pc.id === 'KD01-004' || pc.id === 'BT03-001') && isNarai(summoned)) { addTp(summoned, 3); fx({ k: 'say', id: pc.id, t: 'POWER +3' }); log(r, '✨ พระลักษมี: ' + nmOf(summoned) + ' POWER +3 จนจบเทิร์น'); }
     if (pc.id === 'SD08-010' && B[summoned.id].n.includes('รัททาทุย')) r.g.q.push(() => { log(r, '✨ ตุ๊กตารัททาทุย: อัญเชิญรัททาทุยจาก Deck'); summonRat1(r, i); });
     if (pc.id === 'SD08-020' && isRat(summoned)) r.g.q.push(() => buildFree(r, i, pc, 'hell'));
-    fxPaid03(r, i, pc, summoned);
+    fxPaid03(r, i, pc, summoned); kdPaid(r, i, pc, summoned);
   });
 }
 const sameColPairs = (r, i) => { const p = r.p[i], o = []; p.av.filter(isKP).forEach(a => { if (p.av.filter(isKP).some(b => b !== a && colOf(b) === colOf(a) && nmOf(b) !== nmOf(a))) o.push(a.u); }); return o; };
@@ -289,6 +290,7 @@ const MG = {
 function reactOK(r, i, c, def) { const p = r.g.pend; if (!p || p.who !== i) return false; if (r.g.noReact && r.g.noReact.who === i) return false;
   if (def.react === 'summon') return !!(p.ev && p.ev.k === 'summon');
   if (def.react === 'cast') return !!(p.ev && p.ev.k === 'cast');
+  if (def.react === 'use') return !!(p.ev && p.ev.k === 'use');
   if (def.react === 'atk') return p.k === 'atk';
   if (def.react === 'atkav') return p.k === 'atk' && p.tk === 'av';
   if (def.react === 'atkTank') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg && isTank(a));
@@ -373,7 +375,7 @@ function putAv(r, i, c, o = {}) {
 const fromZone = (r, i, z, u) => { const a = r.p[i][z], k = a.findIndex(c => c.u === u); return k < 0 ? null : a.splice(k, 1)[0]; };
 const canWear = (t, card) => !(t.wr || []).some(w => B[w.id].n === B[card.id].n);
 const tanksFor = (r, i, card) => r.p[i].av.filter(t => isTank(t) && t.u !== card.u && canWear(t, card)).map(t => t.u);
-function wearOn(r, i, t, card) { t.wr = t.wr || []; t.wr.push(card); card.tired = false; fx({ k: 'buff', u: t.u, v: 0 }); log(r, '🪖 ' + nmOf(t) + ' สวมใส่ ' + B[card.id].n); }
+function wearOn(r, i, t, card) { t.wr = t.wr || []; t.wr.push(card); card.tired = false; fx({ k: 'buff', u: t.u, v: 0 }); if (B[card.id].n.includes('โอตะ')) vfx(t.u, 'aura', '🎀 สวมใส่ ' + B[card.id].n, '#f472b6'); log(r, '🪖 ' + nmOf(t) + ' สวมใส่ ' + B[card.id].n); }
 function wearChoose(r, i, card) {
   const L = tanksFor(r, i, card);
   if (!L.length) { log(r, 'ไม่มีรถถังที่สวมได้ → ' + B[card.id].n + ' ลงนรก'); return r.p[i].hell.push(card); }
@@ -613,7 +615,7 @@ Object.assign(MG, {
 
 /* ===== BT02 ===== */
 const nmHas = (x, t) => nm2(x).includes(t);
-const noFx = (r, x) => { if (!x || !isAv(x)) return false; const f = find(r, x.u); if (!f || f.z !== 'av') return false; if (x.hero === r.g.n) return false; if (hasEq(r, x, 'BT02-056')) return true; const n = r.g.nofx; return !!(n && n[f.i] === r.g.n); };
+const noFx = (r, x) => { if (!x || !isAv(x)) return false; const f = find(r, x.u); if (!f || f.z !== 'av') return false; if (x.hero === r.g.n) return false; if (x.nf === r.g.n) return true; if (hasEq(r, x, 'BT02-056')) return true; const n = r.g.nofx; return !!(n && n[f.i] === r.g.n); };
 function lifeUp(r, i) { const d = r.p[i], l = d.life.find(x => !x.up); if (!l) return false; l.up = 1; fx({ k: 'life', i }); (d.lf = d.lf || []).push(l.id); log(r, '❤ หงาย LIFE ' + d.name + ': ' + B[l.id].n); if (d.life.every(x => x.up)) log(r, d.name + ' สาหัส!'); return true; }
 function sac(r, u) { const f = find(r, u); if (!f || f.z !== 'av') return null; const nf = noFx(r, f.c); take(r, u); fx({ k: 'sac', u, id: f.c.id }); r.p[f.i].hell.push(f.c); log(r, '🔥 เซ่นไหว้ ' + nmOf(f.c)); deathFx(r, f, nf); return f.c; }
 function costFx(r, i, ps, c) {
@@ -846,7 +848,7 @@ function payOK(c, pay, me) {
 }
 function startTurn(r) {
   const g = r.g, p = r.p[g.turn]; g.used = [{}, {}]; g.noReact = null;
-  p.av.forEach(a => a.tired = false);
+  p.av.forEach(a => { if (!(a.hold && a.hold >= g.n)) a.tired = false; });
   const cnt = g.n === 0 ? 2 : p.hand.length < 3 ? 3 - p.hand.length : 1;
   const queen = g.n < 2 ? p.deck.find(c => c.id === 'BT01-008') : null;   // Draw Phase แรกของผู้เล่น
   const fin = swap => {
@@ -956,6 +958,7 @@ function act(r, i, m) {
       else if (op.av.some(x => x.u === m.tg)) tk = 'av';
       else if (op.co.some(x => x.u === m.tg)) tk = 'co';
       else E('ไม่พบเป้าหมาย');
+      if (tk === 'av') { const tgt = op.av.find(x => x.u === m.tg); if (tgt && kdUntarget(r, 1 - i, tgt)) E('Avatar นี้ถูกเลือกเป็นเป้าหมายการโจมตีไม่ได้'); }
       const sup = [...new Set((m.sup || []).map(Number))].filter(u => u !== a.c.u).map(u => { const q = own(u);
         if (q.z !== 'av' || q.c.tired || q.c.tk) E('สนับสนุนไม่ได้: ' + nmOf(q.c));
         const e = B[q.c.id].e || '';
@@ -979,6 +982,7 @@ function act(r, i, m) {
     case 'use': {
       mainOnly(); let f = find(r, m.u), z;
       if (f && f.i === i) z = f.z; else if (g.land && g.land.o === i && g.land.c.u === m.u) { f = { i, z: 'land', c: g.land.c }; z = 'land'; } else E('ไม่ใช่การ์ดของเรา');
+      if (z === 'av' && !m.rg17 && kdUseGate(r, i, f, m)) break;
       const ab2 = ABIL[f.c.id];
       if (ab2 && ab2.zone === z) {
         if (ab2.once && f.c.ou === g.n) E('ใช้ได้เทิร์นละครั้ง');
@@ -1312,6 +1316,7 @@ function fxPaid03(r, i, pc, summoned) {
   if (pc.id === 'BT03-015' && B[summoned.id].n.includes('รัททาทุย')) r.g.q.push(() => { log(r, '✨ ตุ๊กตารัททาทุย: อัญเชิญรัททาทุยจาก Deck'); summonRat1(r, i); });
 }
 function fxAtk03(r, i, a, tg, tk) {
+  if (hasEq(r, a, 'KD03-018')) { a.hold = r.g.n + 2; log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' จะไม่ตื่นจนจบ End Phase ถัดไปของเรา'); }
   if (hasEq(r, a, 'BT03-055')) { draw(r, r.p[i], 1); vfx(a.u, 'aura', 'ขวานทอง: จั่ว 1', '#fde047'); log(r, '🪓 ขวานทอง: ' + r.p[i].name + ' จั่ว 1 ใบ'); }
   if (hasEq(r, a, 'BT03-056') && tk === 'av') { const d = r.p[1 - i].av.find(x => x.u === tg); if (d) { vfx(a.u, 'shake'); vfx(d.u, 'burst', 'วัชระ!', '#38bdf8'); log(r, '⚡ สายฟ้า วัชระ: ทำลาย ' + nmOf(d)); destroyAv(r, d.u); } }
   if (a.id === 'BT03-002') vfx(a.u, 'aura', 'ศัตรูใช้ React ไม่ได้', '#a78bfa');
@@ -1425,7 +1430,7 @@ Object.assign(AB, {
 
 /* ===== BT03 ชุด 3 (Magic 041-060) ===== */
 function mod05(r, x, f) {
-  let v = 0;
+  let v = modKD(r, x, f);
   if (hasEq(r, x, 'BT03-051')) v += nmOf(x).includes('หุ่นนักรบผู้กล้า') ? 3 : 1;
   if (hasEq(r, x, 'BT03-052')) v -= 2;
   if (!x.tk && nmOf(x).includes('แดรกคูลา') && landIs(r, 'BT03-060')) v += 1;
@@ -1613,13 +1618,14 @@ function kdNaraiFx(r, i, c) {
     ask(r, i, { text: 'ทำลาย Avatar ฝ่ายตรงข้าม 1 ใบ ที่ Cost ไม่เกิน 4', opts: L, cb: us => destroyAv(r, us[0]) });
   } else if (c.id === 'KD01-003') {
     c.kdSwap = r.g.n;
-    const L = p.av.filter(a => symOf(a) === 'เทพ' && a.tired).map(a => a.u);
+    const L = p.av.filter(a => symOf(a) === 'เทพ' && a.tired && !(a.hold && a.hold >= r.g.n)).map(a => a.u);
     ask(r, i, { text: 'เลือก Avatar {เทพ} ของเราที่อยู่ในสภาพนอน เปลี่ยนเป็นสภาพตื่น', opts: L, cb: us => { const t = find(r, us[0]); if (t) { t.c.tired = false; fx({ k: 'summon', u: t.c.u }); log(r, '☀ ' + nmOf(t.c) + ' กลับเป็นสภาพตื่น'); } } });
   }
 }
 // End Phase: ส่ง 002/003 ลงนรก แล้วอัญเชิญ Avatar "พระนารายณ์" ชื่ออื่นจากนรก
-const kdSwapList = r => { const o = []; r.p.forEach((q, qi) => q.av.forEach(a => { if (a.kdSwap === r.g.n) o.push({ qi, a }); })); return o; };
+const kdSwapList = r => { const o = []; r.p.forEach((q, qi) => q.av.forEach(a => { if (a.kdSwap === r.g.n || (a.id === 'KD03-001' && qi === r.g.turn)) o.push({ qi, a }); })); return o; };
 function kdSwap(r, qi, a, done) {
+  if (a.id === 'KD03-001') return kdIdolEnd(r, qi, a, done);
   delete a.kdSwap; const p = r.p[qi], nm = B[a.id].n;
   log(r, '🔄 End Phase: ' + nm + ' ลงนรก แล้วอัญเชิญ "พระนารายณ์" ชื่ออื่นจากนรก');
   sendHell(r, a.u); if (onAv(r, a.u)) return done();
@@ -1634,8 +1640,8 @@ function kdLife(r, i, id) {
   const c = B[id], p = r.p[i]; if (!c || !/^KD0[1-4]-02[1-5]$/.test(id)) return false;
   const lab = '❤ ' + c.n + ': ', toHand = (z, pred, text) => ask(r, i, { text: lab + text, opts: p[z].filter(pred).map(x => x.u), cb: us => { const h = fromZone(r, i, z, us[0]); if (h) { p.hand.push(h); log(r, '❤ นำ ' + B[h.id].n + ' ขึ้นมือ'); } } });
   if (['KD01-025', 'KD02-022', 'KD03-025'].includes(id)) { toHand('hell', x => isAv(x) && (B[x.id].g || 0) >= 3, 'เลือก Avatar ที่มี GEM 3 หรือมากกว่า จากนรก ขึ้นมือ'); return true; }
-  if (id === 'KD02-023') { scout(r, i, 5, { text: lab + 'เลือก Avatar 1 ใบ จากที่สอดแนม ขึ้นมือ', pred: x => isAv(x), rest: 'bottom', then: x => x && p.hand.push(x) }); return true; }
-  if (id === 'KD02-024') { toHand('hell', x => !x.tk && B[x.id].t === 'Magic' && B[x.id].st === 'Normal', 'เลือก Normal Magic จากนรก ขึ้นมือ'); return true; }
+  if (id === 'KD02-023' || id === 'KD03-021') { scout(r, i, 5, { text: lab + 'เลือก Avatar 1 ใบ จากที่สอดแนม ขึ้นมือ', pred: x => isAv(x), rest: 'bottom', then: x => x && p.hand.push(x) }); return true; }
+  if (id === 'KD02-024' || id === 'KD03-022') { toHand('hell', x => !x.tk && B[x.id].t === 'Magic' && B[x.id].st === 'Normal', 'เลือก Normal Magic จากนรก ขึ้นมือ'); return true; }
   return false;
 }
 Object.assign(SUM, {
@@ -1696,6 +1702,117 @@ Object.assign(AB, {
       (cx.pick.x || []).forEach(u => { const k = p.hell.findIndex(h => h.u === u); if (k >= 0) { const [c] = p.hell.splice(k, 1); if (!c.tk) p.dk.push(c); } });
       fx({ k: 'exile', u: cx.card.u, id: null, nm: 'เนรเทศ 2 ใบ' }); log(r, '🌀 ลิลิธ: เนรเทศการ์ดในนรก 2 ใบ');
       ask(r, i, { text: 'ลิลิธ: เลือกการ์ด {นรก} จากนรก 1 ใบ ขึ้นมือ', opts: p.hell.filter(c => !c.tk && B[c.id].s === 'นรก').map(c => c.u), cb: us => { const h = fromZone(r, i, 'hell', us[0]); h && p.hand.push(h); } }); } },
+});
+
+
+/* ===== KD03 มุ่งสู่ฝันเป็นที่ 1 (ไอดอล / โอตะ) ===== */
+const isIdol = x => isAv(x) && nmHas(x, 'ไอดอล');
+const isMim = x => isAv(x) && (nmHas(x, 'มีมมิ') || nmHas(x, 'บีมมิ'));          // "บีมมิ" = ตระกูล มีมมิจัง
+const isOtaC = c => !c.tk && B[c.id] && B[c.id].t === 'Avatar' && B[c.id].n.includes('โอตะ');
+const otaOf = x => (x.wr || []).filter(w => B[w.id].n.includes('โอตะ'));
+WEAR_IDOL.push('KD03-002');
+Object.assign(COST03, {
+  'KD03-002': { ok: c => isIdol(c) || nmHas(c, 'โปรดิวเซอร์'), msg: 'โอตะคูล่า ใช้เป็น Cost ได้เฉพาะ Avatar ไอดอล/โปรดิวเซอร์' },
+  'KD03-009': { ok: c => isIdol(c), msg: 'โอตะตัวกะปอม ใช้เป็น Cost ได้เฉพาะ Avatar ไอดอล' },
+  'KD03-019': { ok: c => isIdol(c) || nmHas(c, 'โปรดิวเซอร์'), msg: 'ของขวัญจากโอตะ ใช้เป็น Cost ได้เฉพาะ Avatar ไอดอล/โปรดิวเซอร์' },
+});
+KD_HAND['KD03-001'] = 1; KD_HAND['KD03-002'] = 1;
+function modKD(r, x, f) {
+  let v = 0; const p = r.p[f.i];
+  (x.wr || []).forEach(w => { if (w.id === 'KD03-002' && (isIdol(x) || isMim(x))) v += isMim(x) ? 2 : 1; if (w.id === 'KD03-009') v += 1; });
+  if (isIdol(x) && otaOf(x).length) v += 2 * p.av.filter(a => a.id === 'KD03-005' && a.u !== x.u && !noFx(r, a)).length;
+  if (hasEq(r, x, 'KD03-018')) v += 3;
+  return v;
+}
+const kdUntarget = (r, owner, x) => x.id === 'KD03-005' && !noFx(r, x) && otaOf(x).length > 0 && r.p[owner].av.some(a => a.u !== x.u && isIdol(a) && B[a.id].n !== B[x.id].n);
+function kdPaid(r, i, pc, summoned) {
+  if (pc.id !== 'KD03-009' || !isIdol(summoned)) return;
+  const p = r.p[i];
+  r.g.q.push(() => { if (!p.hell.includes(pc)) return; const L = p.av.filter(isIdol).map(a => a.u); if (!L.length) return;
+    ask(r, i, { text: 'โอตะตัวกะปอม: นำมาสวมใส่ให้ Avatar "ไอดอล" 1 ใบ (ยกเลิก = ไม่ใช้)', opts: L, cancel: true, cb: us => { const t = find(r, us[0]), k = p.hell.indexOf(pc); if (!t || t.z !== 'av' || k < 0) return; p.hell.splice(k, 1); wearOn(r, i, t.c, pc); } }); });
+}
+// เชาว์ปัญญาลิง: เปิดช่อง React เมื่อฝ่ายตรงข้ามใช้ความสามารถของ Avatar
+function kdUseGate(r, i, f, m) {
+  const g = r.g, o = 1 - i;
+  if (g.used[o].React || (g.noReact && g.noReact.who === o) || !r.p[o].hand.some(h => h.id === 'KD03-017')) return false;
+  g.q.push(() => { const ff = find(r, f.c.u); if (!ff || ff.z !== 'av') return; if (ff.c.nf === g.n) return log(r, '❌ ความสามารถของ ' + nmOf(ff.c) + ' ถูกยกเลิก'); act(r, i, { ...m, rg17: 1 }); });
+  open(r, { who: o, k: 'ev', ev: { k: 'use', id: f.c.id, u: f.c.u, i } });
+  return true;
+}
+// มีมมิจัง No.1: End Phase กลับเข้า Deck, จั่ว 1, อัญเชิญ "บีมมิ" จากเนรเทศ
+function kdIdolEnd(r, qi, a, done) {
+  const p = r.p[qi], wr = a.wr || []; a.wr = [];
+  fx({ k: 'say', id: a.id, t: 'กลับเข้า Deck' }); take(r, a.u); p.deck.push(a); shuf(p.deck); draw(r, p, 1);
+  log(r, '🎤 End Phase: ' + B[a.id].n + ' กลับเข้า Deck แล้วสับ จั่ว 1 ใบ');
+  const L = p.dk.filter(isMim).map(c => c.u), bury = () => { wr.forEach(w => p.hell.push(w)); done(); };
+  if (!L.length) return bury();
+  ask(r, qi, { text: 'End Phase: อัญเชิญ Avatar "บีมมิ" จากเนรเทศ Zone (ยกเลิก = ไม่อัญเชิญ)', opts: L, cancel: true, onCancel: bury, cb: us => {
+    const k = p.dk.findIndex(c => c.u === us[0]); if (k < 0) return bury(); const [c] = p.dk.splice(k, 1);
+    if (!putAv(r, qi, c, {})) return bury();
+    wr.forEach(w => wearOn(r, qi, c, w)); done(); } });
+}
+function kdScoutMulti(r, i, n, pred, max, text, then) {
+  const p = r.p[i], seen = p.deck.splice(-n).reverse();
+  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ (' + seen.map(c => B[c.id].n).join(', ') + ')'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
+  const fin = us => { const got = (us || []).map(u => seen.find(c => c.u === u)).filter(Boolean); seen.filter(c => !got.includes(c)).forEach(c => p.deck.push(c)); shuf(p.deck); log(r, '🔀 นำการ์ดที่เหลือกลับเข้า Deck แล้วสับ'); then(got); };
+  const ok = seen.filter(pred).map(c => c.u); if (!ok.length) return fin([]);
+  ask(r, i, { text, opts: ok, n: Math.min(max, ok.length), min: 0, cb: fin });
+}
+const kdOtaSrc = (r, i) => { const p = r.p[i], o = p.hell.filter(isOtaC).map(c => c.u); if (p.av.some(a => nmHas(a, 'ทัตดนัยซัง'))) o.push(...p.deck.filter(isOtaC).map(c => c.u)); return o; };
+Object.assign(SUM, {
+  'KD03-001': (r, i) => { const p = r.p[i], L = p.deck.filter(isIdol).map(c => c.u);
+    if (!L.length) { shuf(p.deck); return log(r, 'ค้น Deck ไม่พบ Avatar ไอดอล'); }
+    ask(r, i, { text: 'จุติ: เลือก Avatar "ไอดอล" จาก Deck อัญเชิญลง Avatar Zone', opts: L, cb: us => {
+      if (!summonAny(r, i, us[0], 'deck')) { shuf(p.deck); return; }
+      const t = find(r, us[0]), O = p.deck.filter(isOtaC).map(c => c.u);
+      if (!t || !O.length) return shuf(p.deck);
+      ask(r, i, { text: 'จุติ: เลือก Avatar "โอตะ" จาก Deck ไปสวมใส่ให้ ' + nmOf(t.c), opts: O, cb: u2 => { const c = fromZone(r, i, 'deck', u2[0]); c && wearOn(r, i, t.c, c); shuf(p.deck); } });
+    } }); },
+});
+Object.assign(ABIL, {
+  'KD03-001': { zone: 'hand', label: 'เนรเทศ "บีมมิ" แล้วอัญเชิญ มีมมิจัง No.1 (จุติ)', cond: (r, i) => r.p[i].av.some(isMim),
+    run: (r, i, x) => { const p = r.p[i];
+      ask(r, i, { text: 'มีมมิจัง No.1: เลือก Avatar "บีมมิ" บน Avatar Zone ที่จะเนรเทศ (ยกเลิก = ไม่ใช้)', opts: p.av.filter(isMim).map(a => a.u), cancel: true, cb: us => {
+        const t = find(r, us[0]); if (!t || t.z !== 'av') return; const wr = t.c.wr || []; t.c.wr = [];
+        fx({ k: 'exile', u: t.c.u, id: t.c.kd || t.c.id }); take(r, t.c.u); p.dk.push(t.c); log(r, '🌀 เนรเทศ ' + nmOf(t.c));
+        const hc = fromZone(r, i, 'hand', x.u); if (!hc) return wr.forEach(w => p.hell.push(w));
+        putAv(r, i, hc, { sm: 1 }); wr.forEach(w => B[w.id].n.includes('โอตะ') ? wearOn(r, i, hc, w) : p.hell.push(w));
+      } }); } },
+  'KD03-002': { zone: 'hand', label: 'เนรเทศใบนี้ + ทิ้งมือ 1 ใบ: นำ "บีมมิ" จาก Deck ขึ้นมือ', cond: (r, i, c) => r.p[i].hand.length >= 2 && r.p[i].deck.some(isMim),
+    run: (r, i, x) => { const p = r.p[i];
+      ask(r, i, { text: 'โอตะคูล่า: เลือกการ์ดบนมือ 1 ใบที่จะทิ้ง (ยกเลิก = ไม่ใช้)', opts: p.hand.filter(h => h.u !== x.u).map(h => h.u), cancel: true, cb: us => {
+        sendHell(r, us[0]); const c = fromZone(r, i, 'hand', x.u); if (c) { p.dk.push(c); log(r, '🌀 เนรเทศ ' + B[c.id].n); }
+        tutor(r, i, isMim, 'Avatar บีมมิ'); } }); } },
+});
+Object.assign(AB, {
+  'KD03-002': { z: 'av', can: (r, i, c) => r.p[i].av.some(a => a.u !== c.u && (isIdol(a) || isMim(a))),
+    steps: [{ key: 't', text: 'เลือก Avatar "ไอดอล" หรือ "บีมมิ" ที่จะสวมใส่ โอตะคูล่า', opts: (r, i, cx) => r.p[i].av.filter(a => a.u !== cx.card.u && (isIdol(a) || isMim(a))).map(a => a.u) }],
+    run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } },
+  'KD03-006': { z: 'av', can: (r, i, c) => kdOtaSrc(r, i).length > 0 && r.p[i].av.some(a => a.u !== c.u && isIdol(a)),
+    steps: [{ key: 't', text: 'เลือก Avatar "ไอดอล" ใบอื่น ที่จะสวมใส่ โอตะ', opts: (r, i, cx) => r.p[i].av.filter(a => a.u !== cx.card.u && isIdol(a)).map(a => a.u) },
+            { key: 'o', text: 'เลือก Avatar "โอตะ" (จากนรก หรือ Deck ถ้ามี ทัตดนัยซัง)', opts: (r, i) => kdOtaSrc(r, i) }],
+    run: (r, i, cx) => { const p = r.p[i], t = find(r, cx.pick.t[0]), u = cx.pick.o[0]; if (!t) return; const z = p.hell.some(c => c.u === u) ? 'hell' : 'deck'; const c = fromZone(r, i, z, u); if (!c) return; wearOn(r, i, t.c, c); if (z === 'deck') shuf(p.deck); } },
+  'KD03-020': { z: 'land', can: (r, i) => r.p[i].hand.length > 0,
+    steps: [{ key: 'd', pay: 1, text: 'ทิ้งการ์ดบนมือ 1 ใบ', opts: (r, i) => r.p[i].hand.map(c => c.u) }],
+    run: (r, i) => { const p = r.p[i];
+      ask(r, i, { text: 'เวทีแห่งความฝัน: เลือกปฏิบัติ', choices: ['1) สอดแนม 5 ใบ: โอตะ ≤ 2 ใบ สวมใส่ให้ ไอดอล', '2) สอดแนม 7 ใบ: นำ Avatar ไอดอล 1 ใบขึ้นมือ'], cb: k => {
+        if (k === 1) return kdScoutMulti(r, i, 7, isIdol, 1, 'เลือก Avatar "ไอดอล" 1 ใบ ขึ้นมือ', got => got.forEach(c => { p.hand.push(c); log(r, '✋ นำ ' + B[c.id].n + ' ขึ้นมือ'); }));
+        const I = p.av.filter(isIdol).map(a => a.u); if (!I.length) return log(r, 'ไม่มี Avatar ไอดอล บน Avatar Zone');
+        kdScoutMulti(r, i, 5, isOtaC, 2, 'เลือก Avatar "โอตะ" ได้สูงสุด 2 ใบ ไปสวมใส่ให้ ไอดอล', got => {
+          if (!got.length) return;
+          const wear = tu => { const t = find(r, tu); if (!t || t.z !== 'av') return; got.forEach(c => { const q = p.deck.indexOf(c); if (q >= 0) p.deck.splice(q, 1); wearOn(r, i, t.c, c); }); };
+          got.forEach(c => p.deck.push(c));   // ระหว่างเลือก ให้ใบที่ได้อยู่ใน Deck ชั่วคราว (ถ้าไม่มีเป้าหมาย จะกลับเข้า Deck อยู่แล้ว)
+          if (I.length === 1) return wear(I[0]);
+          ask(r, i, { text: 'เลือก Avatar "ไอดอล" ที่จะสวมใส่โอตะ', opts: I, cb: us => wear(us[0]) }); });
+      } }); } },
+});
+Object.assign(MG, {
+  'KD03-015': { react: 'atkAv', cond: r => { const p = r.g.pend; return !!(p && p.k === 'atk' && p.tk === 'av' && r.p[p.who].av.some(a => a.u === p.tg && isIdol(a))); },
+    run: (r, i, cx) => { if (cx.pend) cx.pend.cancel = 1; log(r, '🤝 งานจับมือ: ยกเลิกการโจมตี'); const p = r.p[i], L = p.hell.filter(isOtaC).map(c => c.u), I = p.av.filter(isIdol).map(a => a.u); if (!L.length || !I.length) return;
+      ask(r, i, { text: 'งานจับมือ: เลือก Avatar "โอตะ" จากนรก', opts: L, cb: us => ask(r, i, { text: 'เลือก Avatar "ไอดอล" ที่จะสวมใส่', opts: I, cb: u2 => { const t = find(r, u2[0]), c = fromZone(r, i, 'hell', us[0]); t && c && wearOn(r, i, t.c, c); } }) }); } },
+  'KD03-017': { react: 'use', run: (r, i, cx) => { const e = cx.ev, f = e && find(r, e.u); if (!f || f.z !== 'av') return; f.c.nf = r.g.n; fx({ k: 'say', id: 'KD03-017', t: 'สูญเสียความสามารถ!' }); vfx(f.c.u, 'burst', 'สูญเสียความสามารถ', '#a3e635'); log(r, '🐒 ' + nmOf(f.c) + ' สูญเสียความสามารถทั้งหมด จนจบเทิร์น'); } },
+  'KD03-018': { mod: 1 },
+  'KD03-019': { mod: 1, tgf: x => isIdol(x), run: (r, i) => { draw(r, r.p[i], 1); log(r, '🎁 ของขวัญจากโอตะ: ' + r.p[i].name + ' จั่ว 1 ใบ'); } },
 });
 
 /* ===== BOT: โหมดเล่นกับบอท (ง่าย/กลาง/ยาก) =====
