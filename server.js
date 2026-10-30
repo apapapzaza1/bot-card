@@ -82,7 +82,7 @@ async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null
   for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
-const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 /* ===== KD: การ์ดพิมพ์ซ้ำ (reprint) ใช้สกิลเดิมของการ์ดต้นฉบับ: instance เก็บ id ต้นฉบับ + kd = id จริง (ใช้แสดงรูป) ===== */
 const CANON = { 'KD01-006': 'SD01-002', 'KD01-008': 'BT02-008', 'KD01-010': 'BT01-004', 'KD01-013': 'BT01-038', 'KD01-014': 'BT02-045', 'KD01-015': 'SD08-013', 'KD01-017': 'SD01-017', 'KD01-018': 'BT02-054', 'KD01-019': 'SD01-020', 'KD01-020': 'BT02-060',
   'KD02-003': 'SD03-001', 'KD02-004': 'BT01-016', 'KD02-006': 'SD03-002', 'KD02-007': 'SD03-003', 'KD02-008': 'SD03-004', 'KD02-009': 'BT01-015', 'KD02-015': 'BT02-046', 'KD02-016': 'SD08-013', 'KD02-018': 'BT01-041', 'KD02-020': 'BT02-058',
@@ -410,7 +410,7 @@ function startUse(r, i, card, def) {
 const abOf = (r, i, x, z) => { const d = AB[x.id] || (z === 'av' && (x.wr || []).some(w => WEAR_IDOL.includes(w.id)) ? AB_R : null); const ok = r.g.turn === i && r.g.phase === 'main' && !r.g.ask && !r.g.pend;
   if (d && d.z === z && ok && x.us !== r.g.n) return 1;
   const a2 = ABIL[x.id]; /* ความสามารถแบบ ABIL (เช่น โดมรัททาทุย) ต้องแสดงปุ่มด้วย */
-  if (a2 && a2.zone === z && ok && !(a2.once && x.ou === r.g.n)) { try { if (!a2.cond || a2.cond(r, i, x)) return 1; } catch (e) { } }
+  if (a2 && a2.zone === z && ok && !(a2.once && x.ou === r.g.n)) return 1;
   return 0; };
 const myAv = f => (r, i, cx) => r.p[i].av.filter(a => f(a, cx)).map(a => a.u);
 const wearUse = { z: 'av', can: (r, i, c) => tanksFor(r, i, c).length > 0, steps: [{ key: 't', text: 'เลือก Avatar รถถังที่จะสวมใส่', opts: (r, i, cx) => tanksFor(r, i, cx.card) }],
@@ -436,7 +436,7 @@ const ABIL = {
   'SD08-001': { zone: 'av', once: 1, label: 'อัญเชิญรัททาทุยจาก Deck/นรก', run: (r, i, x) => {
     const p = r.p[i], L = [...p.deck.filter(isRat1).map(c => c.u), ...p.hell.filter(isRat1).map(c => c.u)];
     ask(r, i, { text: 'ไพรมอล: เลือกรัททาทุย (Cost1/Gem1/Power1) จาก Deck/นรก อัญเชิญลงสนาม', opts: L, cb: us => { const inDeck = p.deck.some(c => c.u === us[0]); summonAny(r, i, us[0], inDeck ? 'deck' : 'hell'); if (inDeck) shuf(p.deck); } }); } },
-  'SD08-003': { zone: 'av', label: 'เซ่นไหว้ แล้วก่อสร้าง Construct รัททาทุยจากมือ', cond: (r, i) => r.p[i].hand.some(c => !c.tk && B[c.id].t === 'Construct' && symOf(c) === 'รัททาทุย'), run: (r, i, x) => {
+  'SD08-003': { zone: 'av', hint: 'ต้องมี Construct รัททาทุยในมือ เพื่อแสดงและก่อสร้าง', label: 'เซ่นไหว้ แล้วก่อสร้าง Construct รัททาทุยจากมือ', cond: (r, i) => r.p[i].hand.some(c => !c.tk && B[c.id].t === 'Construct' && symOf(c) === 'รัททาทุย'), run: (r, i, x) => {
     const p = r.p[i]; ask(r, i, { text: 'เลือก Construct รัททาทุย จากมือ (เซ่นไหว้ Avatar ใบนี้เป็น Cost)', opts: p.hand.filter(c => !c.tk && B[c.id].t === 'Construct' && symOf(c) === 'รัททาทุย').map(c => c.u), cancel: true,
       cb: us => { const chosen = p.hand.find(c => c.u === us[0]); if (!chosen) return; kill(r, find(r, x.u).i, x.u); r.g.q.unshift(() => buildFree(r, i, chosen, 'hand')); } }); } },
   'SD08-005': { zone: 'av', once: 1, label: 'เนรเทศรัททาทุยในนรก → POWER +1/ใบ', run: (r, i, x) => {
@@ -998,7 +998,7 @@ function act(r, i, m) {
       const ab2 = ABIL[f.c.id];
       if (ab2 && ab2.zone === z) {
         if (ab2.once && f.c.ou === g.n) E('ใช้ได้เทิร์นละครั้ง');
-        if (ab2.cond && !ab2.cond(r, i, f.c)) E('เงื่อนไขการใช้ไม่ครบ');
+        if (ab2.cond && !ab2.cond(r, i, f.c)) E(ab2.hint || 'เงื่อนไขการใช้ไม่ครบ');
         if (richGuard(r, i, f, m)) break;
         if (ab2.once) f.c.ou = g.n;
         log(r, '⚡ ' + me.name + ' ใช้สกิล ' + nmOf(f.c) + ': ' + (ab2.label || ''));
