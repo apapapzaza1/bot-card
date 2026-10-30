@@ -1362,7 +1362,7 @@ function weaponTrig03(r, c) {
 function deathFx03(r, f) {
   const c = f.c, g = r.g, p = r.p[f.i];
   if (c.tk) return;
-  deathFx04(r, f);
+  deathFx04(r, f); bt4Death(r, f);
   if (c.id === 'BT03-020' && c.drac) { delete c.drac; c.rv = { n: g.n }; log(r, '🧛 แดรกคูลา: จะกลับมาในเทิร์นถัดไปของเรา ช่วง Battle Phase'); }
   if (c.id === 'BT03-014') r.g.q.push(() => { draw(r, p, 1); log(r, '✨ โอตะปุส คำสั่งเสีย: ' + p.name + ' จั่ว 1 ใบ'); });
 }
@@ -1987,6 +1987,62 @@ Object.assign(AB, {
       } });
     } });
   } },
+});
+
+/* ===== BT04 ชุด 2 (batch 1): จุติ / สั่งใช้ / คำสั่งเสีย / Magic พื้นฐาน ===== */
+const isPet = c => isAv(c) && symOf(c) === 'สัตว์' && /^(หมา|แมว)/.test(B[c.id].n);   // Avatar "หมา" หรือ "แมว" ที่มี {Symbol สัตว์}
+const bt4Say = (x, t, c) => { fx({ k: 'say', id: x.id, t }); vfx(x.u, 'aura', t, c || '#38bdf8'); };
+Object.assign(SUM, {
+  'BT04-014': (r, i, x) => {   // มาวิน เซียนเบ็ด: ทิ้ง {แมลง}/"เหยื่อ" จากมือ → อัญเชิญ {ปลา} จากนรก
+    const p = r.p[i], D = p.hand.filter(c => isAv(c) && (symOf(c) === 'แมลง' || B[c.id].n.includes('เหยื่อ'))).map(c => c.u);
+    const F = () => p.hell.filter(c => isAv(c) && symOf(c) === 'ปลา').map(c => c.u);
+    if (!D.length || !F().length) return log(r, 'จุติ มาวิน: ไม่มี Avatar {แมลง}/เหยื่อ ในมือ หรือไม่มี {ปลา} ในนรก');
+    ask(r, i, { text: 'จุติ: ทิ้ง Avatar {แมลง} หรือ "เหยื่อ" จากมือ 1 ใบ เพื่ออัญเชิญ {ปลา} จากนรก (ยกเลิก = ไม่ใช้)', opts: D, cancel: true, cb: us => {
+      const c = fromZone(r, i, 'hand', us[0]); if (!c) return; p.hell.push(c);
+      r.g.q.unshift(() => ask(r, i, { text: 'เลือก Avatar {ปลา} จากนรก 1 ใบ อัญเชิญลงสนาม', opts: F(), cb: u2 => { if (summonAny(r, i, u2[0], 'hell')) vfx(u2[0], 'burst', 'อัญเชิญ', '#38bdf8'); } }));
+    } });
+  },
+  'BT04-017': (r, i, x) => {   // หมานมเย็น: อัญเชิญ "หมา"/"แมว" {สัตว์} Cost ≤ 2 จาก Deck แล้วสับ
+    const p = r.p[i], L = p.deck.filter(c => isPet(c) && B[c.id].c <= 2).map(c => c.u);
+    if (!L.length) { shuf(p.deck); return log(r, 'จุติ หมานมเย็น: ไม่พบ หมา/แมว Cost ≤ 2 ใน Deck'); }
+    ask(r, i, { text: 'จุติ: เลือก หมา/แมว {สัตว์} Cost ≤ 2 จาก Deck อัญเชิญลงสนาม', opts: L, cb: us => { if (summonAny(r, i, us[0], 'deck')) vfx(us[0], 'burst', 'อัญเชิญ', '#f59e0b'); shuf(p.deck); } });
+  },
+  'BT04-022': (r, i, x) => {   // รปภ.: จั่ว 1 แล้วนำการ์ด 1 ใบจากมือไปไว้บนสุดของ Deck
+    const p = r.p[i]; draw(r, p, 1); vfx(x.u, 'aura', 'จั่ว 1', '#38bdf8'); log(r, '✨ ' + p.name + ': จั่ว 1 ใบ');
+    r.g.q.unshift(() => ask(r, i, { text: 'จุติ: เลือกการ์ดจากมือ 1 ใบ วางไว้บนสุดของ Deck', opts: p.hand.map(c => c.u), cb: us => { const c = fromZone(r, i, 'hand', us[0]); if (c) { p.deck.push(c); log(r, '⬆ ' + p.name + ': วางการ์ด 1 ใบไว้บน Deck'); } } }));
+  },
+  'BT04-026': (r, i, x) => {   // ลูกเขยบิ๊ก: นำ Magic "แผนการ" จาก Deck หรือ นรก ขึ้นมือ (จาก Deck ต้องสับ)
+    const p = r.p[i], ok = c => B[c.id].t === 'Magic' && B[c.id].n.startsWith('แผนการ');
+    const L = [...p.deck.filter(c => ok(c)).map(c => c.u), ...p.hell.filter(c => !c.tk && ok(c)).map(c => c.u)];
+    if (!L.length) { shuf(p.deck); return log(r, 'จุติ ลูกเขยบิ๊ก: ไม่พบ Magic "แผนการ"'); }
+    ask(r, i, { text: 'จุติ: เลือก Magic "แผนการ" จาก Deck/นรก 1 ใบ ขึ้นมือ', opts: L, cb: us => {
+      const fromDeck = p.deck.some(c => c.u === us[0]), c = fromZone(r, i, fromDeck ? 'deck' : 'hell', us[0]); if (!c) return;
+      p.hand.push(c); if (fromDeck) shuf(p.deck); vfx(x.u, 'aura', 'ขึ้นมือ', '#a78bfa'); log(r, '✨ ' + p.name + ': นำ ' + B[c.id].n + ' ขึ้นมือ');
+    } });
+  },
+  'BT04-027': (r, i, x) => {   // ผู้งมงาย: จั่ว 1 แล้วทิ้งการ์ด 1 ใบจากมือลงนรก
+    const p = r.p[i]; draw(r, p, 1); vfx(x.u, 'aura', 'จั่ว 1', '#38bdf8'); log(r, '✨ ' + p.name + ': จั่ว 1 ใบ');
+    r.g.q.unshift(() => ask(r, i, { text: 'จุติ: ทิ้งการ์ดจากมือ 1 ใบ ลงนรก', opts: p.hand.map(c => c.u), cb: us => { const c = fromZone(r, i, 'hand', us[0]); if (c) { p.hell.push(c); log(r, '🗑 ' + p.name + ': ทิ้ง ' + B[c.id].n); } } }));
+  },
+});
+Object.assign(AB, {
+  'BT04-019': { z: 'av', steps: [], run: (r, i, cx) => { draw(r, r.p[i], 1); vfx(cx.card.u, 'aura', 'จั่ว 1', '#38bdf8'); log(r, '✨ ' + r.p[i].name + ': จั่ว 1 ใบ'); } },   // คนแก่สติเลอะเลือน: เทิร์นละครั้ง จั่ว 1 (ส่วนอัญเชิญเมื่อถูกสอดแนมโดย "ผู้รู้ความจริง" ทำใน batch ถัดไป)
+  'BT04-031': { z: 'av', steps: [], run: (r, i, cx) => { tutor(r, i, c => B[c.id].t === 'Magic' && B[c.id].n.trim() === 'ปืนเล็กยาว', 'Modification Magic "ปืนเล็กยาว"'); vfx(cx.card.u, 'aura', 'ค้น ปืนเล็กยาว', '#84cc16'); } },
+});
+function bt4Death(r, f) {   // คำสั่งเสีย BT04
+  const c = f.c, p = r.p[f.i]; if (c.tk) return;
+  if (c.id === 'BT04-034') r.g.q.push(() => {   // อนงค์: อัญเชิญ หมา/แมว {สัตว์} Cost ≤ 3 จากนรก
+    const L = p.hell.filter(h => isPet(h) && B[h.id].c <= 3).map(h => h.u); if (!L.length) return log(r, 'คำสั่งเสีย อนงค์: ไม่มี หมา/แมว Cost ≤ 3 ในนรก');
+    ask(r, f.i, { text: 'คำสั่งเสีย: เลือก หมา/แมว {สัตว์} Cost ≤ 3 จากนรก อัญเชิญลงสนาม', opts: L, cb: us => { if (summonAny(r, f.i, us[0], 'hell')) vfx(us[0], 'burst', 'อัญเชิญ', '#f59e0b'); } });
+  });
+}
+const foeAvT = (r, i) => r.p[1 - i].av.filter(a => !protectedFrom(r, i, a)).map(a => a.u);
+Object.assign(MG, {
+  'BT04-041': { run: (r, i) => {   // ล้มโต๊ะ: มือทั้ง 2 ฝ่ายกลับเข้า Deck สับ แล้วจั่วคนละ 4
+    r.p.forEach(q => { q.deck.push(...q.hand.splice(0)); shuf(q.deck); }); r.p.forEach(q => draw(r, q, 4));
+    fx({ k: 'vfx', u: null, t: 'burst', txt: 'ล้มโต๊ะ!', c: '#ef4444' }); log(r, '🎲 ล้มโต๊ะ: มือทั้งสองฝ่ายกลับเข้า Deck แล้วจั่วคนละ 4 ใบ'); } },
+  'BT04-044': { steps: [oneHand(1, 'ทิ้งการ์ดบนมือ 1 ใบ'), { key: 't', text: 'เลือก Avatar ฝ่ายตรงข้าม 1 ใบ ทำลาย', opts: foeAvT }],   // บีมมมมมมมมมม
+    run: (r, i, cx) => { const u = cx.pick.t[0]; vfx(u, 'burst', 'บีม!', '#facc15'); destroyAv(r, u); log(r, '💥 บีม: ทำลาย Avatar ฝ่ายตรงข้าม'); } },
 });
 
 /* ===== BOT: โหมดเล่นกับบอท (ง่าย/กลาง/ยาก) =====
