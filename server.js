@@ -199,6 +199,7 @@ function P(r, x) {
     (x.hd || []).forEach(h => { if (h.until >= r.g.n) v += h.v; });
     if (x.id === 'SD03-005') v += new Set(p.hell.filter(h => isAv(h) && isNir(h)).map(h => B[h.id].n)).size;
   }
+  if (x.id === 'BT04-008' && f && f.z === 'av' && !noFx(r, x)) v += r.p[1 - f.i].hand.length;   // BT04-008 ลูกคนรวย: POWER = จำนวนการ์ดบนมือฝ่ายตรงข้าม (base 0)
   v -= neg053(r, x);
   return Math.max(0, v);
 }
@@ -263,7 +264,7 @@ function fxSummon0(r, i, x) {
 function fxAtk0(r, i, a, tg, tk) {
   if (noFx(r, a)) return;
   if (a.id === 'BT01-001' && tk === 'av') { const d = r.p[1 - i].av.find(x => x.u === tg); if (d && symOf(d) === 'เทพ') { fx({ k: 'say', id: a.id, t: 'ทำลายเป้าหมาย' }); log(r, '💥 นนทก นิ้วเพชร: ทำลาย ' + nmOf(d)); destroyAv(r, d.u); } }
-  fxAtk03(r, i, a, tg, tk); fxAtk2(r, i, a); atkTrig(r, i, a);
+  fxAtk03(r, i, a, tg, tk); fxAtk2(r, i, a); atkTrig(r, i, a); bt4Atk(r, i, a, tg, tk);
   if (a.id === 'SD01-002') { addTp(a, 2); log(r, '✨ พระนารายณ์ POWER +2'); }
   if (a.id === 'SD03-002') { mill(r, i, 2, a); addTp(a, 1); log(r, '✨ พ่อจีจ้า POWER +1'); }
   if (a.id === 'SD07-002') log(r, '✨ เตียวหุย (มี modifier อยู่ใน P)');
@@ -734,6 +735,7 @@ function fxSummon01(r, i, x) {
 function stealCard(r, i, u) {
   const f = find(r, u), me = r.p[i]; if (!f || f.z !== 'av' || f.i === i) return false;
   if (f.c.id === 'KD04-001') { log(r, '🛡 ราชันย์หุ่นนักรบผู้กล้า ไม่สามารถถูกเปลี่ยนการควบคุมได้'); return false; }
+  if (f.c.id === 'BT04-003' && !r.g.nutOK && !noFx(r, f.c)) { log(r, '🛡 ไอ้นัท - คนใจเด็ด ไม่ถูกเปลี่ยนการควบคุม'); return false; }
   if (f.c.hero === r.g.n) { log(r, '🛡 ' + nmOf(f.c) + ' ไม่รับผลความสามารถ'); return false; }
   if (!canPlaceAv(r, i, f.c)) { log(r, 'Avatar เต็ม เปลี่ยนการควบคุมไม่ได้'); return false; }
   r.p[f.i].av.splice(f.k, 1); if (f.c.oo == null) f.c.oo = f.i; f.c.tired = true; me.av.push(f.c); log(r, '✨ ' + me.name + ' ยึด ' + nmOf(f.c) + ' มาฝั่งเรา'); return true;
@@ -1089,6 +1091,7 @@ function resolveAtk(r, p) {
     if (d.id === 'SD08-002') { addPw(a, -1); pa = Math.max(0, pa - 1); base.pa = pa; log(r, '✨ รัททาทุย พาหะ: ' + an + ' POWER -1 ถาวร'); }
     if (a.id === 'BT03-034' && !noFx(r, a)) { pa += 2; pd = Math.max(0, pd - 2); vfx(a.u, 'aura', 'พาลี +2 / ศัตรู -2', '#22c55e'); log(r, '🐒 พาลี: ' + an + ' +2 / ' + dn + ' -2'); }
     if (d.id === 'BT03-034' && !noFx(r, d)) { pd += 2; pa = Math.max(0, pa - 2); vfx(d.u, 'aura', 'พาลี +2 / ศัตรู -2', '#22c55e'); log(r, '🐒 พาลี: ' + dn + ' +2 / ' + an + ' -2'); }
+    if ((a.id === 'BT04-001' && !noFx(r, a)) || (d.id === 'BT04-001' && !noFx(r, d))) { const bp0 = x => x.tk ? (x.tk.p || 0) : (B[x.id].p || 0); pa = bp0(a); pd = bp0(d); vfx((a.id === 'BT04-001' ? a : d).u, 'aura', 'POWER ตั้งต้น', '#ef4444'); log(r, '🦴 จอมหักกระดูก: Avatar ที่ต่อสู้ POWER กลับเป็นค่าตั้งต้น'); }
     base.pa = pa;
     log(r, an + ' (' + pa + ') สู้ ' + dn + ' (' + pd + ')');
     let kl = [];
@@ -1302,7 +1305,7 @@ wss.on('connection', ws => {
 });
 /* ===== คนรวย (BT02-006): ขัดจังหวะ "ความสามารถอัตโนมัติ" ของอีกฝ่ายด้วย =====
    autoGuard คืน true = ขัดจังหวะแล้ว (ถ้าเจ้าของคนรวยปฏิเสธ จะเรียก fn ให้เอง) / false = ไม่เข้าเงื่อนไข ให้ผู้เรียกทำต่อตามปกติ */
-const ATK_TRIG = new Set(['SD05-001', 'SD06-003', 'BT02-004', 'BT02-005', 'BT01-001', 'KD01-009', 'BT03-002', 'BT03-018']);
+const ATK_TRIG = new Set(['SD05-001', 'SD06-003', 'BT02-004', 'BT02-005', 'BT01-001', 'KD01-009', 'BT03-002', 'BT03-018', 'BT04-002']);
 function autoGuard(r, o, card, kind, fn) {
   if (!card || card.tk || r.g.ask || r.g.over) return false;
   const rp = r.p[1 - o], a = rp.av.find(x => kdRich(r, 1 - o, x));
@@ -1758,14 +1761,14 @@ Object.assign(COST03, {
 KD_HAND['KD03-001'] = 1; KD_HAND['KD03-002'] = 1;
 function modKD(r, x, f) {
   let v = 0; const p = r.p[f.i];
-  (x.wr || []).forEach(w => { if (w.id === 'KD03-002' && (isIdol(x) || isMim(x))) v += isMim(x) ? 2 : 1; if (w.id === 'KD03-009' || w.id === 'KD04-008') v += 1; });
-  if (isIdol(x) && otaOf(x).length) v += 2 * p.av.filter(a => a.id === 'KD03-005' && a.u !== x.u && !noFx(r, a)).length;
+  (x.wr || []).forEach(w => { if (w.id === 'KD03-002' && (isIdol(x) || isMim(x))) v += isMim(x) ? 2 : 1; if (w.id === 'KD03-009' || w.id === 'BT04-013' || w.id === 'KD04-008') v += 1; });
+  if (isIdol(x) && otaOf(x).length) v += 2 * p.av.filter(a => (a.id === 'KD03-005' || a.id === 'BT04-009') && a.u !== x.u && !noFx(r, a)).length;
   if (hasEq(r, x, 'KD03-018')) v += 3;
   return v;
 }
-const kdUntarget = (r, owner, x) => x.id === 'KD03-005' && !noFx(r, x) && otaOf(x).length > 0 && r.p[owner].av.some(a => a.u !== x.u && isIdol(a) && B[a.id].n !== B[x.id].n);
+const kdUntarget = (r, owner, x) => (x.id === 'KD03-005' || x.id === 'BT04-009') && !noFx(r, x) && otaOf(x).length > 0 && r.p[owner].av.some(a => a.u !== x.u && isIdol(a) && B[a.id].n !== B[x.id].n);
 function kdPaid(r, i, pc, summoned) {
-  if (pc.id !== 'KD03-009' || !isIdol(summoned)) return;
+  if ((pc.id !== 'KD03-009' && pc.id !== 'BT04-013') || !isIdol(summoned)) return;
   const p = r.p[i];
   r.g.q.push(() => { if (!p.hell.includes(pc)) return; const L = p.av.filter(isIdol).map(a => a.u); if (!L.length) return;
     ask(r, i, { text: 'โอตะตัวกะปอม: นำมาสวมใส่ให้ Avatar "ไอดอล" 1 ใบ (ยกเลิก = ไม่ใช้)', opts: L, cancel: true, cb: us => { const t = find(r, us[0]), k = p.hell.indexOf(pc); if (!t || t.z !== 'av' || k < 0) return; p.hell.splice(k, 1); wearOn(r, i, t.c, pc); } }); });
@@ -1941,6 +1944,48 @@ Object.assign(MG, {
   'KD04-014': { mod: 1, tgf: x => isRobot(x) && nmOf(x).includes('ผู้กล้า') },
   'KD04-015': { mod: 1, tgf: x => isRobot(x) },
   'KD04-016': {}, 'KD04-017': {},
+});
+
+/* ===== BT04 ชุด 1: Avatar แดง (001-004, 006-009, 013, 036) + Magic พิมพ์ซ้ำ (046/048/050/054) ===== */
+Object.assign(CANON, { 'BT04-046': 'SD08-013', 'BT04-048': 'KD03-015', 'BT04-050': 'KD03-017', 'BT04-054': 'KD03-019' });   // ข้อความเหมือนเดิมทุกตัวอักษร ใช้สกิลเดิม
+COST03['BT04-013'] = COST03['KD03-009'];
+const BT4A = {
+  'BT04-002': (r, i, a) => {   // ครูสงบ: ประกาศโจมตี → ทำลาย Modification ฝ่ายตรงข้าม 1 ใบ
+    const L = r.p[1 - i].mg.filter(m => B[m.id].st === 'Modification').map(m => m.u); if (!L.length) return;
+    ask(r, i, { text: 'ครูสงบ: เลือก Modification Magic ของฝ่ายตรงข้าม 1 ใบ ทำลาย (ยกเลิก = ไม่ใช้)', opts: L, cancel: true, cb: us => {
+      fx({ k: 'say', id: a.id, t: 'ทำลาย Modification' }); vfx(a.u, 'shake', 'ทำลาย Modification', '#ef4444'); log(r, '💥 ครูสงบ: ทำลาย Modification ของฝ่ายตรงข้าม'); destroyAny(r, us[0]);
+    } });
+  },
+};
+function bt4Atk(r, i, a, tg, tk) { if (noFx(r, a)) return; const f = BT4A[a.id]; f && f(r, i, a, tg, tk); }
+Object.assign(SUM, {
+  'BT04-004': (r, i, x) => {   // อีช่า: เซ่นไหว้ Avatar ใบอื่น 1 ใบ → ยึด Avatar {คน/เทพ/นรก} ของศัตรู
+    const p = r.p[i], SY = ['คน', 'เทพ', 'นรก'], tgs = () => r.p[1 - i].av.filter(a => SY.includes(symOf(a)) && !protectedFrom(r, i, a)).map(a => a.u);
+    const L = p.av.filter(a => a.u !== x.u).map(a => a.u); if (!L.length || !tgs().length) return log(r, 'จุติ อีช่า: ไม่มี Avatar ให้เซ่นไหว้ หรือไม่มีเป้าหมาย');
+    ask(r, i, { text: 'จุติ: เซ่นไหว้ Avatar ใบอื่นใน Avatar Zone เรา 1 ใบ เพื่อยึด Avatar {คน/เทพ/นรก} ของศัตรู (ยกเลิก = ไม่ใช้)', opts: L, cancel: true, cb: us => {
+      sendHell(r, us[0]);
+      r.g.q.push(() => { const T = tgs(); if (!T.length) return;
+        ask(r, i, { text: 'เลือก Avatar {คน/เทพ/นรก} ของศัตรู 1 ใบ เปลี่ยนการควบคุมมาฝั่งเรา', opts: T, cb: u2 => {
+          r.g.nutOK = 1; const ok = stealCard(r, i, u2[0]); r.g.nutOK = 0;
+          if (ok) { fx({ k: 'say', id: x.id, t: 'ยึดการควบคุม!' }); vfx(u2[0], 'burst', 'เปลี่ยนการควบคุม', '#f43f5e'); }
+        } }); });
+    } });
+  },
+});
+Object.assign(AB, {
+  'BT04-007': { z: 'av', can: () => true, steps: [], run: (r, i, cx) => {   // ราม และ วิโรจน์: เลือกปฏิบัติ
+    const me = cx.card, p = r.p[i];
+    const wearOK = c => { const d = MG[c.id]; return !d || !d.tgf || d.tgf(me); };
+    const L = () => (r.g.used[i].Modification || !onAv(r, me.u)) ? [] : p.hell.filter(c => !c.tk && B[c.id].st === 'Modification' && wearOK(c)).map(c => c.u);
+    ask(r, i, { text: 'ราม และ วิโรจน์: เลือกปฏิบัติ', choices: ['1) Avatar ใบนี้ POWER +2 จนถึง End Phase ต่อไปของฝ่ายตรงข้าม', '2) (เทิร์นนี้ยังไม่ใช้ Modification) นำ Modification Magic 1 ใบจากนรกเรา มาสวมใส่ที่ Avatar ใบนี้ นับเป็นการใช้ Modification'], cb: k => {
+      if (k === 0) { addHold(me, 2, r.g.n + 1); vfx(me.u, 'aura', 'POWER +2', '#f97316'); log(r, '🔥 ราม และ วิโรจน์ POWER +2 จนถึง End Phase ต่อไปของฝ่ายตรงข้าม'); return; }
+      const O = L(); if (!O.length) return log(r, 'ใช้ข้อ 2 ไม่ได้ (เทิร์นนี้ใช้ Modification แล้ว หรือไม่มี Modification ในนรกที่สวมได้)');
+      ask(r, i, { text: 'เลือก Modification Magic จากนรก 1 ใบ สวมใส่ที่ Avatar ใบนี้', opts: O, cb: us => { const c = fromZone(r, i, 'hell', us[0]); if (!c) return;
+        if (!onAv(r, me.u)) return p.hell.push(c);
+        c.at = me.u; p.mg.push(c); r.g.used[i].Modification = 1; vfx(me.u, 'aura', 'สวม ' + B[c.id].n, '#38bdf8'); log(r, '🪖 ราม และ วิโรจน์ สวมใส่ ' + B[c.id].n + ' จากนรก');
+      } });
+    } });
+  } },
 });
 
 /* ===== BOT: โหมดเล่นกับบอท (ง่าย/กลาง/ยาก) =====
