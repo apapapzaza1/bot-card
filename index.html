@@ -645,7 +645,7 @@ if(S.ask){const a=S.ask;if(!a.mine)return A('⏳ รอฝ่ายตรงข�
 if(a.yn){A('✔ ใช่',()=>send({t:'pick',yes:1}));return A('✖ ไม่',()=>send({t:'pick',yes:0}))}
 const ok=akSel.length>=a.min&&akSel.length<=a.n;const bt=A('ยืนยัน ('+akSel.length+'/'+(a.min==a.n?a.n:a.min+'-'+a.n)+')',()=>send({t:'pick',us:akSel}));bt.disabled=!ok;bt.className='atkb';
 return a.cancel?A('ยกเลิก',()=>send({t:'pick',cancel:1})):bt}
-if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
+if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});if(S.pend&&S.pend.can&&!S.pend.can.length)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
 if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s)':''),()=>send({t:'pass'}));
 if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (กดค้างที่การ์ดเพื่อดูได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';BM.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
 if(!S.mine)DISC=0;if(S.mine&&DISC&&S.phase!='end'){if(S.me.hand.length<=7)DISC=0;else{const ex=S.me.hand.length-7;A('ยกเลิก',()=>{DISC=0;pay=[];render()});return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') แล้วจบเทิร์น · มือเกิน 7 ใบ',()=>{if(pay.length!=ex)return alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ');const d=pay.slice();DISC=0;pay=[];send({t:'next',fin:1,disc:d})}).className='endb'}}

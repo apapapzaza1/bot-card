@@ -1034,7 +1034,7 @@ function act(r, i, m) {
   }
   runQ(r);
 }
-const canReact = (r, w, c) => { const d = B[c.id]; if (!d || d.t !== 'Magic' || d.st !== 'React') return false; const def = MG[c.id]; if (!def) return true; try { if (!reactOK(r, w, d, def)) return false; if (def.cond && !def.cond(r, w)) return false; } catch (e) { return true; } return true; };
+const canReact = (r, w, c) => { const d = B[c.id]; if (!d || d.t !== 'Magic' || d.st !== 'React') return false; const def = MG[c.id]; if (!def) return true; try { if (!reactOK(r, w, d, def)) return false; if (def.cond && !def.cond(r, w)) return false; const p = r.g.pend, cx = { ev: p && p.ev, pend: p, pick: {}, card: c }; for (const s of (def.steps || [])) if (s.opts(r, w, cx).length < (s.min == null ? (s.n || 1) : s.min)) return false; } catch (e) { return true; } return true; };
 const reactList = (r, w) => (!r.g.pend || (r.g.noReact && r.g.noReact.who === w) || r.g.used[w].React) ? [] : r.p[w].hand.filter(c => canReact(r, w, c)).map(c => c.u);
 const hasReact = (r, w) => reactList(r, w).length > 0;
 const open = (r, p) => { if (r.g.over) return; p.until = Date.now() + (r.cfg.react || 15) * 1000; r.g.pend = p; };
@@ -1140,7 +1140,7 @@ async function rematch(r, i) {
 }
 const dropRoom = c => { (rooms[c].spec || []).forEach(w => w.readyState === 1 && w.send(JSON.stringify({ t: 'specend' }))); delete rooms[c]; };
 let FTK = 0;
-setInterval(() => { for (const c in rooms) { const r = rooms[c], g = r.g; if (!g || g.over || !g.pend || g.ask) continue; const w = g.pend.who; if (r.p[w] && r.p[w].bot) continue; try { if (!hasReact(r, w)) { passReact(r); bc(r); settle(r).catch(() => { }); } } catch (e) { } } }, 300);
+setInterval(() => { for (const c in rooms) { const r = rooms[c], g = r.g; if (!g || g.over || !g.pend || g.ask) continue; const w = g.pend.who; if (r.p[w] && r.p[w].bot) continue; try { if (!hasReact(r, w)) { const now = Date.now(); if (!g.pend.fk) g.pend.fk = now + 1500; else if (now >= g.pend.fk) { passReact(r); bc(r); settle(r).catch(() => { }); } } } catch (e) { } } }, 300);   // ไม่มี React: หน่วงคงที่ 1.5 วิ (กันอีกฝ่ายเดาว่ามีการ์ด React)
 setInterval(() => {
   const now = Date.now();
   if ((++FTK) % 2 === 0) for (const w of wss.clients) { try { pushFst(w); } catch (e) { } }
