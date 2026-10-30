@@ -1745,6 +1745,7 @@ function kdReactGate(r, i, c, go) {
 Object.assign(MG, {
   'KD02-014': { run: (r, i) => { const p = r.p[i]; mill(r, i, 3); r.g.q.push(() => { const n = hellNames(p) >= 5 ? 2 : 1; draw(r, p, n); log(r, '🩸 สัญญาเลือด: ' + p.name + ' จั่ว ' + n + ' ใบ'); }); } },
   'KD02-017': { react: 'never' },
+  'BT01-041': MG['SD05-020'],   // ชายจากอนาคต (BT01 / KD02-018 / KD04-019): เดิมเป็นสกิลเปล่า ไม่ยกเลิกอะไร → ใช้สกิลเดียวกับ SD05-020
   'KD02-019': { mod: 1 },
 });
 Object.assign(SUM, {
@@ -2222,7 +2223,9 @@ Object.assign(MG, {
   'BT04-056': { mod: 1, tgf: x => (nmOf(x).includes('ทหาร') || nmOf(x).includes('รด.')) && symOf(x) === 'คน' },   // ปืนเล็กยาว: POWER +3 (ใน P)
   'BT04-058': {}, 'BT04-059': {}, 'BT04-060': {},   // Land แบบต่อเนื่อง: ผลอยู่ใน lifeDown / canPlaceAv+bt4AtkBonus / P
 });
-Object.assign(CANON, { 'BT04-053': 'KD04-014' });
+Object.assign(CANON, { 'BT04-053': 'KD04-014',
+  'BT05-058': 'KD02-017', 'PRMO-100': 'KD02-017', 'SL02-007': 'KD02-017',   // อย่าให้มีครั้งที่ 2 (ฉบับพิมพ์ซ้ำ)
+  'ODY1-069': 'SD05-020', 'PRMO-056': 'SD05-020', 'SL01-006': 'SD05-020', 'CC02-061': 'SD05-020' });   // ชายจากอนาคต (ฉบับพิมพ์ซ้ำ)
 CARDS.forEach(c => { if (!/^(PRMO|FPRO|ODY1|CC0)/.test(c.id) || CANON[c.id]) return; const t = CARDS.find(o => o.id.startsWith('BT04-') && o.n === c.n && o.e === c.e && o.t === c.t && o.c === c.c && o.p === c.p && o.s === c.s); if (t) CANON[c.id] = CANON[t.id] || t.id; });   // พิมพ์ซ้ำ (PRMO ฯลฯ) ที่ข้อความเหมือน BT04 ทุกตัวอักษร ใช้สกิลเดียวกัน
 { const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return f(...a); } finally { MGX--; MGWHO = o; } }; } };   // 016 ริกกี้ คุณตา: ไม่รับผลจาก Magic ฝ่ายตรงข้าม
   Object.keys(MG).forEach(k => w(MG[k])); }
