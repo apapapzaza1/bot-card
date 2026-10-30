@@ -71,9 +71,12 @@ function pack(set, gar) {
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
 }
 const inst2 = (id, art) => { const c = inst(id); if (art && art[id]) c.ar = art[id]; return c; };
-function preDeck(s) { const x = ST[s]; return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id) }; }
+function deckInsts(d) { const left = {}; Object.entries(d.vr || {}).forEach(([k, n]) => { const [i, r] = k.split('|'); (left[i] = left[i] || []).push(...Array(Math.max(0, n | 0)).fill(r)); });
+  const mk = id => { const c = inst(id), a = (left[id] && left[id].shift()) || (d.art && d.art[id]); if (a) c.ar = a; return c; };
+  return { deck: shuf(d.main.map(mk)), life: shuf(d.life.map(id => ({ ...mk(id), up: 0 }))) }; }
+function preDeck(s) { const x = ST[s], vr = {}; [...x.main, ...x.life].forEach(([id, n, r]) => { if (r) vr[id + '|' + r] = (vr[id + '|' + r] || 0) + n; }); return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id), vr }; }
 async function pickDeck(m, user, ban) {
-  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return { ...mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban), art: k.art || {} }; }
+  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return { ...mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban), art: k.art || {}, vr: k.vr || null }; }
   if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return preDeck(m.pre); }
   if (!process.env.BOT_TEST) E('ปิดใช้งานเด็ควางลิสต์/เด็คทดสอบแล้ว');
   return mkDeck(m.text || '', m.rand, m.skip, ban);
@@ -1123,7 +1126,7 @@ function begin(r) {
 async function rematch(r, i) {
   r.p[i].rm = 1; r.p.forEach(x => x.bot && (x.rm = 1)); if (!r.rmT) r.rmT = Date.now();
   if (r.p.every(x => x.rm)) {
-    for (const x of r.p) { const d = x.bot ? botDeck() : await pickDeck(x.last, x.name, r.cfg.ban); x.deck = shuf(d.main.map(id => inst2(id, d.art))); x.life = shuf(d.life.map(id => ({ ...inst2(id, d.art), up: 0 }))); x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
+    for (const x of r.p) { const d = x.bot ? botDeck() : await pickDeck(x.last, x.name, r.cfg.ban); { const y = deckInsts(d); x.deck = y.deck; x.life = y.life; } x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
     r.rmT = 0; if (r.bot) { r.bot.tn = -1; r.bot.fail = 0; } begin(r);
   } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
   bc(r);
@@ -1223,7 +1226,10 @@ wss.on('connection', ws => {
         if (life.some(i => B[i].t !== 'Life') || main.some(i => B[i].t === 'Life')) E('ประเภทผิด');
         mkDeck([...main, ...life].map(i => i + ' x1').join(' '), 0, false);
         const nm = String(m.name || 'เด็คใหม่').slice(0, 20); d.decks = d.decks || {};
-        if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); const art = {}; Object.entries(m.art || {}).forEach(([i, r]) => { if (cnt[i] && B[i] && (d.cards[i + '|' + r] || 0) > 0) art[i] = String(r); }); d.decks[nm] = { main, life, art };
+        if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); const art = {}; Object.entries(m.art || {}).forEach(([i, r]) => { if (cnt[i] && B[i] && (d.cards[i + '|' + r] || 0) > 0) art[i] = String(r); }); const vr = {}, vs = {}; Object.entries(m.vr || {}).forEach(([k, n]) => { const [i, r] = String(k).split('|'); n = n | 0; if (n > 0 && cnt[i] && (d.cards[i + '|' + r] || 0) >= n) { vr[i + '|' + r] = n; vs[i] = (vs[i] || 0) + n; } });
+        for (const i in vs) if (vs[i] > cnt[i]) E('จำนวนระดับเกิน');
+        for (const i in cnt) if ((vs[i] || 0) < cnt[i]) { const r = art[i] || (B[i].v || ['C'])[0], k = i + '|' + r; vr[k] = (vr[k] || 0) + cnt[i] - (vs[i] || 0); }
+        d.decks[nm] = { main, life, art, vr };
         await dbPut(ws.user, d); me_(d); return;
       }
       if (m.t === 'fadd') {
@@ -1270,7 +1276,7 @@ wss.on('connection', ws => {
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
-        p.last = m; p.deck = shuf(d.main.map(inst)); p.life = shuf(d.life.map(id => ({ ...inst(id), up: 0 }))); p.hand = [];
+        p.last = m; { const y = deckInsts(d); p.deck = y.deck; p.life = y.life; } p.hand = [];
         bc(r);
       } else if (m.t === 'rcfg') {
         if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องตั้งกติกาได้');

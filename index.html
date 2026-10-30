@@ -376,11 +376,11 @@ function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · ${esc(
 let bd;const oc=i=>Object.entries(ME.cards).reduce((a,[k,v])=>k.split('|')[0]==i?a+v:a,0),exp=o=>Object.entries(o).flatMap(([i,n])=>Array(n).fill(i)),sm=o=>Object.values(o).reduce((a,b)=>a+b,0);
 function decks(){bd=bd||{n:'',m:{},l:{},q:'',t:''};md.className='dkb';$('md').dataset.pg='';bdr();md.hidden=false}
 const lifeDup=()=>{const n=Object.keys(bd.l).flatMap(i=>Array(bd.l[i]).fill(C[i]?C[i].n:i));return n.length!=new Set(n).size};
-function saveDeck(){const n=(bd.n||'').trim();if(!n)return alert('ตั้งชื่อเด็คก่อน');const ids=new Set([...Object.keys(bd.m),...Object.keys(bd.l)]),ar={};Object.entries(bd.art||{}).forEach(([i,r])=>ids.has(i)&&(ar[i]=r));send({t:'savedeck',name:n,main:exp(bd.m),life:exp(bd.l),art:ar});toast('กำลังบันทึก…');setTimeout(bdr,500)}
-function delDeck(){const n=(bd.n||'').trim();if(!ME.decks[n])return;if(!confirm('ลบเด็ค "'+n+'" ?'))return;send({t:'deldeck',name:n});bd.n='';bd.m={};bd.l={};toast('ลบเด็คแล้ว');setTimeout(bdr,500)}
+function saveDeck(){const n=(bd.n||'').trim();if(!n)return alert('ตั้งชื่อเด็คก่อน');const ids=new Set([...Object.keys(bd.m),...Object.keys(bd.l)]),ar={};bnorm();Object.keys(bd.vr).forEach(k=>{const[i,r]=k.split('|');ids.has(i)&&!ar[i]&&(ar[i]=r)});send({t:'savedeck',name:n,main:exp(bd.m),life:exp(bd.l),art:ar,vr:bd.vr});toast('กำลังบันทึก…');setTimeout(bdr,500)}
+function delDeck(){const n=(bd.n||'').trim();if(!ME.decks[n])return;if(!confirm('ลบเด็ค "'+n+'" ?'))return;send({t:'deldeck',name:n});bd.n='';bd.m={};bd.l={};bd.vr={};toast('ลบเด็คแล้ว');setTimeout(bdr,500)}
 function bdc(i,d){const o=C[i].t=='Life'?bd.l:bd.m,n=(o[i]||0)+d;if(n<0||n>oc(i)||n>(C[i].lim||4))return;n?o[i]=n:delete o[i];bdr()}
-function ldst(s){const x=ST[s];if(!x)return;if(!confirm('โหลด '+x.name+' ลงตัวจัดเด็ค? (แทนที่ลิสต์ปัจจุบัน)'))return;bd={n:bd.n||x.name.slice(0,20),m:{},l:{},q:'',t:'',art:{}};x.main.forEach(([i,n])=>bd.m[i]=(bd.m[i]||0)+n);x.life.forEach(([i,n])=>bd.l[i]=(bd.l[i]||0)+n);bdr()}
-function ldd(n){const k=ME.decks[n];if(!k)return;bd={n,m:{},l:{},q:'',t:'',art:{...(k.art||{})}};k.main.forEach(i=>bd.m[i]=(bd.m[i]||0)+1);k.life.forEach(i=>bd.l[i]=(bd.l[i]||0)+1);bdr()}
+function ldst(s){const x=ST[s];if(!x)return;if(!confirm('โหลด '+x.name+' ลงตัวจัดเด็ค? (แทนที่ลิสต์ปัจจุบัน)'))return;bd={n:bd.n||x.name.slice(0,20),m:{},l:{},q:'',t:'',art:{},vr:{}};x.main.forEach(([i,n,r])=>{bd.m[i]=(bd.m[i]||0)+n;if(r)bd.vr[i+'|'+r]=(bd.vr[i+'|'+r]||0)+n});x.life.forEach(([i,n,r])=>{bd.l[i]=(bd.l[i]||0)+n;if(r)bd.vr[i+'|'+r]=(bd.vr[i+'|'+r]||0)+n});bdr()}
+function ldd(n){const k=ME.decks[n];if(!k)return;bd={n,m:{},l:{},q:'',t:'',art:{...(k.art||{})},vr:{...(k.vr||{})}};k.main.forEach(i=>bd.m[i]=(bd.m[i]||0)+1);k.life.forEach(i=>bd.l[i]=(bd.l[i]||0)+1);bdr()}
 let DV=[];
 function dvs(){md.className='';const row=c=>{const d=C[c.id]||{n:c.id};return`<div class="rw"><span class="th" onclick="zoom('${c.id}',0)" style="${art(c.id)}"></span><a onclick="zoom('${c.id}',0)">${esc(d.n)}</a><small>${c.id}</small><button onclick="dvm(${c.u},'hand')">มือ</button><button onclick="dvm(${c.u},'hell')">นรก</button><button onclick="dvp(${c.u},1)">บนสุด</button><button onclick="dvp(${c.u},0)">ใต้เด็ค</button></div>`};
 $('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button><button onclick="send({t:'dshuf'});md.hidden=true">🔀 สับเด็คแล้วปิด</button><br>การ์ดในเด็ค (บนสุดอยู่บน) ${DV.length} ใบ${DV.map(row).join('')}</div>`;$('md').hidden=false}
@@ -390,16 +390,20 @@ function bgb(){BG=[];const m={};Object.values(C).forEach(c=>{const k=[c.n,c.t,c.
 function bfo(){if(BFO)return BFO;const s={set:new Set,cost:new Set,gc:new Set,s:new Set,st:new Set};Object.values(C).forEach(c=>{s.set.add(c.id.split('-')[0]);if(c.t!='Magic'&&c.c!=null)s.cost.add(c.c);if(c.gc)s.gc.add(c.gc);if(c.s)s.s.add(c.s);if(c.st)s.st.add(c.st)});return BFO={set:[...s.set].sort(),cost:[...s.cost].sort((a,b)=>a-b),gc:[...s.gc],s:[...s.s].sort((a,b)=>a.localeCompare(b,'th')),st:[...s.st]}}
 const bgv=g=>{const v={};g.ids.forEach(i=>RO.forEach(r=>{const n=ME.cards[i+'|'+r]||0;if(n>0)(v[r]=v[r]||[]).push([i,n])}));return v};
 const erar=i=>{const o=RO.filter(r=>(ME.cards[i+'|'+r]||0)>0).reverse(),a=bd.art[i];if(a&&o.includes(a))return a;const d=(C[i].v||[])[0]||'C';return o.includes(d)||!o.length?d:o[0]};
+function bnorm(){bd.vr=bd.vr||{};bd.art=bd.art||{};const ids=new Set([...Object.keys(bd.m),...Object.keys(bd.l)]);
+Object.keys(bd.vr).forEach(k=>{if(!ids.has(k.split('|')[0])||!(bd.vr[k]>0))delete bd.vr[k]});
+ids.forEach(i=>{const o=C[i]&&C[i].t=='Life'?bd.l:bd.m,n=o[i]||0,ks=Object.keys(bd.vr).filter(k=>k.split('|')[0]==i);let hv=ks.reduce((a,k)=>a+bd.vr[k],0);
+if(hv<n){const k=i+'|'+erar(i);bd.vr[k]=(bd.vr[k]||0)+n-hv}else if(hv>n)for(const k of ks.reverse()){while(hv>n&&bd.vr[k]>0){bd.vr[k]--;hv--}if(!bd.vr[k])delete bd.vr[k]}})}
 function bgc(gi,r,d){const g=BG[gi],c=C[g.ids[0]],o=c.t=='Life'?bd.l:bd.m,lim=c.lim||4,tot=g.ids.reduce((a,i)=>a+(o[i]||0),0);
-if(d>0){if(tot>=lim)return;const pri=g.ids.find(i=>(ME.cards[i+'|'+r]||0)>(o[i]||0)&&(!o[i]||erar(i)==r));if(!pri)return;o[pri]=(o[pri]||0)+1;bd.art[pri]=r}
-else{const pri=g.ids.find(i=>o[i]&&erar(i)==r);if(!pri)return;o[pri]--;if(!o[pri])delete o[pri]}
+if(d>0){if(tot>=lim)return;const pri=g.ids.find(i=>(ME.cards[i+'|'+r]||0)>(bd.vr[i+'|'+r]||0));if(!pri)return;o[pri]=(o[pri]||0)+1;bd.vr[pri+'|'+r]=(bd.vr[pri+'|'+r]||0)+1}
+else{const pri=g.ids.find(i=>bd.vr[i+'|'+r]>0);if(!pri)return;const k=pri+'|'+r;bd.vr[k]--;if(!bd.vr[k])delete bd.vr[k];o[pri]--;if(!o[pri])delete o[pri]}
 bdr()}
 const bflt=(k,v)=>{const a=bd.f[k]=bd.f[k]||[],i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);bd.lim=60;bdr()},bfx=()=>{bd.f={};bd.q='';bd.qe='';bd.t='';bd.lim=60;bdr()};
-function bdr(){const sc=$('md').scrollTop;if(!BG||BG.n!=Object.keys(C).length)bgb();bd.tab=bd.tab||'own';bd.lim=bd.lim||60;bd.f=bd.f||{};bd.gr=bd.gr||{};bd.art=bd.art||{};bd.so=bd.so||'id';
+function bdr(){const sc=$('md').scrollTop;if(!BG||BG.n!=Object.keys(C).length)bgb();bd.tab=bd.tab||'own';bd.lim=bd.lim||60;bd.f=bd.f||{};bd.gr=bd.gr||{};bd.art=bd.art||{};bd.so=bd.so||'id';bnorm();
 const f=bd.f,fa=k=>f[k]||[],q=(bd.q||'').toLowerCase(),qe=(bd.qe||'').toLowerCase(),O=bfo(),
 cnt=g=>g.ids.reduce((a,i)=>a+(bd.m[i]||0)+(bd.l[i]||0),0),R=[];
 BG.forEach((g,gi)=>{const c=C[g.ids[0]],o=c.t=='Life'?bd.l:bd.m,m={};
-g.ids.forEach(i=>{RO.forEach(r=>{const k=ME.cards[i+'|'+r]||0;if(k>0){const e=m[r]=m[r]||{ids:[],tot:0,n:0};e.ids.push(i);e.tot+=k}});if(o[i]){const r=erar(i),e=m[r]=m[r]||{ids:[],tot:0,n:0};if(!e.ids.includes(i))e.ids.push(i);e.n+=o[i]}});
+g.ids.forEach(i=>{RO.forEach(r=>{const k=ME.cards[i+'|'+r]||0;if(k>0){const e=m[r]=m[r]||{ids:[],tot:0,n:0};e.ids.push(i);e.tot+=k}});RO.forEach(r=>{const v=bd.vr[i+'|'+r]||0;if(v){const e=m[r]=m[r]||{ids:[],tot:0,n:0};if(!e.ids.includes(i))e.ids.push(i);e.n+=v}})});
 if(bd.t&&c.t!=bd.t)return;
 if(fa('col').length&&!fa('col').includes(c.col||'ไม่มีสี'))return;
 if(fa('set').length&&!g.ids.some(i=>fa('set').includes(i.split('-')[0])))return;
