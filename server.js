@@ -322,6 +322,7 @@ function startCast(r, i, f, c, def, pre) {
     ask(r, i, { text: s.text, opts: s.opts(r, i, ctx).filter(u => !used.includes(u)), n: s.n || 1, min: s.min, cancel: true, cb: us => { ctx.pick[s.key] = us; next(); }, none: next }); };
   next();
 }
+const MASS030 = new Set(['BT01-036', 'BT05-053', 'BT07-056', 'BT04-042', 'BT06-049']);   // Magic ที่กระทบทั้งสนาม (มาติเนซยกเลิกได้)
 function castFinal(r, i, card, c, def, ctx, steps) {
   const g = r.g, me = r.p[i];
   const z = find(r, card.u); if (!z || z.i !== i || !['hand', 'hell'].includes(z.z)) E('การ์ดไม่อยู่แล้ว');
@@ -333,9 +334,12 @@ function castFinal(r, i, card, c, def, ctx, steps) {
   ev(r, c.id); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + (t ? ' → ' + nmOf(t.c) : ''));
   if (c.t === 'Magic' && c.s === 'ฤษี') rishiFx(r);
   if (c.t === 'Magic' && !def.mod && c.st !== 'React' && c.st !== 'Land') {   // BT04-030 มาติเนซ: รถถังที่สวมใส่ตกเป็นเป้าหมายของ Magic ฝ่ายตรงข้าม → ทำลายตัวเองเพื่อยกเลิก
-    const tk = Object.values(ctx.pick).flat().map(u => find(r, u)).filter(x => x && x.z === 'av' && x.i !== i && isTank(x.c) && (x.c.wr || []).some(w => (CANON[w.id] || w.id) === 'BT04-030'))[0];
+    const w030 = q => (q.wr || []).some(w => (CANON[w.id] || w.id) === 'BT04-030'), tkOf = x => ({ i: x.i, c: x.c, z: 'av' });
+    const picked = Object.values(ctx.pick).flat().map(u => find(r, u)).filter(x => x && x.z === 'av' && x.i !== i && isTank(x.c) && w030(x.c));   // เป็นหนึ่งในเป้าหมาย (เลือกหลายเป้าหมายได้)
+    const mass = c.st === 'Normal' && (MASS030.has(CANON[c.id] || c.id) || /(ทำลาย|ส่ง)[^\n]*(Avatar|การ์ด)[^\n]*(ทุกใบ|ทั้งหมด)/.test(c.e || ''));   // Magic ที่กระทบทั้งสนาม
+    const tk = picked[0] || (mass ? r.p[1 - i].av.filter(x => isTank(x) && w030(x)).map(x => ({ i: 1 - i, c: x, z: 'av' }))[0] : null), massOnly = !picked.length;
     if (tk) { const w = tk.c.wr.find(q => (CANON[q.id] || q.id) === 'BT04-030');
-      ask(r, tk.i, { yn: true, text: 'มาติเนซ Tank Ranger: ' + nmOf(tk.c) + ' ตกเป็นเป้าหมายของ Magic "' + c.n + '" — ทำลาย มาติเนซ จากสภาพสวมใส่ เพื่อยกเลิกความสามารถของ Magic ใบนั้นไหม?', cb: y => { if (!y) return; const k = tk.c.wr.indexOf(w); if (k < 0) return; tk.c.wr.splice(k, 1); r.p[tk.i].hell.push(w); ctx.cancelled = 1; vfx(tk.c.u, 'burst', 'มาติเนซ ยกเลิก Magic', '#22c55e'); log(r, '🛡 มาติเนซ Tank Ranger: ทำลายตัวเองจากสภาพสวมใส่ ยกเลิกความสามารถของ ' + c.n); } }); } }
+      ask(r, tk.i, { yn: true, text: 'มาติเนซ Tank Ranger: ' + nmOf(tk.c) + (massOnly ? ' ได้รับผลของ Magic "' : ' ตกเป็นเป้าหมายของ Magic "') + c.n + (massOnly ? '" ที่กระทบทั้งสนาม' : '"') + ' — ทำลาย มาติเนซ จากสภาพสวมใส่ เพื่อยกเลิกความสามารถของ Magic ใบนั้นไหม?', cb: y => { if (!y) return; const k = tk.c.wr.indexOf(w); if (k < 0) return; tk.c.wr.splice(k, 1); r.p[tk.i].hell.push(w); ctx.cancelled = 1; vfx(tk.c.u, 'burst', 'มาติเนซ ยกเลิก Magic', '#22c55e'); log(r, '🛡 มาติเนซ Tank Ranger: ทำลายตัวเองจากสภาพสวมใส่ ยกเลิกความสามารถของ ' + c.n); } }); } }
   if (c.st === 'React') kdReactGate(r, i, c, cancelled => { if (!cancelled) def.run && def.run(r, i, ctx); const p = g.pend; if (p && p.who === i) { g.pend = null; if (p.k === 'atk' && !p.cancel) { if (g.ask) g.pendAfter = () => resolveAtk(r, p); else resolveAtk(r, p); } } });
   else { if (def.run) g.q.push(() => ctx.cancelled ? log(r, '❌ ' + c.n + ' ถูกยกเลิก') : def.run(r, i, ctx)); open(r, { who: 1 - i, k: 'ev', ev: { k: 'cast', id: c.id, i, cx: ctx } }); }
 }
