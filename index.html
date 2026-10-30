@@ -358,7 +358,7 @@ let AC;const note=(f,d,v,ty)=>{try{AC=AC||new AudioContext();const o=AC.createOs
 const sfx=k=>{if(cfg.snd)({turn:()=>{note(660,.3,.06);note(880,.4,.05)},hit:()=>note(120,.25,.12,'triangle'),play:()=>note(440,.15,.05),draw:()=>note(520,.08,.04),win:()=>{note(523,.3,.07);note(659,.4,.07);note(784,.7,.07)},lose:()=>{note(220,.5,.07);note(165,.9,.07)}})[k]()};
 let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02));f();mu=setInterval(f,4000)};
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
-const info=x=>x.tk?{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'}:C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};
+const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};const b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
 let AM=null;fetch('/artmap.json').then(r=>r.json()).then(a=>{AM=new Set(a);if(S&&!$('game').hidden)render()}).catch(e=>{});
