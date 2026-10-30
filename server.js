@@ -620,7 +620,7 @@ Object.assign(MG, {
 Object.assign(MG, {
   'BT01-035': { run: (r, i) => { mill(r, i, 3); mill(r, 1 - i, 3); } },
   'BT01-036': { run: (r, i) => { r.p[1 - i].av.slice().forEach(a => destroyAv(r, a.u)); log(r, '💥 ทำลาย Avatar ทุกใบของศัตรู'); } },
-  'BT01-037': { steps: [{ key: 'c', pay: 1, text: 'เซ่นไหว้: ส่ง Avatar สัตว์ บนสนามเรา 1 ใบ ลงนรก', opts: (r, i) => r.p[i].av.filter(a => symOf(a) === 'สัตว์').map(a => a.u) }],
+  'BT01-037': { steps: [{ key: 'c', pay: 1, text: 'เซ่นไหว้: ส่ง Avatar สัตว์ บนสนามเรา 1 ใบ ลงนรก', opts: (r, i) => r.p[i].av.filter(a => isAnimal(a)).map(a => a.u) }],
     run: (r, i) => { draw(r, r.p[i], 3); r.g.lim = r.g.lim || {}; r.g.lim[i] = 'สัตว์'; log(r, '✨ ' + r.p[i].name + ': จั่ว 3 ใบ — เทิร์นนี้อัญเชิญได้เฉพาะ Avatar สัตว์'); } },
   'BT01-038': { run: (r, i) => { draw(r, r.p[i], 2); log(r, '✨ ' + r.p[i].name + ': จั่ว 2 ใบ'); } },
   'BT01-039': { react: 'atk', run: (r) => { const p = r.g.pend; if (p && p.k === 'atk') { const f = find(r, p.u); if (f) { log(r, '✨ ส่ง ' + nmOf(f.c) + ' ลงนรก'); sendHell(r, p.u); } } } },
@@ -695,7 +695,7 @@ Object.assign(SUM, {
 function deathFx2(r, f, nf) {
   if (nf) return; const c = f.c;
   if (c.id === 'BT01-012') { const q = r.p[f.i], l = q.life.find(x => x.up); if (l) { l.up = 0; const k = q.lf ? q.lf.lastIndexOf(l.id) : -1; if (k >= 0) q.lf.splice(k, 1); log(r, '❤ ลูกแม่ศรีนวล: คว่ำ LIFE ใบบนสุดที่หงายอยู่กลับ'); } }
-  if (c.id === 'BT01-013') r.g.q.push(() => { const L = r.p[f.i].hell.filter(x => isAv(x) && symOf(x) === 'สัตว์' && B[x.id].c <= 4).map(x => x.u); L.length && ask(r, f.i, { text: 'คำสั่งเสีย: เลือก Avatar {สัตว์} Cost ไม่เกิน 4 จากนรก นำกลับขึ้นมือ', opts: L, cb: us => { const x = fromZone(r, f.i, 'hell', us[0]); if (x) { r.p[f.i].hand.push(x); log(r, '♻ นำ ' + B[x.id].n + ' กลับขึ้นมือ'); } } }); });
+  if (c.id === 'BT01-013') r.g.q.push(() => { const L = r.p[f.i].hell.filter(x => isAv(x) && isAnimal(x) && B[x.id].c <= 4).map(x => x.u); L.length && ask(r, f.i, { text: 'คำสั่งเสีย: เลือก Avatar {สัตว์} Cost ไม่เกิน 4 จากนรก นำกลับขึ้นมือ', opts: L, cb: us => { const x = fromZone(r, f.i, 'hell', us[0]); if (x) { r.p[f.i].hand.push(x); log(r, '♻ นำ ' + B[x.id].n + ' กลับขึ้นมือ'); } } }); });
   if (c.id === 'BT02-013') r.g.q.push(() => { const L = r.p.flatMap(q => q.mg.map(m => m.u)); if (L.length) return ask(r, f.i, { text: 'คำสั่งเสีย: เลือก MAGIC บนสนาม 1 ใบ ทำลาย', opts: L, cb: us => sendHell(r, us[0]) }); if (r.g.land) { r.p[r.g.land.o].hell.push(r.g.land.c); r.g.land = null; log(r, '💥 ทำลาย Land Magic'); } });
 }
 Object.assign(MG, {
@@ -1949,6 +1949,7 @@ Object.assign(MG, {
 /* ===== BT04 ชุด 1: Avatar แดง (001-004, 006-009, 013, 036) + Magic พิมพ์ซ้ำ (046/048/050/054) ===== */
 Object.assign(CANON, { 'BT04-046': 'SD08-013', 'BT04-048': 'KD03-015', 'BT04-050': 'KD03-017', 'BT04-054': 'KD03-019' });   // ข้อความเหมือนเดิมทุกตัวอักษร ใช้สกิลเดิม
 COST03['BT04-013'] = COST03['KD03-009'];
+const isAnimal = x => symOf(x) === 'สัตว์' || (x.id === 'BT04-007' && !x.tk);   // BT04-007: เป็น Symbol สัตว์ ด้วย
 const BT4A = {
   'BT04-002': (r, i, a) => {   // ครูสงบ: ประกาศโจมตี → ทำลาย Modification ฝ่ายตรงข้าม 1 ใบ
     const L = r.p[1 - i].mg.filter(m => B[m.id].st === 'Modification').map(m => m.u); if (!L.length) return;
