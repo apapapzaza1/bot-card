@@ -1951,7 +1951,7 @@ const botDeck = () => preDeck(pick(Object.keys(ST).filter(k => /^SD0[1-8]$/.test
 const botIdx = r => r.p.findIndex(p => p.bot);
 // คะแนนความ "มีค่า" ของการ์ด (ใช้เทียบเป้าหมาย / เลือกใบที่จะจ่ายเป็น Cost)
 const botCv = (r, x) => { if (x.tk) return (x.tk.p || 0) + 1; const d = B[x.id]; if (!d) return 0; const f = find(r, x.u);
-  return (f && f.z === 'av' ? P(r, x) : (d.p || 0)) + (d.c || 0) * .6 + (d.t === 'Avatar' ? 1 : 0); };
+  return (f && f.z === 'av' ? P(r, x) : (d.p || 0)) + (d.c || 0) * .6 + (d.t === 'Avatar' ? 1 : 0) + (d.t === 'Magic' && f && f.z === 'hand' ? (BOT_REACT.has(d.id) ? 3.5 : 1.5) : 0); };   // ยาก: Magic/React บนมือมีค่า ไม่เอาไปจ่าย Cost ง่ายๆ
 const botSync = r => { bc(r); settle(r).catch(() => { }); };
 function botAct(r, k, m) {
   const bt = r.bot;
@@ -2015,10 +2015,10 @@ function botBattle(r, k) {
     if ((a.id === 'BT02-024' && !noFx(r, a)) || ((a.id === 'BT02-029' || a.id === 'SD04-004') && !(a.wr && a.wr.length))) return;
     const pa = P(r, a), my = botCv(r, a);
     if (!a.nolife && pa > 0 && (!op.av.length || kick(r, a)) && !(a.id === 'SD06-003' && !hasCamp(r, k)))
-      opts.push({ a, tg: 'life', sc: op.life.every(l => l.up) ? 1000 : 8 + pa });   // LIFE หงายหมด = ชนะทันที
+      opts.push({ a, tg: 'life', sc: op.life.every(l => l.up) ? 1000 : 8 + pa + (lv === 3 && !op.av.length && ready >= op.life.filter(l => !l.up).length ? 100 : 0) });   // ยาก: ถ้าทุกตัวที่พร้อมตี LIFE ที่เหลือได้หมด = ปิดเกม   // LIFE หงายหมด = ชนะทันที
     op.av.forEach(d => {
       const pd = P(r, d), dv = botCv(r, d), clear = lv === 3 && op.av.length <= ready ? 3 : 0;   // ยาก: ถ้ากวาดสนามได้ จะเปิดทางตี LIFE
-      if (pa > pd) opts.push({ a, tg: d.u, sc: 2 + dv + clear });                                  // ชนะและไม่ตาย
+      if (pa > pd) opts.push({ a, tg: d.u, sc: 2 + dv + clear - (lv === 3 ? (pa - pd) * .15 : 0) });   // ยาก: ใช้ตัวที่แรงพอดี เก็บตัวแรงไว้ตีเป้าใหญ่/LIFE                                  // ชนะและไม่ตาย
       else if (pa === pd && pa > 0 && lv >= 2 && (dv >= my - .5 || ahead || stall || (lv === 3 && clear))) opts.push({ a, tg: d.u, sc: 1 + dv - my * .5 + clear });  // กลาง/ยาก: แลกเมื่อคุ้ม/ได้เปรียบ/เกมนิ่ง
       else if (lv === 1 && Math.random() < .3) opts.push({ a, tg: d.u, sc: .1 });                 // ง่าย: บางทีก็ตีมั่ว
       if (lv === 3 && pa <= pd && dv >= 2.5) {   // ยาก: เรียกสามัคคี/แทงหลังมารวมพลัง ถ้าทำให้ชนะเป้าที่มีค่าได้
@@ -2062,7 +2062,7 @@ function botAsk(r, k) {
   let m;
   if (a.choices) m = { t: 'pick', i: rnd ? Math.floor(Math.random() * a.choices.length) : 0 };
   else if (a.yn) {
-    const tx = a.text || ''; let y = /ทิ้งการ์ดทั้งหมด/.test(tx) ? 0 : (rnd ? +(Math.random() < .5) : 1);
+    const tx = a.text || ''; let y = /ทิ้งการ์ดทั้งหมด/.test(tx) ? +(lv === 3 && r.p[k].hand.length <= 2) : (rnd ? +(Math.random() < .5) : 1);
     if (/^อู๊ดลูกเสือ: เซ่นไหว้/.test(tx)) { const h = a.hint || {}, at = find(r, h.u), tg = find(r, h.tg); y = +(lv >= 2 && !!at && !!tg && P(r, at.c) >= P(r, tg.c)); }   // เซ่นไหว้ก็ต่อเมื่อเป้าจะตาย
     if (/^คนรวย:/.test(tx)) y = +(lv >= 2);
     m = { t: 'pick', yes: y };
@@ -2088,7 +2088,7 @@ function botStep(r, k) {
   if (g.phase === 'battle') { if (!botBattle(r, k)) botAct(r, k, { t: 'next' }); return; }
   if (g.phase === 'end') return botEnd(r, k);
 }
-const BOT_REACT = new Set(['SD01-017', 'BT01-039', 'BT02-049', 'SD06-014', 'BT02-054', 'SD07-016', 'SD05-020', 'BT01-041']);
+const BOT_REACT = new Set(['BT03-047', 'SD01-017', 'BT01-039', 'BT02-049', 'SD06-014', 'BT02-054', 'SD07-016', 'SD05-020', 'BT01-041']);
 function botReact(r, k) {
   const g = r.g, p = g.pend, me = r.p[k], T = r.bot.tried; if (g.used[k].React) return false;
   const atF = p.k === 'atk' ? find(r, p.u) : null, tgF = p.k === 'atk' && p.tk === 'av' ? find(r, p.tg) : null;
@@ -2101,6 +2101,7 @@ function botReact(r, k) {
     else if (h.id === 'BT01-039') go = !!atF && botCv(r, atF.c) >= 2.5;
     else if (h.id === 'BT02-049') go = me.hand.length <= 5;
     else if (h.id === 'SD06-014' || h.id === 'BT02-054') { const red = 2 * (me.av.length + me.mg.length + me.co.length + me.hand.length - 1); go = !!atF && !!tgF && P(r, atF.c) >= P(r, tgF.c) && P(r, atF.c) - red < P(r, tgF.c); }
+    else if (h.id === 'BT03-047') { const f = p.ev && p.ev.k === 'summon' && find(r, p.ev.u); go = !!f && f.i !== k && botCv(r, f.c) >= 3; }
     else if (h.id === 'SD07-016') go = !!atF && !!tgF && P(r, atF.c) >= P(r, tgF.c) && botCv(r, tgF.c) >= 3;
     else go = !!p.ev && p.ev.k === 'cast';   // ชายจากอนาคต: ยกเลิก Magic ของอีกฝ่าย
     if (!go) continue;
