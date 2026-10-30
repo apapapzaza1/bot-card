@@ -150,7 +150,7 @@ function buildFree(r, i, c, from) {
 function summonRat1(r, i) {
   const p = r.p[i], L = p.deck.filter(isRat1);
   if (!L.length) { log(r, '✨ ค้น Deck ไม่พบ รัททาทุย (Cost1/Gem1/Power1)'); return shuf(p.deck); }
-  const done = u => { summonAny(r, i, u, 'deck'); shuf(p.deck); };
+  const done = u => { if (!summonAny(r, i, u, 'deck')) log(r, '⚠ อัญเชิญรัททาทุยไม่สำเร็จ (Avatar Zone เต็ม)'); shuf(p.deck); };
   if (new Set(L.map(x => B[x.id].n)).size === 1) return done(L[0].u);
   ask(r, i, { text: 'เลือกรัททาทุย (Cost1/Gem1/Power1) จาก Deck 1 ใบ อัญเชิญลงสนาม', opts: L.map(x => x.u), cb: us => done(us[0]) });
 }
@@ -173,7 +173,7 @@ function fxSummon2(r, i, x) {
 function fxPaid(r, i, ps, summoned) {
   ps.forEach(pc => {
     if ((pc.id === 'KD01-004' || pc.id === 'BT03-001') && isNarai(summoned)) { addTp(summoned, 3); fx({ k: 'say', id: pc.id, t: 'POWER +3' }); log(r, '✨ พระลักษมี: ' + nmOf(summoned) + ' POWER +3 จนจบเทิร์น'); }
-    if (pc.id === 'SD08-010' && B[summoned.id].n.includes('รัททาทุย')) r.g.q.push(() => { log(r, '✨ ตุ๊กตารัททาทุย: อัญเชิญรัททาทุยจาก Deck'); summonRat1(r, i); });
+    if (B[pc.id].n === 'ตุ๊กตารัททาทุย' && isRat(summoned)) r.g.q.push(() => { log(r, '✨ ตุ๊กตารัททาทุย: อัญเชิญรัททาทุยจาก Deck'); summonRat1(r, i); });   // ทุกใบ (SD08-010/BT03-015/PRMO-086) ใช้ได้ซ้ำทุกครั้ง 1 ใบต่อ 1 ตุ๊กตา
     if (pc.id === 'SD08-020' && isRat(summoned)) r.g.q.push(() => buildFree(r, i, pc, 'hell'));
     fxPaid03(r, i, pc, summoned); kdPaid(r, i, pc, summoned); bt4Paid(r, i, pc, summoned);
   });
@@ -955,7 +955,7 @@ function act(r, i, m) {
       if (av && g.lim && g.lim[i] && symOf(f.c) !== g.lim[i]) E('เทิร์นนี้อัญเชิญได้เฉพาะ Avatar ' + g.lim[i]);
       if (av ? !canPlaceAv(r, i, f.c) : me.co.length >= 3) E(av ? 'Avatar เต็ม' : 'Construct เต็ม 3');
       if (!av && me.co.some(x => B[x.id].n === c.n)) E('Construct ชื่อซ้ำ');
-      const ps = pays(); payOK(c, ps, me); ps.forEach(q => { if (q.id === 'SD08-010' && !(av && isRat(f.c))) E('ตุ๊กตารัททาทุย ใช้จ่ายได้เฉพาะ Avatar รัททาทุย'); if (q.id === 'KD01-004' && !(av && symOf(f.c) === 'เทพ')) E('พระลักษมี ใช้เป็น Cost ได้เฉพาะ Avatar เทพ'); { const cr3 = COST03[q.id]; if (cr3 && !(av && cr3.ok(f.c))) E(cr3.msg); } });
+      const ps = pays(); payOK(c, ps, me); ps.forEach(q => { if (B[q.id].n === 'ตุ๊กตารัททาทุย' && !(av && isRat(f.c))) E('ตุ๊กตารัททาทุย ใช้จ่ายได้เฉพาะ Avatar รัททาทุย'); if (q.id === 'KD01-004' && !(av && symOf(f.c) === 'เทพ')) E('พระลักษมี ใช้เป็น Cost ได้เฉพาะ Avatar เทพ'); { const cr3 = COST03[q.id]; if (cr3 && !(av && cr3.ok(f.c))) E(cr3.msg); } });
       ps.forEach(p => { take(r, p.u); me.hell.push(p); }); take(r, m.u); me[av ? 'av' : 'co'].push(f.c); if (av) heroMk(r, i, f.c);
       if (av) { g.q.push(() => costFx(r, i, ps, f.c)); g.q.push(() => fxSummon(r, i, f.c)); } else g.q.push(() => { if (f.c.id === 'SD08-018') summonRat1(r, i); });
       g.q.push(() => fxPaid(r, i, ps, f.c));
@@ -1370,7 +1370,6 @@ function fxPaid03(r, i, pc, summoned) {
       const norm = () => ask(r, i, { yn: true, text: 'อิสานโนซอรัส สอดแนม: ' + B[c.id].n + ' — ไว้ที่เดิมต่อไหม? (ไม่ = ใต้ Deck)', cb: y => { if (!y) { me.deck.splice(me.deck.indexOf(c), 1); me.deck.unshift(c); log(r, '⬇ นำไว้ใต้ Deck'); } one(k + 1); } });
       if (c.id === 'BT03-058' && !r.g.used[i].Land) ask(r, i, { yn: true, text: 'ยุคกาฬสินธุ์โซอิค ถูกสอดแนมจากกะปอม — วางลง Land Magic Zone เลยไหม?', cb: y => { if (y) { me.deck.splice(me.deck.indexOf(c), 1); placeLand03(r, i, c); one(k + 1); } else norm(); } }); else norm(); };
     one(0); });
-  if (pc.id === 'BT03-015' && B[summoned.id].n.includes('รัททาทุย')) r.g.q.push(() => { log(r, '✨ ตุ๊กตารัททาทุย: อัญเชิญรัททาทุยจาก Deck'); summonRat1(r, i); });
 }
 function fxAtk03(r, i, a, tg, tk) {
   if (hasEq(r, a, 'KD03-018')) { a.hold = r.g.n + 2; log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' จะไม่ตื่นจนจบ End Phase ถัดไปของเรา'); }
