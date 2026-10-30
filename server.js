@@ -101,6 +101,7 @@ const symOf = x => x.tk ? (x.tk.s || '') : (x.wr && x.wr.some(w => w.id === 'BT0
 const isAv = x => !x.tk && B[x.id] && B[x.id].t === 'Avatar';
 const TRIO = ['กุ่ย', 'ฮอล', 'นาย'];
 const allAv = r => { const a = []; r.p.forEach((p, i) => p.av.forEach(x => a.push({ i, x }))); return a; };
+const addPw = (x, n) => { if (n < 0 && x.hero != null && CR && CR.g && x.hero === CR.g.n) return; x.pw = (x.pw || 0) + n; n && fx({ k: 'buff', u: x.u, v: n }); };
 const addTp = (x, n) => { if (n < 0 && x.hero != null && CR && CR.g && x.hero === CR.g.n) return; x.tp = (x.tp || 0) + n; n && fx({ k: 'buff', u: x.u, v: n }); };
 const lose = (r, i, why) => { if (r.g.over) return; r.g.over = r.p[i].name + ' ' + why + ' แพ้!'; r.g.win = 1 - i; };
 
@@ -406,7 +407,11 @@ function startUse(r, i, card, def) {
   };
   next();
 }
-const abOf = (r, i, x, z) => { const d = AB[x.id] || (z === 'av' && (x.wr || []).some(w => WEAR_IDOL.includes(w.id)) ? AB_R : null); return d && d.z === z && r.g.turn === i && r.g.phase === 'main' && x.us !== r.g.n && !r.g.ask && !r.g.pend ? 1 : 0; };
+const abOf = (r, i, x, z) => { const d = AB[x.id] || (z === 'av' && (x.wr || []).some(w => WEAR_IDOL.includes(w.id)) ? AB_R : null); const ok = r.g.turn === i && r.g.phase === 'main' && !r.g.ask && !r.g.pend;
+  if (d && d.z === z && ok && x.us !== r.g.n) return 1;
+  const a2 = ABIL[x.id]; /* ความสามารถแบบ ABIL (เช่น โดมรัททาทุย) ต้องแสดงปุ่มด้วย */
+  if (a2 && a2.zone === z && ok && !(a2.once && x.ou === r.g.n)) { try { if (!a2.cond || a2.cond(r, i, x)) return 1; } catch (e) { } }
+  return 0; };
 const myAv = f => (r, i, cx) => r.p[i].av.filter(a => f(a, cx)).map(a => a.u);
 const wearUse = { z: 'av', can: (r, i, c) => tanksFor(r, i, c).length > 0, steps: [{ key: 't', text: 'เลือก Avatar รถถังที่จะสวมใส่', opts: (r, i, cx) => tanksFor(r, i, cx.card) }],
   run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } };
@@ -1070,8 +1075,8 @@ function resolveAtk(r, p) {
     const d = op.av.find(x => x.u === p.tg); if (!d) { r.g.inB = 0; return log(r, 'เป้าหาย'); }
     let pd = P(r, d); const dn = nmOf(d);
     if (hasEq(r, a, 'SD05-017') && d.tired) { addTp(a, 1); addTp(d, -1); pa += 1; pd = Math.max(0, pd - 1); base.pa = pa; log(r, '🔱 ปืนฉมวก: POWER +1 / เป้าหมาย -1'); }
-    if (a.id === 'SD08-002') { addTp(d, -1); pd = Math.max(0, pd - 1); log(r, '✨ รัททาทุย พาหะ: ' + dn + ' POWER -1'); }
-    if (d.id === 'SD08-002') { addTp(a, -1); pa = Math.max(0, pa - 1); base.pa = pa; log(r, '✨ รัททาทุย พาหะ: ' + an + ' POWER -1'); }
+    if (a.id === 'SD08-002') { addPw(d, -1); pd = Math.max(0, pd - 1); log(r, '✨ รัททาทุย พาหะ: ' + dn + ' POWER -1 ถาวร'); }
+    if (d.id === 'SD08-002') { addPw(a, -1); pa = Math.max(0, pa - 1); base.pa = pa; log(r, '✨ รัททาทุย พาหะ: ' + an + ' POWER -1 ถาวร'); }
     if (a.id === 'BT03-034' && !noFx(r, a)) { pa += 2; pd = Math.max(0, pd - 2); vfx(a.u, 'aura', 'พาลี +2 / ศัตรู -2', '#22c55e'); log(r, '🐒 พาลี: ' + an + ' +2 / ' + dn + ' -2'); }
     if (d.id === 'BT03-034' && !noFx(r, d)) { pd += 2; pa = Math.max(0, pa - 2); vfx(d.u, 'aura', 'พาลี +2 / ศัตรู -2', '#22c55e'); log(r, '🐒 พาลี: ' + dn + ' +2 / ' + an + ' -2'); }
     base.pa = pa;
@@ -1110,6 +1115,7 @@ function resolveAtk(r, p) {
 }
 function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') resolveAtk(r, p); runQ(r); }
 function begin(r) {
+  r.p.forEach(x => { try { console.log('[deckcheck]', x.name, 'deck', x.deck.length, 'trio', x.deck.filter(c => ['กุ่ย', 'ฮอล', 'นาย'].includes(B[c.id].n)).length); } catch (e) { } });
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; x.fd = 0; x.ban = null; });
   r.g = { turn: 0, phase: 'dice', pend: null, ask: null, q: [], n: 0, used: [{}, {}], land: null, log: ['เริ่มเกม!'], over: null };
 }
