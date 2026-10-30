@@ -418,7 +418,12 @@ const abOf = (r, i, x, z) => { const d = AB[x.id] || (z === 'av' && (x.wr || [])
 const myAv = f => (r, i, cx) => r.p[i].av.filter(a => f(a, cx)).map(a => a.u);
 const wearUse = { z: 'av', can: (r, i, c) => tanksFor(r, i, c).length > 0, steps: [{ key: 't', text: 'เลือก Avatar รถถังที่จะสวมใส่', opts: (r, i, cx) => tanksFor(r, i, cx.card) }],
   run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } };
+const hospOK = (r, i, x) => { const h = r.g.hosp; return !(h && h.n === r.g.n && h.i === i && h.names.includes(B[x.id].n)); };
 const AB = {
+  'BT01-050': { z: 'land',
+    steps: [{ key: 'd', pay: 1, text: 'โรงบาล: ทิ้งการ์ดจากมือ 1 ใบ', opts: (r, i) => r.p[i].hand.map(c => c.u) },
+      { key: 't', text: 'โรงบาล: เลือก Avatar Cost ไม่เกิน 3 จากนรก ขึ้นมือ', opts: (r, i) => r.p[i].hell.filter(c => isAv(c) && !c.tk && B[c.id].c <= 3).map(c => c.u) }],
+    run: (r, i, cx) => { const c = fromZone(r, i, 'hell', cx.pick.t[0]); if (!c) return; r.p[i].hand.push(c); const g = r.g; if (!g.hosp || g.hosp.n !== g.n || g.hosp.i !== i) g.hosp = { n: g.n, i, names: [] }; g.hosp.names.push(B[c.id].n); log(r, '🏥 ' + B[c.id].n + ' ขึ้นมือ (เทิร์นนี้อัญเชิญ/ใช้สกิลไม่ได้ รวมการ์ดชื่อเดียวกัน)'); } },
   'SD04-001': wearUse, 'SD04-002': wearUse, 'SD04-003': wearUse,
   'SD06-008': { z: 'av', can: (r, i, c) => r.p[i].av.some(a => a.u !== c.u && canWear(a, c)), steps: [{ key: 't', text: 'เลือก Avatar ที่จะสวมใส่ บุญช่วย', opts: (r, i, cx) => r.p[i].av.filter(a => a.u !== cx.card.u && canWear(a, cx.card)).map(a => a.u) }],
     run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } },
@@ -925,6 +930,7 @@ function act(r, i, m) {
       mainOnly(); const f = own(m.u), c = B[f.c.id], av = m.t === 'summon';
       if (f.z !== 'hand' || c.t !== (av ? 'Avatar' : 'Construct')) E('ประเภทผิด');
       if (f.c.id === 'SD03-003') E('การ์ดนี้ลงสนามจากบนมือไม่ได้');
+      if (!hospOK(r, i, f.c)) E('โรงบาล: เทิร์นนี้อัญเชิญการ์ดชื่อนี้ไม่ได้');
       if (f.c.id === 'KD02-001') E('เมฟิสโตเฟเลส อัญเชิญได้ด้วยความสามารถของตัวเองเท่านั้น (สั่งใช้ จากมือ)');
       if (av && g.lim && g.lim[i] && symOf(f.c) !== g.lim[i]) E('เทิร์นนี้อัญเชิญได้เฉพาะ Avatar ' + g.lim[i]);
       if (av ? !canPlaceAv(r, i, f.c) : me.co.length >= 3) E(av ? 'Avatar เต็ม' : 'Construct เต็ม 3');
@@ -998,6 +1004,7 @@ function act(r, i, m) {
       mainOnly(); let f = find(r, m.u), z;
       if (f && f.i === i) z = f.z; else if (g.land && g.land.o === i && g.land.c.u === m.u) { f = { i, z: 'land', c: g.land.c }; z = 'land'; } else E('ไม่ใช่การ์ดของเรา');
       if (z === 'av' && !m.rg17 && kdUseGate(r, i, f, m)) break;
+      if (!hospOK(r, i, f.c)) E('โรงบาล: เทิร์นนี้ใช้สกิลการ์ดชื่อนี้ไม่ได้');
       const ab2 = ABIL[f.c.id];
       if (ab2 && ab2.zone === z) {
         if (ab2.once && f.c.ou === g.n) E('ใช้ได้เทิร์นละครั้ง');
