@@ -1115,9 +1115,10 @@ function resolveAtk(r, p) {
 }
 function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') resolveAtk(r, p); runQ(r); }
 function begin(r) {
-  r.p.forEach(x => { try { console.log('[deckcheck]', x.name, 'deck', x.deck.length, 'trio', x.deck.filter(c => ['กุ่ย', 'ฮอล', 'นาย'].includes(B[c.id].n)).length); } catch (e) { } });
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; x.fd = 0; x.ban = null; });
   r.g = { turn: 0, phase: 'dice', pend: null, ask: null, q: [], n: 0, used: [{}, {}], land: null, log: ['เริ่มเกม!'], over: null };
+  /* TEMP debug: แสดงใน Log เกม ว่ากุ่ย/ฮอล/นาย อยู่ในเด็ค/มือกี่ใบ */
+  r.p.forEach(x => { try { const t = c => ['กุ่ย', 'ฮอล', 'นาย'].includes(B[c.id].n); r.g.log.push('🔎 ตรวจเด็ค ' + x.name + ': เด็ค ' + x.deck.length + ' ใบ · กุ่ย/ฮอล/นาย ในเด็ค ' + x.deck.filter(t).length + ' · ในมือ ' + x.hand.filter(t).length); } catch (e) { } });
 }
 async function rematch(r, i) {
   r.p[i].rm = 1; r.p.forEach(x => x.bot && (x.rm = 1)); if (!r.rmT) r.rmT = Date.now();
