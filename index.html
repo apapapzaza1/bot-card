@@ -267,6 +267,7 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 #md .in.pg{max-width:none;margin:0;width:100%}
 #md .in.pg>.cardx{max-width:560px;margin-left:auto;margin-right:auto}
 #md .in.pg .ph2{padding-left:max(12px,calc(50% - 280px + 12px));padding-right:max(12px,calc(50% - 280px + 12px))}
+.fxdice{display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:900;color:#fff;text-shadow:0 2px 8px #000}.fxdice .dd{width:96px;height:96px;border-radius:18px;background:linear-gradient(#fff,#d8dce8);color:#1b1f33;display:flex;align-items:center;justify-content:center;font-size:3.2em;box-shadow:0 8px 24px #000a,inset 0 -6px 0 #0002;animation:drl 1.1s cubic-bezier(.2,.7,.3,1) both}.fxdice i{font-style:normal;font-size:1.1em;opacity:0;animation:dfd .5s 1.1s both}@keyframes drl{0%{transform:translateY(-120px) rotate(0) scale(.4)}60%{transform:translateY(0) rotate(900deg) scale(1.1)}100%{transform:translateY(0) rotate(1080deg) scale(1)}}@keyframes dfd{to{opacity:1}}
 .fxcoin{width:92px;height:92px;border-radius:50%;background:radial-gradient(#ffe27a,#d79a10);border:4px solid #a56d00;color:#5a3a00;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:1.4em;animation:coinf 1.7s ease-out both;box-shadow:0 0 30px #fc3}
 @keyframes coinf{0%{transform:translateY(130px) rotateY(0)}50%{transform:translateY(-70px) rotateY(1080deg)}100%{transform:translateY(0) rotateY(1440deg)}}
 .fxrps{display:flex;gap:16px;align-items:center;font-size:3.2em;background:#000c;padding:10px 22px;border-radius:20px;animation:rpsp 2s both}.fxrps i{font-size:.35em;font-style:normal;color:#fc3}
@@ -483,7 +484,7 @@ let AC;const note=(f,d,v,ty)=>{try{AC=AC||new AudioContext();const o=AC.createOs
 const sfx=k=>{if(cfg.snd)({turn:()=>{note(660,.3,.06);note(880,.4,.05)},hit:()=>note(120,.25,.12,'triangle'),play:()=>note(440,.15,.05),draw:()=>note(520,.08,.04),win:()=>{note(523,.3,.07);note(659,.4,.07);note(784,.7,.07)},lose:()=>{note(220,.5,.07);note(165,.9,.07)}})[k]()};
 let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02));f();mu=setInterval(f,4000)};
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
-const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};const b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
+const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};let b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};if(x.nmo)b={...b,n:x.nmo,s:x.sy||b.s};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
 let AM=null;fetch('/artmap.json').then(r=>r.json()).then(a=>{AM=new Set(a);if(S&&!$('game').hidden)render()}).catch(e=>{});
@@ -866,6 +867,7 @@ else if(f.k=='mill'){const w=f.i==S.i?'0':'1',a=rc(document.querySelector('[data
 const m=$('mid');m.classList.remove('shk');void m.offsetWidth;m.classList.add('shk');
 fxEl('<div class="fxbn">🕳 ธรณีสูบ! '+f.ids.length+' ใบ</div>',innerWidth/2,innerHeight*.4,1600);fxEl('<div class="fxhole"></div>',b.x,b.y,1600);
 f.ids.forEach((id,k)=>{const ar=art(id);setTimeout(()=>fxEl(`<div class="c im fxfall" style="--w:54px;--dx:${b.x-a.x}px;--dy:${b.y-a.y}px;${ar}">${ar?'':esc((C[id]||{}).n||'')}</div>`,a.x,a.y,1100),k*160)});sfx('hit')}
+else if(f.k=='dice'){const n=f.v,fc=['','⚀','⚁','⚂','⚃','⚄','⚅'];fxEl(`<div class="fxdice"><div class="dd">${fc[n]}</div><i>🎲 ${n} · ${n%2?'ออกคี่':'ออกคู่'}</i></div>`,innerWidth/2,innerHeight*.4,2600);sfx('play')}
 else if(f.k=='coin'){fxEl(`<div class="fxcoin">${f.h?'หัว':'ก้อย'}</div>`,innerWidth/2,innerHeight*.4,1900);sfx('play')}
 else if(f.k=='rps'){const E={r:'✊',p:'✋',s:'✌'},m=f.i==S.i;fxEl(`<div class="fxrps"><span>${E[m?f.a:f.b]}</span><i>VS</i><span>${E[m?f.b:f.a]}</span></div>`,innerWidth/2,innerHeight*.4,2200);sfx('hit')}
 else if(f.k=='vfx'){const p=pos(f.u)||{x:innerWidth/2,y:innerHeight*.4},e=cel(f.u),c=f.c||'#fde047';
