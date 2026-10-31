@@ -96,7 +96,8 @@ const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
 let CR = null, FXN = 0;
 const fx = o => { if (!CR || !CR.g) return; const g = CR.g; (g.fxl = g.fxl || []).push({ n: ++FXN, ...o }); if (g.fxl.length > 20) g.fxl.shift(); };
-function sweep(r) { chk052(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); } } }); }
+function sweep(r) { chk052(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); mgHellTrig(r, p, m); } } }); }
+function mgHellTrig(r, p, m) { if (['ตีแม่', 'ตีพ่อ'].includes(B[m.id].n.trim())) { const pi = r.p.indexOf(p); fx({ k: 'say', id: m.id, t: 'หงาย LIFE' }); log(r, '🪓 ' + B[m.id].n.trim() + ' ตกนรก: หงาย LIFE ใบบนสุดของ ' + p.name); lifeUp(r, pi); } }
 
 /* ===== ENGINE: กฎ v3.2 + สกิล SD01-08 + BT01-02 ===== */
 const nmOf = x => x.tk ? x.tk.n : (x.nmo || B[x.id].n);
@@ -194,6 +195,7 @@ function P(r, x) {
     v += mod456(r, x, f) + mod03(r, x, f) + mod04(r, x, f) + mod05(r, x, f);
     r.p.forEach(q => q.mg.forEach(m => { if (m.at === x.u) {
       if (m.id === 'SD01-016') v += 1;
+      if (B[m.id].n.trim() === 'ตีแม่') v += 2;   // ตีแม่: POWER +2 ให้ Avatar ที่สวมใส่
       if ((m.id === 'SD03-018' || m.id === 'KD02-019') && s === 'นรก') v += 1;
       if (m.id === 'SD07-018') v += B[x.id].n.startsWith('กวนอู') ? 2 : 1;
       if (m.id === 'SD08-016') v += p.av.filter(isRat).length;
@@ -549,6 +551,7 @@ function afterBattle(r, p, a, d, res, pa, pd) {
   const df = Math.abs((pa || 0) - (pd || 0)); kdAfter(r, p, a, d, res); bt4Win(r, p, a, d, res);
   if (res === 'win') winFx(r, p.ai, a, df); if (res === 'lose') winFx(r, 1 - p.ai, d, df);
   if (res !== 'lose' && res !== 'both') surviveFx(r, p.ai, a);
+  if (res === 'win' && a && find(r, a.u)) r.p.forEach(q => q.mg.forEach(m => { if (m.at === a.u && B[m.id].n.trim() === 'ตีพ่อ' && m.wk !== r.g.n && a.tired) { m.wk = r.g.n; a.tired = false; fx({ k: 'say', id: m.id, t: 'กลับมาตื่น' }); log(r, '✨ ตีพ่อ: ' + nmOf(a) + ' ทำลาย Avatar สำเร็จ กลับมาสภาพตื่น'); } }));   // 1 ครั้ง/เทิร์น
   if (res !== 'win' && res !== 'both' && d.id === 'BT02-027' && find(r, d.u) && !noFx(r, d)) { fx({ k: 'say', id: d.id, t: 'สุ่มคว่ำ LIFE' }); lifeDown(r, 1 - p.ai); }
 }
 function wall(r, i) {
@@ -862,7 +865,7 @@ const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
 const draw = (r, p, n) => { DRAWING++; try { for (let k = 0; k < n && p.deck.length; k++) p.hand.push(p.deck.pop()); } finally { DRAWING--; } if (!p.deck.length && !r.g.over) { r.g.over = p.name + ' เด็คหมด แพ้!'; r.g.win = r.p ? 1 - r.p.indexOf(p) : null; } };
 const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
-const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) if (p.mg[k].at === u) { const [g] = p.mg.splice(k, 1); delete g.at; p.hell.push(g); } });
+const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) if (p.mg[k].at === u) { const [g] = p.mg.splice(k, 1); delete g.at; p.hell.push(g); mgHellTrig(r, p, g); } });
 const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') { delete f.c.half; delete f.c.kdSwap; release(r, u); if (f.c.wr && f.c.wr.length) { f.c.wr.forEach(w => { delete w.nmo; r.p[f.i].hell.push(w); }); f.c.wr = []; } } delete f.c.at; delete f.c.cx; delete f.c.jt; if (f.z === 'hand') delete f.c.stl; if (f.z === 'av' && f.c.id === 'BT05-054A') { f.c.id = 'BT05-054'; delete f.c.kd; } return f; };
 const kill = (r, i, u, ns) => {
   const f0 = find(r, u), nf0 = !!(f0 && f0.z === 'av' && noFx(r, f0.c));
@@ -997,7 +1000,7 @@ function act(r, i, m) {
     case 'cast': {
       const f = own(m.u), c = B[f.c.id]; if (c.t !== 'Magic') E('ไม่ใช่ Magic');
       if (f.c.stl) E('การ์ดที่ขโมยมา ใช้เป็น Cost อัญเชิญ Avatar ได้เท่านั้น');
-      const def = MG[c.id] || (c.st === 'Modification' ? { mod: 1 } : {});
+      const def0 = MG[c.id] || (c.st === 'Modification' ? { mod: 1 } : {}), def = (c.st === 'Modification' && !Object.keys(def0).length) ? { mod: 1 } : def0;   // Modification ที่ลงทะเบียนเป็น {} (เช่น ตีแม่/ตีพ่อ BT01) ต้องสวมใส่ Avatar ได้
       if (!(f.z === 'hand' || (f.z === 'hell' && f.c.mh === g.n && c.st === 'Modification' && !g.used[i].Modification && mine && g.phase === 'main'))) E('ใช้จากโซนนี้ไม่ได้');
       if (c.st === 'React') { if (!reactOK(r, i, c, def)) E('ใช้ React ตอนนี้ไม่ได้'); } else if (!mine && c.s === 'ฤษี' && ['Normal', 'Modification', 'Land'].includes(c.st) && hasRishi(r, i) && g.phase === 'main' && !g.ask && !g.pend) { /* BT05-011 ฤๅษี: ใช้ได้ในเทิร์นฝ่ายตรงข้าม */ } else mainOnly();
       const m2 = (g.mod2 && g.mod2.who === i && g.mod2.n === g.n && c.st === 'Modification') ? g.mod2 : null;
@@ -1227,7 +1230,7 @@ async function rematch(r, i) {
 }
 const dropRoom = c => { (rooms[c].spec || []).forEach(w => w.readyState === 1 && w.send(JSON.stringify({ t: 'specend' }))); delete rooms[c]; };
 let FTK = 0;
-setInterval(() => { for (const c in rooms) { const r = rooms[c], g = r.g; if (!g || g.over || !g.pend || g.ask) continue; const w = g.pend.who; if (r.p[w] && r.p[w].bot) continue; try { if (!hasReact(r, w)) { const now = Date.now(); if (!g.pend.fk) g.pend.fk = now + 1500; else if (now >= g.pend.fk) { passReact(r); bc(r); settle(r).catch(() => { }); } } } catch (e) { } } }, 300);   // ไม่มี React: หน่วงคงที่ 1.5 วิ (กันอีกฝ่ายเดาว่ามีการ์ด React)
+setInterval(() => { for (const c in rooms) { const r = rooms[c], g = r.g; if (!g || g.over || !g.pend || g.ask) continue; const w = g.pend.who; if (r.p[w] && r.p[w].bot) continue; try { if (!hasReact(r, w)) { const now = Date.now(); if (!g.pend.fk) g.pend.fk = now + 1000 + Math.floor(Math.random() * 1000); else if (now >= g.pend.fk) { passReact(r); bc(r); settle(r).catch(() => { }); } } } catch (e) { } } }, 300);   // ไม่มี React: หน่วงคงที่ 1.5 วิ (กันอีกฝ่ายเดาว่ามีการ์ด React)
 setInterval(() => {
   const now = Date.now();
   if ((++FTK) % 2 === 0) for (const w of wss.clients) { try { pushFst(w); } catch (e) { } }
