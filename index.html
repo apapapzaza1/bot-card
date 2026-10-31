@@ -358,7 +358,7 @@ let AC;const note=(f,d,v,ty)=>{try{AC=AC||new AudioContext();const o=AC.createOs
 const sfx=k=>{if(cfg.snd)({turn:()=>{note(660,.3,.06);note(880,.4,.05)},hit:()=>note(120,.25,.12,'triangle'),play:()=>note(440,.15,.05),draw:()=>note(520,.08,.04),win:()=>{note(523,.3,.07);note(659,.4,.07);note(784,.7,.07)},lose:()=>{note(220,.5,.07);note(165,.9,.07)}})[k]()};
 let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02));f();mu=setInterval(f,4000)};
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
-const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};const b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
+const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};const b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
 let AM=null;fetch('/artmap.json').then(r=>r.json()).then(a=>{AM=new Set(a);if(S&&!$('game').hidden)render()}).catch(e=>{});
@@ -531,7 +531,8 @@ step()}
 const find=u=>{for(const w of['me','op'])for(const z of['hand','av','mg','co','hell','life'])for(const x of S[w][z]||[])if(x.u===u)return{x,z,o:w=='op'};if(S.land&&S.land.c.u===u)return{x:S.land.c,z:'land',o:S.land.o!=S.i}};
 const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
 const isMod=x=>{const c=info(x);return !!c&&c.t=='Magic'&&c.st=='Modification'};
-const gemSum=f=>{const c=info(f.x);return S.me.hand.reduce((a,y)=>{if(y.u==f.x.u)return a;const d=info(y);return a+((d.g&&!(d.gc&&c.col&&d.gc!=c.col))?d.g:0)},0)};
+const gvF=(c,d)=>(S.land&&S.land.c.id=='BT05-069'&&S.land.o==S.i&&c.t=='Avatar'&&c.s=='ยักษ์'&&d.t=='Avatar'&&d.s=='ยักษ์'&&d.p>0)?d.p:0;
+const gemSum=f=>{const c=info(f.x);return S.me.hand.reduce((a,y)=>{if(y.u==f.x.u)return a;const d=info(y),gv=gvF(c,d);return a+(gv?gv:((d.g&&!(d.gc&&c.col&&d.gc!=c.col))?d.g:0))},0)};
 const gemMsg=f=>'Gem ในมือไม่พอ ('+gemSum(f)+'/'+info(f.x).c+')';
 const supOK=x=>!x.tired&&!x.tk&&(/สามัคคี/.test(info(x).e||'')||x.sg)&&x.u!=atk;
 const can=(x,z,o)=>(S.ask&&S.ask.mine&&S.ask.opts.includes(x.u))||(mode=='atk'&&o&&(z=='av'||z=='co'))||(mode=='atk'&&!o&&z=='av'&&supOK(x))||(mode=='pay'&&z=='hand'&&x.u!=sel);
@@ -600,13 +601,13 @@ function mullUI(){const e=$('mlg');if(!S||S.spec||S.over||S.phase!='mull'||S.md[
 const ok=mullOK(),sc=e.scrollTop;
 e.innerHTML=`<h2>🃏 การ์ดเริ่มต้นของคุณ (${S.me.hand.length} ใบ)</h2><div>${ok?'แตะการ์ดที่ต้องการเปลี่ยน · กดค้างเพื่อดูรายละเอียด':'⏳ รอ '+esc(S.op.name)+' ตัดสินใจก่อน — ดูการ์ดได้ (กดค้าง)'}</div><div class="mlr">${S.me.hand.map(x=>cd(x,'hand',0)).join('')}</div><div class="mlb"><button class="pri big" ${ok?'':'disabled'} onclick="mullGo(0)">✔ ไม่เปลี่ยน</button><button class="atkb big" ${ok&&pay.length?'':'disabled'} onclick="mullGo(1)">🔄 เปลี่ยน ${pay.length} ใบ</button></div>`;e.hidden=false;e.scrollTop=sc}
 function flyCard(u){const f=find(u);if(!f)return;const d=document.createElement('div');d.className='fly2';d.innerHTML=cd(f.x,'x',0);document.body.append(d);setTimeout(()=>d.remove(),800);sfx('draw')}
-function pdOK(q,col){const d=info(q);return !!d.g&&!(d.gc&&col&&d.gc!=col)}
+function pdOK(q,col,tc){const d=info(q);return (!!tc&&gvF(tc,d)>0)||(!!d.g&&!(d.gc&&col&&d.gc!=col))}
 function pdCancel(){mode=null;pay=[];supl=[];render()}
-function pdGo(){const f=find(sel);if(!f||mode!='pay')return;const c=info(f.x),g=pay.reduce((a,u)=>{const q=find(u);return a+(q&&pdOK(q.x,c.col)?info(q.x).g:0)},0);if(g<c.c)return toast('Gem ไม่พอ ('+g+'/'+c.c+')');send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:pay.slice()});mode=null;pay=[];render()}
+function pdGo(){const f=find(sel);if(!f||mode!='pay')return;const c=info(f.x),g=pay.reduce((a,u)=>{const q=find(u);return a+(q?(gvF(c,info(q.x))||(pdOK(q.x,c.col)?info(q.x).g:0)):0)},0);if(g<c.c)return toast('Gem ไม่พอ ('+g+'/'+c.c+')');send({t:c.t=='Avatar'?'summon':'build',u:sel,pay:pay.slice()});mode=null;pay=[];render()}
 function ptrUI(){$('ptr').hidden=true;const e=$('pdlg');if(mode!='pay'||!S){e.hidden=true;e.innerHTML='';return}const f=find(sel);if(!f){e.hidden=true;return}const c=info(f.x),verb=c.t=='Avatar'?'อัญเชิญ':'ก่อสร้าง',sc=e.firstChild?e.firstChild.scrollTop:0;
 pay=pay.filter(u=>{const q=find(u);return q&&q.z=='hand'&&pdOK(q.x,c.col)});
 const g=pay.reduce((a,u)=>a+info(find(u).x).g,0),ok=g>=c.c;
-e.innerHTML=`<div class="pdb"><h3>${verb} ${esc(c.n)}</h3><div class="pds">Cost ${c.c} · ${esc(c.t)}${c.col?' สี'+esc(c.col):''} → จ่ายด้วย GEM ไร้สี${c.col?' หรือ GEM สี'+esc(c.col):' (ทุกสี)'}</div><div class="pdg">${S.me.hand.filter(x=>x.u!=sel).map(q=>{const d=info(q),can=pdOK(q,c.col);return`<div class="pdw${pay.includes(q.u)?' on':''}${can?'':' dis'}">${cd(q,'pdc',0)}${d.g?`<span class="gbd" style="${d.gc&&KC[d.gc]?'background:'+KC[d.gc]+';color:#fff':''}">◆${d.g}</span>`:''}</div>`}).join('')}</div><div class="pdt">รวม GEM: <b class="${ok?'ok':''}">${g}</b> / ต้องการ ${c.c} · <span class="${ok?'ok':'no'}">${ok?'ครบ Cost แล้ว':'ยังไม่ถึง Cost'}</span></div><div class="pdn">*ต้องจ่ายให้ถึง Cost (จ่ายเกินได้) · GEM ไร้สีใช้จ่ายได้ทุกสี</div><div class="pdf"><button onclick="pdCancel()">ยกเลิก</button><button class="go" ${ok?'':'disabled'} onclick="pdGo()">${verb}</button></div></div>`;e.hidden=false;e.firstChild.scrollTop=sc}
+e.innerHTML=`<div class="pdb"><h3>${verb} ${esc(c.n)}</h3><div class="pds">Cost ${c.c} · ${esc(c.t)}${c.col?' สี'+esc(c.col):''} → จ่ายด้วย GEM ไร้สี${c.col?' หรือ GEM สี'+esc(c.col):' (ทุกสี)'}</div><div class="pdg">${S.me.hand.filter(x=>x.u!=sel).map(q=>{const d=info(q),can=pdOK(q,c.col,c);return`<div class="pdw${pay.includes(q.u)?' on':''}${can?'':' dis'}">${cd(q,'pdc',0)}${d.g?`<span class="gbd" style="${d.gc&&KC[d.gc]?'background:'+KC[d.gc]+';color:#fff':''}">◆${d.g}</span>`:''}</div>`}).join('')}</div><div class="pdt">รวม GEM: <b class="${ok?'ok':''}">${g}</b> / ต้องการ ${c.c} · <span class="${ok?'ok':'no'}">${ok?'ครบ Cost แล้ว':'ยังไม่ถึง Cost'}</span></div><div class="pdn">*ต้องจ่ายให้ถึง Cost (จ่ายเกินได้) · GEM ไร้สีใช้จ่ายได้ทุกสี</div><div class="pdf"><button onclick="pdCancel()">ยกเลิก</button><button class="go" ${ok?'':'disabled'} onclick="pdGo()">${verb}</button></div></div>`;e.hidden=false;e.firstChild.scrollTop=sc}
 function akUI(){const e=$('akp'),a=S&&S.ask;const key=a&&a.mine?a.text+a.opts.join():'';if(key!==lastAk){lastAk=key;akSel=[]}
 if(!a||!a.mine){e.hidden=true;return}
 const off=(a.cards||[]).filter(c=>!['av','co','mg','hand'].includes(c.z));
