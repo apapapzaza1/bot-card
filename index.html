@@ -367,9 +367,31 @@ body.ing footer{display:none}
 .cta .big{width:100%;min-height:54px;font-size:1.2em;border-radius:14px}
 #mid{--bw:min(94vw,360px);min-height:0;justify-content:center}
 @media(max-width:899px){#game #ls{max-height:2.7em}}
+
+/* ===== v3: theme/perf/auth ===== */
+body[data-bg=line]:not(.ing){--bg:#f3efe4;--fg:#111;--pn:#fff;--cb:#ddd;--ce:#222}
+body[data-bg=line] #bg{animation:none}
+#bg{will-change:transform;transform:translateZ(0)}
+[data-th=light] #bg i,[data-th=light] #bg svg,body[data-bg=line] #bg i,body[data-bg=line] #bg svg{display:none}
+[data-th=light] .lgb,body[data-bg=line] .lgb,[data-th=light] #dcv,body[data-bg=line] #dcv{-webkit-backdrop-filter:none;backdrop-filter:none}
+#top{color:var(--fg)}#top button{margin:0}
+#auth:not([hidden]){display:flex;flex-direction:column}
+.ac{margin:auto 0;background:var(--pn);color:var(--fg);border:1px solid #8885;border-radius:20px;padding:22px 18px;box-shadow:0 8px 28px #0004}
+body[data-bg=line] .ac{border:3px solid #111;box-shadow:6px 6px 0 #111}
+.ac h2{margin:0 0 6px;text-align:center;font-size:1.8em;line-height:1.1;letter-spacing:2px}
+.ac h2 small{display:block;font-size:.5em;letter-spacing:3px;opacity:.75}
+.ac label{display:block;margin-top:12px;font-size:.85em;text-align:left;opacity:.9}
+.ac input{margin-top:4px;padding:12px;font-size:16px;color:var(--fg);background:var(--bg);border:2px solid #8886}
+.ac input:focus{outline:0;border-color:#3b82f6}
+.ab2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.ac button{margin:0;min-height:46px;font-weight:700}
+.ac .pri{background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border:0}
+.ac .ghost{display:block;margin:10px auto 0;background:none;border:0;text-decoration:underline;min-height:36px}
+.ac p{margin:8px 0 0;text-align:center;font-size:.8em;opacity:.75}
+.cta .big{width:auto;min-width:180px;min-height:44px;padding:8px 26px;font-size:1.05em;border-radius:12px}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
-<div id="auth" class="scr"><h2 style="text-align:center">BOT (FANMADE) CARD</h2><input id="aname" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"><br><br><input id="apass" type="password" placeholder="รหัสผ่าน"><br><button onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button><button onclick="st()">⚙ ตั้งค่า</button><p style="font-size:.8em;opacity:.7">สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div>
+<div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
 <div id="ld" class="scr" hidden><h2 style="text-align:center">กำลังเข้าสู่ระบบ…</h2><p style="text-align:center"><button onclick="cfg.tok='';ap();location.reload()">ใช้บัญชีอื่น</button></p></div>
 <div id="lobby" class="scr" hidden><div id="top"></div><div id="hm"><div id="tt"><h1>BOT<br>(FANMADE)<br>CARD</h1><small>เกมการ์ดแฟนเมด · Battle of Talingchan</small></div>
 <div id="bt"><button class="lgb" onclick="botPg()"><span class="ic" style="--c:#c792ff">🤖</span><span class="tx"><b>เล่นกับบอท</b><small>ฝึกซ้อม 3 ระดับความยาก</small></span><i>›</i></button><button class="lgb" onclick="roomPg()"><span class="ic" style="--c:#ffd24a">👥</span><span class="tx"><b>เล่นกับเพื่อน</b><small>สร้างห้อง / เข้าห้อง / เพื่อน <span id="bf"></span></small></span><i>›</i></button><button class="lgb" onclick="decks()"><span class="ic" style="--c:#6ec6ff">🃏</span><span class="tx"><b>จัดเด็ค</b><small>สร้างและบันทึกเด็คของคุณ</small></span><i>›</i></button><button class="lgb" onclick="shop()"><span class="ic" style="--c:#ff8fb1">🛒</span><span class="tx"><b>ร้านค้า</b><small>กล่องการ์ด · สกิน · โค้ด</small></span><i>›</i></button><button class="lgb" onclick="st()"><span class="ic" style="--c:#b6f08a">⚙</span><span class="tx"><b>ตั้งค่า</b><small>ธีม เสียง การแสดงผล</small></span><i>›</i></button></div></div></div>
