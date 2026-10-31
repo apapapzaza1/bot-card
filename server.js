@@ -853,15 +853,17 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   CR = r; const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg') })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co') })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
-const sview = r => { const v = view(r, 0); v.spec = 1; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
+const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
 const bc0 = r => r.p.forEach((p, i) => {
   if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', code: r.code, bot: r.bot ? r.bot.lv : 0, owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
 });
 const log = (r, s) => r.g.log.push(s);
-const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; };
+const ev = (r, id) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id }; r.g.evw = { n: r.g.ev.n, ok: r.p.map(p => !!p.bot), t0: Date.now() }; };   // ป๊อปอัปรอทั้งสองฝ่ายกดข้าม (บอทกดอัตโนมัติ)
+const evDone = r => { const g = r.g, w = g.evw; if (!w) return; const d = Date.now() - w.t0; if (g.pend) { if (g.pend.until) g.pend.until += d; if (g.pend.fk) g.pend.fk += d; } g.evw = null; };   // เลื่อนตัวจับเวลา React ตามเวลาที่หยุดรอ
+const evAck = (r, i) => { const w = r.g && r.g.evw; if (!w) return; w.ok[i] = true; if (w.ok.every(Boolean)) evDone(r); };
 const draw = (r, p, n) => { DRAWING++; try { for (let k = 0; k < n && p.deck.length; k++) p.hand.push(p.deck.pop()); } finally { DRAWING--; } if (!p.deck.length && !r.g.over) { r.g.over = p.name + ' เด็คหมด แพ้!'; r.g.win = r.p ? 1 - r.p.indexOf(p) : null; } };
 const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
@@ -1230,7 +1232,7 @@ async function rematch(r, i) {
 }
 const dropRoom = c => { (rooms[c].spec || []).forEach(w => w.readyState === 1 && w.send(JSON.stringify({ t: 'specend' }))); delete rooms[c]; };
 let FTK = 0;
-setInterval(() => { for (const c in rooms) { const r = rooms[c], g = r.g; if (!g || g.over || !g.pend || g.ask) continue; const w = g.pend.who; if (r.p[w] && r.p[w].bot) continue; try { if (!hasReact(r, w)) { const now = Date.now(); if (!g.pend.fk) g.pend.fk = now + 1000 + Math.floor(Math.random() * 1000); else if (now >= g.pend.fk) { passReact(r); bc(r); settle(r).catch(() => { }); } } } catch (e) { } } }, 300);   // ไม่มี React: หน่วงคงที่ 1.5 วิ (กันอีกฝ่ายเดาว่ามีการ์ด React)
+setInterval(() => { for (const c in rooms) { const r = rooms[c], g = r.g; if (!g || g.over || !g.pend || g.ask || g.evw) continue; const w = g.pend.who; if (r.p[w] && r.p[w].bot) continue; try { if (!hasReact(r, w)) { const now = Date.now(); if (!g.pend.fk) g.pend.fk = now + 1000 + Math.floor(Math.random() * 1000); else if (now >= g.pend.fk) { passReact(r); bc(r); settle(r).catch(() => { }); } } } catch (e) { } } }, 300);   // ไม่มี React: หน่วงคงที่ 1.5 วิ (กันอีกฝ่ายเดาว่ามีการ์ด React)
 setInterval(() => {
   const now = Date.now();
   if ((++FTK) % 2 === 0) for (const w of wss.clients) { try { pushFst(w); } catch (e) { } }
@@ -1239,8 +1241,9 @@ setInterval(() => {
     if (!g) { if (r.exp && now > r.exp) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ err: 'ห้องหมดอายุ' }))); dropRoom(c); } continue; }
     if (g.over) { g.oa = g.oa || now; if ((r.rmT && now - r.rmT > 10000) || now - g.oa > 6e5) { r.p.forEach(p => p.ws && p.ws.readyState === 1 && p.ws.send(JSON.stringify({ t: 'rmx' }))); dropRoom(c); } continue; }
     r.p.forEach((p, k) => { if (!g.over && p.dc && now - p.dc > DC_MS) { g.over = p.name + ' หลุด 3 นาที แพ้'; g.win = 1 - k; LOST[p.name] = { op: r.p[1 - k].name, at: now }; } });
-    if (g.pend && g.pend.until && now > g.pend.until) { passReact(r); bc(r); settle(r).catch(() => { }); }
-    if (!g.over && r.cfg.clock && ['main','battle','end'].includes(g.phase)) {
+    if (g.evw) { const w = g.evw; r.p.forEach((p, k) => { if (!w.ok[k] && (p.dc || !p.ws || p.ws.readyState !== 1) && now - w.t0 > 3000) w.ok[k] = true; }); if (now - w.t0 > 30000) w.ok.fill(true); if (w.ok.every(Boolean)) { evDone(r); bc(r); } }   // หลุด: รอ 3 วิ แล้วข้ามแทน (กันค้าง 30 วิ)
+    if (!g.evw && g.pend && g.pend.until && now > g.pend.until) { passReact(r); bc(r); settle(r).catch(() => { }); }
+    if (!g.over && !g.evw && r.cfg.clock && ['main','battle','end'].includes(g.phase)) {
       const p = r.p[g.turn]; p.t -= 1000; if (p.t <= 0) { g.over = p.name + ' หมดเวลา แพ้'; g.win = 1 - g.turn; }
       r.p.forEach(x => x.ws && x.ws.readyState === 1 && x.ws.send(JSON.stringify({ t: 'clk', a: r.p.map(y => y.t) })));
     }
@@ -1386,7 +1389,8 @@ wss.on('connection', ws => {
         if (r.p.length < 2 || !r.p.every(x => x.deck)) E('ผู้เล่นยังไม่พร้อม');
         begin(r); bc(r);
       } else if (m.t === 'rm' && r && r.g && r.g.over) { await rematch(r, i);
-      } else if (r && r.g) { act(r, i, m); bc(r); settle(r).catch(() => { }); }
+      } else if (m.t === 'evok' && r && r.g) { evAck(r, i); bc(r);
+      } else if (r && r.g) { if (r.g.evw && !r.g.over && !['chat', 'surrender', 'dview'].includes(m.t)) E('รอป๊อปอัปปิดก่อน'); act(r, i, m); bc(r); settle(r).catch(() => { }); }
     } catch (e) { err(e && e.message ? 'ผิดพลาด' : e); }
   });
 });
@@ -2716,7 +2720,7 @@ function botReact(r, k) {
 function botTick() {
   const now = Date.now();
   for (const c in rooms) {
-    const r = rooms[c], g = r.g; if (!r.bot || !g || g.over) continue;
+    const r = rooms[c], g = r.g; if (!r.bot || !g || g.over || g.evw) continue;
     const bt = r.bot, k = botIdx(r), hu = r.p[1 - k];
     if (!hu.ws || hu.ws.readyState !== 1 || hu.dc || now < bt.at) continue;
     bt.at = now + (bt.lv === 3 ? 500 : 800) + Math.random() * 500;
