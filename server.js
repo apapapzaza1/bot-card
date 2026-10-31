@@ -1311,7 +1311,7 @@ wss.on('connection', ws => {
       }
       if (m.t === 'deldeck') { const d = await dbGet(ws.user); if (!d.decks || !d.decks[m.name]) E('ไม่พบเด็ค'); delete d.decks[m.name]; await dbPut(ws.user, d); me_(d); return; }
       if (m.t === 'buyskin' || m.t === 'eqskin') {
-        const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400, bot1: 2500, chalk: 3750, constr: 5000, hellneon: 6250, hellgate: 7500 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300, blue: 2500, purple: 2500, green: 2500, red: 2500, sun: 2500, violet: 3750, line: 3750, shrine: 3750, soi: 3750, ghost: 5000, galaxy: 5000, holo: 5000, rat: 5000, flame: 6250, dino: 6250, war: 6250, montho: 7500, sweeney: 7500, idol: 7500, bank: 7500 } };
+        const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400, bot1: 2500, dark: 3750, chalk: 3750, adv: 3750, constr: 5000, shrinesky: 5000, ratinv: 5000, hellneon: 6250, space: 6250, warb: 6250, hellgate: 7500, montb: 7500, bankb: 7500, idolb: 7500 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300, blue: 2500, purple: 2500, green: 2500, red: 2500, sun: 2500, violet: 3750, line: 3750, shrine: 3750, soi: 3750, ghost: 5000, galaxy: 5000, holo: 5000, rat: 5000, flame: 6250, dino: 6250, war: 6250, montho: 7500, sweeney: 7500, idol: 7500, bank: 7500 } };
         const pr = SK[m.k] && SK[m.k][m.id]; if (pr == null) E('ไม่มีสินค้า');
         const d = await dbGet(ws.user), key = m.k + ':' + m.id; d.skins = d.skins || []; d.eq = d.eq || {};
         if (m.t === 'buyskin') { if (pr === 0 || d.skins.includes(key)) E('มีแล้ว'); if (d.gems < pr) E('Gem ไม่พอ'); d.gems -= pr; d.skins.push(key); d.eq[m.k] = m.id; }
