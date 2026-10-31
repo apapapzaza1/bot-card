@@ -160,7 +160,7 @@ function fxSummon2(r, i, x) {
   const me = r.p[i];
   if (x.id === 'SD07-008') {
     const top = []; for (let k = 0; k < 3 && me.deck.length; k++) top.push(me.deck.pop());
-    log(r, '🔍 สอดแนม 3 ใบ: ' + top.map(c => B[c.id].n).join(', '));
+    log(r, '🔍 สอดแนม 3 ใบ');
     const back = () => { me.deck.push(...top.filter(c => !c.taken)); shuf(me.deck); };
     const L = top.filter(isKP).map(c => c.u);
     if (!L.length) { back(); return; }
@@ -428,7 +428,7 @@ function wearChoose(r, i, card) {
 function scout(r, i, n, o) {
   const p = r.p[i]; if (o.by && isAv(o.by) && symOf(o.by) === 'กะปอม') n += p.av.filter(x => (CANON[x.id] || x.id) === 'BT04-011' && !noFx(r, x)).length;   // BT04-011: สอดแนมของ {กะปอม} +1 ต่อเทอราโนดอน 1 ใบ (นับตัวเองด้วย)
   const seen = p.deck.slice(-n).reverse(); bt4Seen(r, i, seen, o); if (o.migSrc) kdMigScout(r, i, seen); const ok = seen.filter(c => p.deck.includes(c) && o.pred(c)).map(c => c.u);
-  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ (' + seen.map(c => B[c.id].n).join(', ') + ')'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
+  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
   const fin = u => {
     let got = null; if (u != null) { const k = p.deck.findIndex(c => c.u === u); got = p.deck.splice(k, 1)[0]; }
     const rest = seen.filter(c => c !== got && p.deck.includes(c));
@@ -555,7 +555,7 @@ function wall(r, i) {
   const p = r.p[i], c = p.co.find(x => x.id === 'SD06-020'); if (!c || c.us === r.g.n || p.av.length || !p.hand.length) return;
   ask(r, i, { yn: true, text: 'กำแพงด่านสุดท้าย: ทิ้งการ์ดบนมือ 1 ใบ เพื่อสอดแนมไหม?', cb: y => { if (!y) return;
     ask(r, i, { text: 'เลือกการ์ดบนมือที่จะทิ้ง', opts: p.hand.map(x => x.u), cancel: true, cb: us => { sendHell(r, us[0]); c.us = r.g.n;
-      const n = 1 + (p.co.some(x => x.id === 'SD06-019') ? 2 : 0), seen = p.deck.splice(-n).reverse(); log(r, '🔎 สอดแนม ' + seen.length + ' ใบ: ' + seen.map(x => B[x.id].n).join(', '));
+      const n = 1 + (p.co.some(x => x.id === 'SD06-019') ? 2 : 0), seen = p.deck.splice(-n).reverse(); log(r, '🔎 สอดแนม ' + seen.length + ' ใบ');
       seen.forEach(x => { if (campTxt(x) && B[x.id].c <= 4) putAv(r, i, x); else { p.hand.push(x); log(r, '✋ ' + B[x.id].n + ' ขึ้นมือ'); } }); } }); } });
 }
 function destroyCo(r, u) {
@@ -603,7 +603,7 @@ Object.assign(MG, {
       if (!L.length) { log(r, p.name + ': ไม่มี Avatar ให้อัญเชิญ'); return shuf(p.deck); } ask(r, w, { text: t, opts: L, cb: us => { putAv(r, w, fromZone(r, w, 'deck', us[0])); shuf(p.deck); } }); };
     sm(i, c => isTank(c), 'เลือก Avatar "รถถัง" (Cost ≤5) จาก Deck อัญเชิญ'); r.g.q.push(() => sm(1 - i, () => true, 'เลือก Avatar (Cost ≤5) จาก Deck ของเรา อัญเชิญ')); } },
   'SD04-015': { run: (r, i) => lifeDown(r, i) },
-  'SD04-016': { run: (r, i) => { const p = r.p[i], c = p.deck.pop(); if (!c) return; log(r, '🔎 สอดแนม: ' + B[c.id].n);
+  'SD04-016': { run: (r, i) => { const p = r.p[i], c = p.deck.pop(); if (!c) return; log(r, '🔎 สอดแนม 1 ใบ');
     if (isAv(c) && symOf(c) === 'คน' && B[c.id].c <= 3) putAv(r, i, c); else { p.deck.unshift(c); log(r, '⬇ ใส่ไว้ใต้ Deck'); } } },
   'SD04-017': { react: 'atk', steps: [{ key: 'k', pay: 1, text: 'เลือก Avatar "รถถัง" ของเรา 1 ใบ ทำลายเป็น Cost', opts: myAvEq(isTank) }], run: (r, i) => { r.p[1 - i].av.slice().forEach(a => destroyAv(r, a.u)); log(r, '💥 ทำลาย Avatar ทุกใบของศัตรู'); } },
   'SD04-018': { react: 'atkTank', run: (r, i, cx) => { const p = r.p[i], tg = cx.pend.tg, at = cx.pend.u;
@@ -850,7 +850,7 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   CR = r; const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg') })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co') })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: g.fxl || [], tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -1428,7 +1428,7 @@ function fxPaid03(r, i, pc, summoned) {
   if (pc.id === 'BT03-006') r.g.q.push(() => { draw(r, me, 1); vfx(summoned.u, 'aura', 'จั่ว 1', '#38bdf8'); log(r, '✨ ยานเกราะผู้กล้า: ' + me.name + ' จั่ว 1 ใบ'); });
   if (pc.id === 'BT03-012') r.g.q.push(() => {   // อิสานโนซอรัส: สอดแนม 1 ใบ (+1 ต่อเทอราโนดอน) แต่ละใบเลือกอยู่ที่เดิม/ใต้ Deck
     const n0 = 1 + me.av.filter(x => (CANON[x.id] || x.id) === 'BT04-011' && !noFx(r, x)).length, seenAll = me.deck.slice(-n0).reverse(); if (!seenAll.length) return;
-    fx({ k: 'scout', i, ids: seenAll.map(c => c.kd || c.id) }); log(r, '🔎 ' + me.name + ': สอดแนม ' + seenAll.length + ' ใบ (' + seenAll.map(c => B[c.id].n).join(', ') + ')');
+    fx({ k: 'scout', i, ids: seenAll.map(c => c.kd || c.id) }); log(r, '🔎 ' + me.name + ': สอดแนม ' + seenAll.length + ' ใบ');
     const one = k => { const c = seenAll[k]; if (!c) return; if (!me.deck.includes(c)) return one(k + 1);
       const norm = () => ask(r, i, { yn: true, text: 'อิสานโนซอรัส สอดแนม: ' + B[c.id].n + ' — ไว้ที่เดิมต่อไหม? (ไม่ = ใต้ Deck)', cb: y => { if (!y) { me.deck.splice(me.deck.indexOf(c), 1); me.deck.unshift(c); log(r, '⬇ นำไว้ใต้ Deck'); } one(k + 1); } });
       if (c.id === 'BT03-058' && !r.g.used[i].Land) ask(r, i, { yn: true, text: 'ยุคกาฬสินธุ์โซอิค ถูกสอดแนมจากกะปอม — วางลง Land Magic Zone เลยไหม?', cb: y => { if (y) { me.deck.splice(me.deck.indexOf(c), 1); placeLand03(r, i, c); one(k + 1); } else norm(); } }); else norm(); };
@@ -1475,7 +1475,7 @@ Object.assign(SUM, {
     const c = op.deck[op.deck.length - 1]; if (!c) return;
     fx({ k: 'scout', i, ids: [c.kd || c.id] }); op.deck.pop();
     if (isAv(c)) { op.hell.push(c); log(r, '🔎 สอดแนม Deck ศัตรู: ' + B[c.id].n + ' เป็น Avatar → ลงนรก'); vfx(x.u, 'burst', 'ลงนรก', '#ef4444'); if (!op.deck.length) lose(r, 1 - i, 'เด็คหมด'); }
-    else { op.deck.unshift(c); log(r, '🔎 สอดแนม Deck ศัตรู: ' + B[c.id].n + ' → ไว้ใต้ Deck'); } },
+    else { op.deck.unshift(c); log(r, '🔎 สอดแนม Deck ศัตรู 1 ใบ → ไว้ใต้ Deck'); } },
   'BT03-010': (r, i, x) => { const me = r.p[i], L = me.hell.filter(c => isAv(c) && symOf(c) === 'กะปอม' && B[c.id].c <= 3).map(c => c.u);
     const fin = us => { us.forEach(u => { const c = fromZone(r, i, 'hell', u); c && me.deck.push(c); }); shuf(me.deck); draw(r, me, 1); if (us.length) addTp(x, us.length);
       vfx(x.u, 'aura', 'จั่ว 1' + (us.length ? ' / POWER +' + us.length : ''), '#22c55e'); log(r, '✨ ไดโนกาฬสินธุ์: คืน ' + us.length + ' ใบเข้า Deck แล้วจั่ว 1'); };
@@ -1742,7 +1742,7 @@ function kdNaraiFx(r, i, c) {
   if (c.id === 'KD01-001') {
     const seen = p.deck.splice(-2).reverse(); seen.length && fx({ k: 'scout', i, ids: seen.map(x => x.kd || x.id) });
     p.hand.push(...seen); const sum = seen.reduce((t, x) => t + costOf(x), 0);
-    log(r, '🔎 สอดแนม ' + seen.length + ' ใบขึ้นมือ (' + seen.map(x => B[x.id].n).join(', ') + ') ผลรวม Cost ' + sum);
+    log(r, '🔎 สอดแนม ' + seen.length + ' ใบขึ้นมือ ผลรวม Cost ' + sum);
     if (!p.deck.length) return lose(r, i, 'เด็คหมด');
     const L = op.av.filter(x => !protectedFrom(r, i, x) && costOf(x) <= sum).map(x => x.u);
     ask(r, i, { text: 'เนรเทศ Avatar ฝ่ายตรงข้าม 1 ใบ ที่ Cost ≤ ' + sum, opts: L, cb: us => exileAv(r, us[0]) });
@@ -1890,7 +1890,7 @@ function kdIdolEnd(r, qi, a, done) {
 }
 function kdScoutMulti(r, i, n, pred, max, text, then) {
   const p = r.p[i], seen = p.deck.splice(-n).reverse();
-  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ (' + seen.map(c => B[c.id].n).join(', ') + ')'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
+  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
   const fin = us => { const got = (us || []).map(u => seen.find(c => c.u === u)).filter(Boolean); seen.filter(c => !got.includes(c)).forEach(c => p.deck.push(c)); shuf(p.deck); log(r, '🔀 นำการ์ดที่เหลือกลับเข้า Deck แล้วสับ'); then(got); };
   const ok = seen.filter(pred).map(c => c.u); if (!ok.length) return fin([]);
   ask(r, i, { text, opts: ok, n: Math.min(max, ok.length), min: 0, cb: fin });
@@ -2156,7 +2156,7 @@ function bt4Seen(r, i, seen, o) {   // 019: ถูกสอดแนมโดย
 }
 function bt4Peek(r, i, n, by) {
   const p = r.p[i], seen = p.deck.slice(-n).reverse();
-  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ (' + seen.map(c => B[c.id].n).join(', ') + ')'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
+  log(r, '🔎 ' + p.name + ': สอดแนม ' + seen.length + ' ใบ'); seen.length && fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) });
   bt4Seen(r, i, seen, { by }); return seen;
 }
 function bt4Arrange(r, i, cs, done) {   // เรียงการ์ดที่สอดแนมไว้บนสุด/ใต้ Deck: เลือกใบบนสุดก่อน (ลงมาเรื่อยๆ) แล้วเลือกใบล่างสุด (ขึ้นมา)
