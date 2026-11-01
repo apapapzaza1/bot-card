@@ -657,7 +657,7 @@ step()}
 const find=u=>{for(const w of['me','op'])for(const z of['hand','av','mg','co','hell','life'])for(const x of S[w][z]||[])if(x.u===u)return{x,z,o:w=='op'};if(S.land&&S.land.c.u===u)return{x:S.land.c,z:'land',o:S.land.o!=S.i}};
 const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
 const isMod=x=>{const c=info(x);return !!c&&c.t=='Magic'&&c.st=='Modification'};
-const gvF=(c,d)=>(S.land&&S.land.c.id=='BT05-069'&&S.land.o==S.i&&c.t=='Avatar'&&c.s=='ยักษ์'&&d.t=='Avatar'&&d.s=='ยักษ์'&&d.p>0)?d.p:0;
+const gvF=(c,d)=>(c.t=='Construct'&&d.id=='BT06-021')?5:(S.land&&S.land.c.id=='BT05-069'&&S.land.o==S.i&&c.t=='Avatar'&&c.s=='ยักษ์'&&d.t=='Avatar'&&d.s=='ยักษ์'&&d.p>0)?d.p:0;
 const gemSum=f=>{const c=info(f.x);return S.me.hand.reduce((a,y)=>{if(y.u==f.x.u)return a;const d=info(y),gv=gvF(c,d);return a+(gv?gv:((d.g&&!(d.gc&&c.col&&d.gc!=c.col))?d.g:0))},0)};
 const gemMsg=f=>'Gem ในมือไม่พอ ('+gemSum(f)+'/'+info(f.x).c+')';
 const supOK=x=>!x.tired&&!x.tk&&(/สามัคคี/.test(info(x).e||'')||x.sg)&&x.u!=atk;
@@ -785,7 +785,7 @@ if(S.pend)A('Pass'+(S.pend.until?' ('+Math.max(0,Math.ceil((S.pend.until-Date.no
 if(S.phase=='mull'){if(S.md[S.i])return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ด…',()=>{});if(!mullOK())return A('⏳ รอ '+S.op.name+' เปลี่ยนการ์ดก่อน (กดค้างที่การ์ดเพื่อดูได้)',()=>{});const mb=A(pay.length?'🔄 เปลี่ยน '+pay.length+' ใบ':'✔ ใช้การ์ดชุดนี้ (ไม่เปลี่ยน)',()=>{send({t:'mull',us:pay});pay=[]});mb.className='atkb';BM.insertAdjacentHTML('beforeend','<div class="hint">แตะการ์ดที่จะเปลี่ยน แล้วกดปุ่ม — ระบบเปลี่ยนให้อัตโนมัติ</div>');return mb}
 if(!S.mine)DISC=0;if(S.mine&&DISC&&S.phase!='end'){if(S.me.hand.length<=7)DISC=0;else{const ex=S.me.hand.length-7;A('ยกเลิก',()=>{DISC=0;pay=[];render()});return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') แล้วจบเทิร์น · มือเกิน 7 ใบ',()=>{if(pay.length!=ex)return alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ');const d=pay.slice();DISC=0;pay=[];send({t:'next',fin:1,disc:d})}).className='endb'}}
 if(S.mine&&S.phase=='end'&&S.me.hand.length>7){const ex=S.me.hand.length-7;return A('ทิ้งที่เลือก ('+pay.length+'/'+ex+') · มือเกิน 7 ใบ',()=>pay.length?send({t:'discardm',us:pay}):alert('แตะการ์ดในมือที่จะทิ้ง '+ex+' ใบ'))}
-const f=sel&&find(sel),c=f&&info(f.x);if(f&&!f.o&&f.z=='av'&&f.x.id=='BT05-044'&&S.pend&&S.pend.mine&&S.pend.k=='atk'&&!S.ask&&!mode)A('🛡 ย้ายเป้าหมายมาที่นี่',()=>send({t:'atkresp',u:sel})).className='atkb';
+const f=sel&&find(sel),c=f&&info(f.x);if(f&&!f.o&&f.z=='av'&&f.x.id=='BT05-044'&&S.pend&&S.pend.mine&&S.pend.k=='atk'&&!S.ask&&!mode)A('🛡 ย้ายเป้าหมายมาที่นี่',()=>send({t:'atkresp',u:sel})).className='atkb'; if(f&&!f.o&&f.z=='av'&&f.x.id=='BT06-007'&&S.pend&&S.pend.mine&&S.pend.k=='atk'&&!S.ask&&!mode&&(S.pend.can||[]).includes(sel))A('⚡ เคย์: ส่งดาบ POWER +2',()=>send({t:'atkresp',u:sel})).className='atkb';
 
 if(mode=='atk'){const ok=lifeT();BM.insertAdjacentHTML('beforeend','<div class="hint">⚔ แตะ Avatar/Construct ศัตรูที่จะโจมตี'+(ok?' หรือแตะแถว LIFE':' (ยังตี LIFE ไม่ได้ เพราะศัตรูมี Avatar)')+' · แตะ Avatar ของเราที่มี สามัคคี เพื่อเสริมพลัง ('+supl.length+')</div>');A('🎯 ตี LIFE',()=>send({t:'atk',u:atk,tg:'life',sup:supl})).disabled=!ok}
 if(mode){return A('ยกเลิก',()=>{mode=null;pay=[];supl=[];render()})}
