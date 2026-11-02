@@ -489,6 +489,25 @@ const abOf = (r, i, x, z) => { if (z === 'mg' && isPole(x) && has33(r, i)) z = '
   const a2 = ABIL[x.id]; /* ความสามารถแบบ ABIL (เช่น โดมรัททาทุย) ต้องแสดงปุ่มด้วย */
   if (a2 && a2.zone === z && (a2.end ? okE : ok) && !(a2.once && x.ou === r.g.n)) return 1;
   return 0; };
+// ✨ glOf: เช็ก "กดใช้สกิลได้จริงตอนนี้" (เฉพาะเทิร์นเรา) เพื่อให้ฝั่ง client เรืองแสงการ์ด
+// ทำซ้ำเงื่อนไขของ case 'use' เฉพาะส่วนที่เช็กได้โดยไม่มีผลข้างเคียง (ไม่เรียก ask/open/E)
+const glOf = (r, i, x, z) => {
+  try {
+    if (r.g.turn !== i || !abOf(r, i, x, z)) return 0;
+    let zz = z; if (zz === 'mg' && isPole(x) && has33(r, i)) zz = 'av';
+    if (zz === 'av' && bt6Banned(r, i, x)) return 0;
+    if (!hospOK(r, i, x)) return 0;
+    const a2 = ABIL[x.id];
+    if (a2 && a2.zone === zz) { if (a2.once && x.ou === r.g.n) return 0; if (a2.cond && !a2.cond(r, i, x)) return 0; return 1; }
+    const def = AB[x.id] || AB[bt8Gain(x)] || ((x.wr || []).some(w => w.id === 'BT02-010') ? AB_R : null);
+    if (!def || def.z !== zz) return 0;
+    if (noFx(r, x) || x.us === r.g.n) return 0;
+    if (def.can && !def.can(r, i, x)) return 0;
+    const steps = bt8CampF(r, i, x, def.steps || []), ctx = { pick: {}, card: x };
+    for (const s of steps) if (s.opts(r, i, ctx).length < (s.min == null ? (s.n || 1) : s.min)) return 0;
+    return 1;
+  } catch (e) { return 1; }   // เช็กพลาด -> ถือว่ากดได้ตาม ab เดิม (ไม่ซ่อนสกิลที่ใช้ได้)
+};
 const myAv = f => (r, i, cx) => r.p[i].av.filter(a => f(a, cx)).map(a => a.u);
 const wearUse = { z: 'av', can: (r, i, c) => tanksFor(r, i, c).length > 0, steps: [{ key: 't', text: 'เลือก Avatar รถถังที่จะสวมใส่', opts: (r, i, cx) => tanksFor(r, i, cx.card) }],
   run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } };
@@ -891,8 +910,8 @@ function rjStatus(ws) {
   const l = LOST[ws.user]; if (l && Date.now() - l.at < 18e5) ws.send(JSON.stringify({ t: 'lost', op: l.op })); else delete LOST[ws.user];
 }
 const view = (r, i) => {
-  CR = r; const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg') })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co') })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (c.id.startsWith('BT09-') && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  CR = r; const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
+  return { i, odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (c.id.startsWith('BT09-') && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land'), gl: g.land.o === i ? glOf(r, i, g.land.c, 'land') : 0 }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
