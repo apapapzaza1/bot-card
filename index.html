@@ -327,6 +327,14 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 #md.dkb .mb{position:sticky;top:0;z-index:7;display:flex;align-items:center;gap:10px;margin:0 -12px 6px;padding:4px 12px;background:var(--bg);border-bottom:1px solid #8886;font-size:.82em;font-weight:700}
 .mb .sp{flex:1}.mb button{margin:0;padding:2px 12px;min-height:0}
 #md.dkb .dg{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 6px}
+/* 💻 PC / Chromebook / โน้ตบุ๊ก: 6 ใบ (>=900px) · 7 ใบ (>=1366px) · 8 ใบ (>=1700px) — มือถือคง 4 ใบ */
+@media(min-width:900px){#md.dkb .dg{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px 10px}#md.dkb .dg .dc>b{font-size:.86em}#md.dkb .dg .dc>small{font-size:.72em}#md.dkb .dg .ct button{min-height:32px}}
+@media(min-width:1366px){#md.dkb .dg{grid-template-columns:repeat(7,minmax(0,1fr))}}
+@media(min-width:1700px){#md.dkb .dg{grid-template-columns:repeat(8,minmax(0,1fr))}}
+/* ⚠ กล่องเตือนแหกกฎเด็ค */
+#bw{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:12;width:min(94vw,540px);max-height:60vh;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:14px;background:#1b1320f2;color:#f5f0ff;border:2px solid #fb7185;box-shadow:0 10px 30px #000a;font-size:.88em;cursor:pointer;animation:fi .2s}#bw[hidden]{display:none}
+#bw .bwg{display:flex;flex-direction:column;gap:2px}#bw .bwg>b{font-size:1.05em}#bw .bwg>small{opacity:.8}#bw .bwg.blk>b{color:#f87171}#bw .bwg.hard>b{color:#fbbf24}#bw .bwg.ban>b{color:#fb7185}#bw>em{align-self:flex-end;font-size:.72em;opacity:.55;font-style:normal}
+.mis.bn{color:#fb7185;background:#fb718518;border-color:#fb718555}
 .dg .dc>b{font-size:.72em}.dg .dc>small{font-size:.62em}
 .dg .vch{display:flex;flex-wrap:wrap;gap:2px}.dg .vch .chip{padding:1px 6px;font-size:.62em;margin:0}
 .dg .ct{display:flex;align-items:center;justify-content:space-between;gap:2px}.dg .ct button{margin:0;padding:0 9px;min-height:28px}
@@ -585,17 +593,47 @@ function bnorm(){bd.vr=bd.vr||{};bd.art=bd.art||{};const ids=new Set([...Object.
 Object.keys(bd.vr).forEach(k=>{if(!ids.has(k.split('|')[0])||!(bd.vr[k]>0))delete bd.vr[k]});
 ids.forEach(i=>{const o=C[i]&&C[i].t=='Life'?bd.l:bd.m,n=o[i]||0,ks=Object.keys(bd.vr).filter(k=>k.split('|')[0]==i);let hv=ks.reduce((a,k)=>a+bd.vr[k],0);
 if(hv<n){const k=i+'|'+erar(i);bd.vr[k]=(bd.vr[k]||0)+n-hv}else if(hv>n)for(const k of ks.reverse()){while(hv>n&&bd.vr[k]>0){bd.vr[k]--;hv--}if(!bd.vr[k])delete bd.vr[k]}})}
-function bgc(gi,r,d){const g=BG[gi],c=C[g.ids[0]],o=c.t=='Life'?bd.l:bd.m,lim=c.lim||4,tot=g.ids.reduce((a,i)=>a+(o[i]||0),0);
-if(d>0){if(tot>=lim)return;const pri=g.ids.find(i=>(ME.cards[i+'|'+r]||0)>(bd.vr[i+'|'+r]||0));if(!pri)return;o[pri]=(o[pri]||0)+1;bd.vr[pri+'|'+r]=(bd.vr[pri+'|'+r]||0)+1}
+/* ===== ตรวจกฎเด็ค + เตือนเมื่อใส่การ์ดที่แหกกฎ ===== */
+const LIMN=c=>c.lim||(/ได้มากสุด 50 ใบ/.test(c.e||'')?50:(c.o=='Only #1'?1:4));
+const nmCnt=(n,o)=>Object.keys(o).reduce((a,i)=>C[i]&&C[i].n==n?a+o[i]:a,0);
+function bdViol(){const V=[],BL=ME.ban||{ban:[],lim:{},pairs:[],cond:[]},cnt={},main=Object.keys(bd.m).filter(i=>C[i]).flatMap(i=>Array(bd.m[i]).fill(i));
+main.forEach(i=>{cnt[C[i].n]=(cnt[C[i].n]||0)+1});const mn=main.length,ln=sm(bd.l);
+if(mn>50)V.push({k:'hard',t:'m',names:[],msg:'Main เกิน 50 ใบ (ตอนนี้ '+mn+' ใบ)'});
+if(ln>5)V.push({k:'hard',t:'l',names:[],msg:'LIFE เกิน 5 ใบ (ตอนนี้ '+ln+' ใบ)'});
+{const c2={};Object.keys(bd.l).filter(i=>C[i]).forEach(i=>{c2[C[i].n]=(c2[C[i].n]||0)+bd.l[i]});const d=Object.keys(c2).filter(n=>c2[n]>1);if(d.length)V.push({k:'hard',t:'l',names:d,msg:'LIFE ห้ามชื่อซ้ำ: '+d.join(', ')})}
+const ol=[...new Set(main.filter(i=>C[i].o=='Only #1').map(i=>C[i].n))];
+if(ol.length>1)V.push({k:'hard',t:'m',names:ol,msg:'ใส่ Only #1 ได้แค่ 1 ใบต่อเด็ค (ตอนนี้ '+ol.length+' ใบ: '+ol.join(', ')+')'});
+Object.keys(cnt).forEach(n=>{const i=main.find(x=>C[x].n==n);if(C[i].o=='ลำเอียง')V.push({k:'ban',names:[n],msg:n+' เป็นการ์ดลำเอียง'});
+if((BL.ban||[]).includes(n))V.push({k:'ban',names:[n],msg:n+' เป็นการ์ดบาป (ห้ามใส่)'});
+const L=(BL.lim||{})[n];if(L&&cnt[n]>L)V.push({k:'ban',names:[n],msg:n+' จำกัด '+L+' ใบ (ตอนนี้ '+cnt[n]+' ใบ)'})});
+(BL.pairs||[]).forEach(([x,y])=>{if(cnt[x]&&cnt[y])V.push({k:'ban',names:[x,y],msg:'ใส่ได้อย่างใดอย่างหนึ่ง: '+x+' / '+y})});
+const only=main.find(i=>C[i].o=='Only #1'),badL=f=>{const bad=[...new Set(main.filter(i=>C[i].t=='Avatar'&&f(C[i])).map(i=>C[i].n))];return bad},
+fmt=bad=>' — ผิดที่: '+bad.slice(0,3).join(', ')+(bad.length>3?' และอีก '+(bad.length-3)+' ใบ':'');
+(BL.cond||[]).forEach(c=>{
+if(c.if&&cnt[c.if]){
+if(c.avatarsText){const bad=badL(d=>!d.n.includes(c.avatarsText)&&!(d.e||'').includes(c.avatarsText));if(bad.length)V.push({k:'ban',names:[c.if,...bad],msg:c.msg+fmt(bad)})}
+if(c.onlySymbol&&(!only||C[only].s!==c.onlySymbol))V.push({k:'ban',names:[c.if,...(only?[C[only].n]:[])],msg:c.msg})}
+if(c.ifOnlyName&&only&&C[only].n.includes(c.ifOnlyName)&&c.avatarsSymbol){const bad=badL(d=>d.s!==c.avatarsSymbol&&!(d.e||'').includes('symbol '+c.avatarsSymbol));if(bad.length)V.push({k:'ban',names:[C[only].n,...bad],msg:c.msg+fmt(bad)})}});
+return V}
+let bwT;
+function bwShow(vs){let e=$('bw');if(!e){e=document.createElement('div');e.id='bw';e.onclick=()=>{e.hidden=true};document.body.append(e)}
+const G=(k,t,tail)=>{const a=vs.filter(v=>v.k==k);return a.length?`<div class="bwg ${k}"><b>${t}</b>${a.map(v=>'<div>• '+esc(v.msg)+'</div>').join('')}${tail?'<small>'+tail+'</small>':''}</div>`:''};
+e.innerHTML=G('blk','🚫 ใส่เพิ่มไม่ได้')+G('hard','⚠ แหกกฎการสร้างเด็ค','เด็คนี้บันทึกไม่ได้จนกว่าจะแก้ให้ครบตามกฎ')+G('ban','⛔ ติดแบนลิสต์','เด็คนี้ใช้เล่นในห้องที่เปิดโหมดแบนลิสต์ไม่ได้')+'<em>แตะเพื่อปิด</em>';
+e.hidden=false;clearTimeout(bwT);bwT=setTimeout(()=>{e.hidden=true},7000)}
+function bdWarn(c){const L=c.t=='Life'?'l':'m',vs=bdViol().filter(v=>v.t==L||v.names.includes(c.n));if(vs.length)bwShow(vs)}
+function bgc(gi,r,d){const g=BG[gi],c=C[g.ids[0]],o=c.t=='Life'?bd.l:bd.m;
+if(d>0){const lim=LIMN(c);if(nmCnt(c.n,o)>=lim)return bwShow([{k:'blk',msg:c.n+' ใส่ได้สูงสุด '+lim+' ใบต่อเด็ค'+(c.o=='Only #1'?' (Only #1)':'')}]);
+const pri=g.ids.find(i=>(ME.cards[i+'|'+r]||0)>(bd.vr[i+'|'+r]||0));if(!pri)return;o[pri]=(o[pri]||0)+1;bd.vr[pri+'|'+r]=(bd.vr[pri+'|'+r]||0)+1;bdr();return bdWarn(c)}
 else{const pri=g.ids.find(i=>bd.vr[i+'|'+r]>0);if(!pri)return;const k=pri+'|'+r;bd.vr[k]--;if(!bd.vr[k])delete bd.vr[k];o[pri]--;if(!o[pri])delete o[pri]}
 bdr()}
-const bflt=(k,v)=>{const a=bd.f[k]=bd.f[k]||[],i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);bd.lim=60;bdr()},bfx=()=>{bd.f={};bd.q='';bd.qe='';bd.t='';bd.lim=60;bdr()};
+const bflt=(k,v)=>{const a=bd.f[k]=bd.f[k]||[],i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);bd.lim=60;bdr()},bfx=()=>{bd.f={};bd.q='';bd.qe='';bd.t='';bd.o1=0;bd.lim=60;bdr()};
 function bdr(){const sc=$('md').scrollTop;if(!BG||BG.n!=Object.keys(C).length)bgb();bd.tab=bd.tab||'own';bd.lim=bd.lim||60;bd.f=bd.f||{};bd.gr=bd.gr||{};bd.art=bd.art||{};bd.so=bd.so||'id';bnorm();
 const f=bd.f,fa=k=>f[k]||[],q=(bd.q||'').toLowerCase(),qe=(bd.qe||'').toLowerCase(),O=bfo(),
 cnt=g=>g.ids.reduce((a,i)=>a+(bd.m[i]||0)+(bd.l[i]||0),0),R=[];
 BG.forEach((g,gi)=>{const c=C[g.ids[0]],o=c.t=='Life'?bd.l:bd.m,m={};
 g.ids.forEach(i=>{RO.forEach(r=>{const k=ME.cards[i+'|'+r]||0;if(k>0){const e=m[r]=m[r]||{ids:[],tot:0,n:0};e.ids.push(i);e.tot+=k}});RO.forEach(r=>{const v=bd.vr[i+'|'+r]||0;if(v){const e=m[r]=m[r]||{ids:[],tot:0,n:0};if(!e.ids.includes(i))e.ids.push(i);e.n+=v}})});
 if(bd.t&&c.t!=bd.t)return;
+if(bd.o1&&!g.ids.some(i=>C[i].o=='Only #1'))return;
 if(fa('col').length&&!fa('col').includes(c.col||'ไม่มีสี'))return;
 if(fa('set').length&&!g.ids.some(i=>fa('set').includes(i.split('-')[0])))return;
 if(fa('cost').length&&!(c.t!='Magic'&&c.c!=null&&fa('cost').includes(String(c.c))))return;
@@ -607,7 +645,7 @@ if(qe&&!g.ids.some(i=>(C[i].e||'').toLowerCase().includes(qe)))return;
 Object.keys(m).forEach(r=>{const e=m[r];if(bd.tab=='own'?!e.tot:!e.n)return;if(fa('rar').length&&!fa('rar').includes(r))return;R.push({g,gi,c,r,ids:e.ids,tot:e.tot,n:e.n})})});
 const bs=(a,b)=>a.g.ids[0]<b.g.ids[0]?-1:a.g.ids[0]>b.g.ids[0]?1:RO.indexOf(b.r)-RO.indexOf(a.r);R.sort(bd.so=='cost'?(a,b)=>(a.c.c??99)-(b.c.c??99)||a.c.n.localeCompare(b.c.n,'th')||bs(a,b):bd.so=='name'?(a,b)=>a.c.n.localeCompare(b.c.n,'th')||bs(a,b):bs);
 const L=R.slice(0,bd.lim),mn=sm(bd.m),ln=sm(bd.l),okk=mn==50&&ln==5&&!lifeDup(),
-nf=Object.values(f).reduce((a,x)=>a+x.length,0)+(q?1:0)+(qe?1:0)+(bd.t?1:0),
+nf=Object.values(f).reduce((a,x)=>a+x.length,0)+(q?1:0)+(qe?1:0)+(bd.t?1:0)+(bd.o1?1:0),
 tile=({g,gi,c,r,ids,tot,n})=>{const rid=ids[0],a=art(rid,r);
 return`<div class="dc"><div class="di${a?'':' nt'}" onclick="zoom('${rid}',0,'${r}')" style="${a}">${a?'':esc(c.n)}<span class="rb r${r}">${r}</span></div><b>${esc(c.n)}</b><small>${c.t}${c.t!='Magic'&&c.c!=null?' · C'+c.c:''}${c.p!=null?' · P'+c.p:''}</small><div class="ct"><button onclick="bgc(${gi},'${r}',-1)">−</button><span>${n}<small> / ${tot}</small></span><button onclick="bgc(${gi},'${r}',1)">+</button></div></div>`},
 row=(lab,k,o)=>`<div class="fr"><span class="lab">${lab}</span>${o.map(([x,t])=>`<button class="chip${fa(k).includes(String(x))?' on':''}" onclick="bflt('${k}','${x}')">${t??x}</button>`).join('')}</div>`,
@@ -615,11 +653,12 @@ panel=bd.fo?`<div class="fp">${row('สีการ์ด','col',['แดง','�
 $('md').innerHTML=`<div class="in wide"><div class="mb"><span>Main ${mn}/50</span><span>LIFE ${ln}/5</span><span class="sp"></span><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button></div><div class="bh"><div class="bh1"><b>จัดเด็ค</b><div class="bars"><div class="bar2"><i class="${mn==50?'ok':''}" style="width:${Math.min(100,mn*2)}%"></i><span>Main ${mn}/50</span></div><div class="bar2"><i class="${ln==5?'ok':''}" style="width:${Math.min(100,ln*20)}%"></i><span>LIFE ${ln}/5</span></div></div><button class="xb" onclick="md.hidden=true">✕</button></div>
 <div class="bh2"><input class="pill" value="${esc(bd.n)}" placeholder="ชื่อเด็ค" maxlength="20" onchange="bd.n=this.value;bdr()"><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button>${ME.decks[(bd.n||'').trim()]?'<button class="dng xb" onclick="delDeck()">🗑</button>':''}</div>
 ${okk?'':`<div class="mis">⚠ บันทึกได้เมื่อครบตามกฎ: ${[mn!=50?'Main ขาด/เกิน '+Math.abs(50-mn)+' ใบ':'',ln!=5?'LIFE ต้องมี 5 ใบ':'',lifeDup()?'LIFE ห้ามชื่อซ้ำ':''].filter(Boolean).join(' · ')}</div>`}
+${(()=>{const bv=bdViol().filter(v=>v.k=='ban');return bv.length?`<div class="mis bn">⛔ ติดแบนลิสต์ — ใช้เล่นห้องที่เปิดโหมดแบนลิสต์ไม่ได้: ${bv.map(v=>esc(v.msg)).join(' · ')}</div>`:''})()}
 <div class="chips"><span class="lab">โหลดเด็ค:</span>${Object.keys(ME.decks).map(n=>`<button class="chip${n==bd.n?' on':''}" data-d="${esc(n)}" onclick="ldd(this.dataset.d)">${esc(n)}</button>`).join('')||'<small>ยังไม่มีเด็คที่บันทึก</small>'}</div>
 <div class="chips"><span class="lab">สตาร์ทเตอร์:</span>${[...new Set(['SD01','SD02','SD03',...(ME.bought||[])])].sort(stCmp).filter(s=>ST[s]).map(s=>`<button class="chip" onclick="ldst('${s}')">${esc(ST[s].name)}</button>`).join('')}</div>
 <div class="srch"><span>🔍</span><input placeholder="ชื่อ/รหัสการ์ด" value="${esc(bd.q||'')}" onchange="bd.q=this.value;bd.lim=60;bdr()"></div>
 <div class="srch"><span>📜</span><input placeholder="ค้นหาจากข้อความสกิล" value="${esc(bd.qe||'')}" onchange="bd.qe=this.value;bd.lim=60;bdr()"></div>
-<div class="chips">${[['','ทั้งหมด'],['Avatar','Avatar'],['Magic','Magic'],['Construct','Construct'],['Life','LIFE']].map(([a,b])=>`<button class="chip${bd.t==a?' on':''}" onclick="bd.t='${a}';bd.lim=60;bdr()">${b}</button>`).join('')}<button class="chip${bd.fo?' on':''}" onclick="bd.fo=!bd.fo;bdr()">🎛 ตัวกรอง${nf?' ('+nf+')':''}</button>${nf?'<button class="chip" onclick="bfx()">ล้าง</button>':''}</div>${panel}
+<div class="chips">${[['','ทั้งหมด'],['Avatar','Avatar'],['Magic','Magic'],['Construct','Construct'],['Life','LIFE']].map(([a,b])=>`<button class="chip${bd.t==a?' on':''}" onclick="bd.t='${a}';bd.lim=60;bdr()">${b}</button>`).join('')}<button class="chip${bd.o1?' on':''}" onclick="bd.o1=!bd.o1;bd.lim=60;bdr()">⭐ Only #1</button><button class="chip${bd.fo?' on':''}" onclick="bd.fo=!bd.fo;bdr()">🎛 ตัวกรอง${nf?' ('+nf+')':''}</button>${nf?'<button class="chip" onclick="bfx()">ล้าง</button>':''}</div>${panel}
 <div class="seg"><button class="${bd.tab=='own'?'on':''}" onclick="bd.tab='own';bd.lim=60;bdr()">การ์ดที่มี</button><button class="${bd.tab=='deck'?'on':''}" onclick="bd.tab='deck';bd.lim=60;bdr()">ในเด็ค</button></div><small style="opacity:.7">พบ ${R.length} ใบ · แตะรูป = ดูรายละเอียด</small></div><div class="dg">${L.map(tile).join('')||'<p>ไม่พบการ์ด</p>'}</div>${R.length>L.length?`<p style="text-align:center"><button onclick="bd.lim+=60;bdr()">แสดงเพิ่ม</button></p>`:''}</div>`;$('md').scrollTop=sc}
 function botPg(){md.className='';$('md').dataset.pg='bot';const L=[[1,'ง่าย','เล่นตามกฎ ตัดสินใจสุ่มบ้าง',30],[2,'กลาง','ประเมินสนาม เลือกเป้าโจมตีที่คุ้ม ใช้ Magic/สกิล',50],[3,'ยาก','คิดแลกการ์ดที่คุ้ม มองหาจังหวะปิดเกม',80]];
 $('md').innerHTML=`<div class="in pg"><div class="ph2"><button class="xb" onclick="md.dataset.pg='';md.hidden=true">←</button><h2>เล่นกับบอท</h2></div><div class="cardx"><h3>🤖 เลือกระดับบอท</h3><p>บอทใช้เด็คสำเร็จรูปแบบสุ่มทุกเกม · ชนะได้ Gem ตามระดับ · แพ้ได้ 💎${10}</p>${L.map(([v,n,t,g])=>`<button class="lvb" style="--c:${['#4ade80','#fbbf24','#f87171'][v-1]}" onclick="mkbot(${v})"><span class="lvd">${'●'.repeat(v)}${'○'.repeat(3-v)}</span><span class="lvt"><b>${n}</b><small>${t}</small></span><span class="lvg">+💎${g}</span></button>`).join('')}</div></div>`;$('md').hidden=false}
