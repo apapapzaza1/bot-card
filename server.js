@@ -2429,7 +2429,7 @@ const isCol = (x, col) => colOf(x) === col || (x.id === 'BT09-006' && col === '�
 const isKnight = c => isAv(c) && B[c.id].n.includes('อัศวินโต๊ะกลม');
 Object.assign(SUM, {
   'BT05-003': (r, i, x) => {   // เบดิเวียร์
-    const p = r.p[i], sw = p.deck.find(c => !c.tk && B[c.id].t === 'Magic' && B[c.id].n.trim() === 'ดาบศักดิ์สิทธิ์');
+    const p = r.p[i], sw = p.deck.find(c => !c.tk && B[c.id].t === 'Magic' && B[c.id].n.trim().startsWith('ดาบศักดิ์สิทธิ์'));   // ชื่อจริงมีต่อท้าย เช่น ดาบศักดิ์สิทธิ์ เอกซ์คาลิเบอร์
     if (sw) { p.deck.splice(p.deck.indexOf(sw), 1); p.hell.push(sw); vfx(x.u, 'aura', '🗡 ส่ง ดาบศักดิ์สิทธิ์ ลงนรก', '#f97316'); log(r, '✨ เบดิเวียร์: ส่ง ดาบศักดิ์สิทธิ์ จาก Deck ลงนรก'); } else log(r, 'จุติ เบดิเวียร์: ไม่พบ ดาบศักดิ์สิทธิ์ ใน Deck');
     shuf(p.deck); addTp(x, 1);
     const K = p.hell.filter(isKnight).map(c => c.u); vfx(x.u, 'aura', 'POWER +1', '#f97316');
