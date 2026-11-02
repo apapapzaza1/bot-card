@@ -505,6 +505,14 @@ body.ing #bg::before{animation:none}
 #hand{padding-right:8px}
 #bar{position:fixed;right:10px;bottom:10px;width:200px;height:0;margin:0;padding:0;z-index:30;justify-self:auto;align-self:auto}
 }
+
+/* ===== v7: symmetric columns, hand centered on screen, buttons flush in bottom-right corner ===== */
+@media(min-width:900px){
+#game{grid-template-columns:250px minmax(420px,1fr) 250px}
+#mid>.oh{justify-content:center}
+#hand{grid-column:1/4;justify-self:center;width:min(100%,720px);padding:14px 8px 0}
+#bar{right:max(6px,env(safe-area-inset-right));bottom:max(6px,env(safe-area-inset-bottom))}
+}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
