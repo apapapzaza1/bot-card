@@ -478,6 +478,22 @@ body.ing #bg::before{animation:none}
 #bar .hint{pointer-events:none;font-size:.78em;text-align:center;opacity:.85}
 #bar button,#bar .endb,#bar .srb{min-height:42px;padding:6px 10px;font-size:1em;white-space:normal;line-height:1.2}
 }
+
+/* ===== v5: bigger board on short wide screens (peeking hand, merged opponent row, slight overlap) ===== */
+@media(min-width:900px){
+#game{grid-template-rows:auto minmax(0,1fr) auto}
+#mid{margin-bottom:-10px}
+#hand{--w:clamp(58px,11.5dvh,96px);height:calc(var(--w)*.72 + 14px);min-height:0;padding:14px 214px 0 8px;align-items:flex-start;position:relative;z-index:5;pointer-events:none;transition:transform .18s ease}
+#hand .c{pointer-events:auto}
+#hand:hover,#hand:has(.c.sel),#hand:has(.c.pay),#hand:has(.c.can){transform:translateY(calc(var(--w)*-.55))}
+#bar{height:0;padding:0;margin-bottom:8px;display:flex;flex-direction:column-reverse;align-items:stretch;justify-content:flex-start;align-self:end}
+#bar>.bm,#bar>.br2{flex:none}
+#mid>.oh{align-self:center;width:var(--bw);height:22px;margin-bottom:-22px;justify-content:flex-start;pointer-events:none;z-index:2}
+#mid>.oh .ohn{display:none}
+#mid>.oh .ohc{padding-left:14px}
+#mid>.pi{height:22px;line-height:22px;align-self:center;width:var(--bw);text-align:right;white-space:nowrap;overflow:hidden}
+#mid>.pi a{pointer-events:auto}
+}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
