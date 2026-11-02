@@ -462,6 +462,22 @@ body.ing #bg::before{animation:none}
 .csw[data-cback=sweeney],.sd[data-cback=sweeney] .c.bk,.oh[data-cback=sweeney] .c.bk,body[data-cback=sweeney] #pkr .c.bk{background:url(/sl_sweeney.webp) center/100% 100% no-repeat,#111;filter:none}
 .csw[data-cback=idol],.sd[data-cback=idol] .c.bk,.oh[data-cback=idol] .c.bk,body[data-cback=idol] #pkr .c.bk{background:url(/sl_idol.webp) center/100% 100% no-repeat,#111;filter:none}
 .csw[data-cback=bank],.sd[data-cback=bank] .c.bk,.oh[data-cback=bank] .c.bk,body[data-cback=bank] #pkr .c.bk{background:url(/sl_bank.webp) center/100% 100% no-repeat,#111;filter:none}
+
+/* ===== v4: stable board size on short wide screens (Chromebook/notebook) ===== */
+@media(min-width:900px){
+#game{grid-template-rows:auto minmax(0,1fr) auto}
+#tb{grid-row:1}#mid{grid-row:2}
+#hand,#bar{grid-row:3;grid-column:2}
+#lg,#dt{grid-row:2/4}
+#hand{--w:clamp(58px,11.5dvh,96px);padding:22px 214px 2px 8px;min-height:calc(var(--w)*1.4 + 26px);align-self:end;z-index:1}
+#bar{align-self:end;justify-self:end;width:200px;z-index:3;padding:0 8px 6px 0;display:block;pointer-events:none}
+#bar .bm,#bar .br2{pointer-events:none}
+#bar button{pointer-events:auto}
+#bar .bm{display:flex;flex-direction:column-reverse;align-items:stretch;gap:6px;flex-wrap:nowrap}
+#bar .br2{width:auto;flex-direction:column-reverse;margin-top:6px}
+#bar .hint{pointer-events:none;font-size:.78em;text-align:center;opacity:.85}
+#bar button,#bar .endb,#bar .srb{min-height:42px;padding:6px 10px;font-size:1em;white-space:normal;line-height:1.2}
+}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
