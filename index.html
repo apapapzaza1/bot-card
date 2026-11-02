@@ -494,6 +494,17 @@ body.ing #bg::before{animation:none}
 #mid>.pi{height:22px;line-height:22px;align-self:center;width:var(--bw);text-align:right;white-space:nowrap;overflow:hidden}
 #mid>.pi a{pointer-events:auto}
 }
+
+/* ===== v6: board reaches the hand, player info on the sides, buttons fixed bottom-right ===== */
+@media(min-width:900px){
+#mid{position:relative;margin-bottom:-18px}
+#mid>.oh{margin-bottom:0;height:22px}
+#mid>.pi{position:absolute;height:auto;line-height:1.35;width:min(190px,calc(50% - var(--bw)/2 - 14px));white-space:normal;overflow:visible;font-size:.9em;text-align:left;z-index:2;word-break:break-word}
+#mid>.oh+.pi{left:6px;right:auto;bottom:auto;top:28px;text-align:right}
+#mid>.pi:not(.oh+.pi){left:auto;right:6px;top:auto;bottom:26px;text-align:left}
+#hand{padding-right:8px}
+#bar{position:fixed;right:10px;bottom:10px;width:200px;height:0;margin:0;padding:0;z-index:30;justify-self:auto;align-self:auto}
+}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -879,7 +890,7 @@ const ids=nw.flatMap(f=>f.ids),e=$('scw');
 e.innerHTML=`<div class="sch"><b>🔎 สอดแนม ${ids.length} ใบ</b><button>ปิด</button></div><div class="scrw">${ids.map(id=>{const ar=art(id);return`<div class="c im" data-zid="${id}" style="--w:60px;${ar}">${ar?'':esc((C[id]||{}).n||'')}</div>`}).join('')}</div>`;
 e.querySelector('button').onclick=()=>e.hidden=true;e.querySelectorAll('[data-zid]').forEach(n=>n.onclick=ev=>{ev.stopPropagation();zoom(n.dataset.zid)});e.hidden=false}
 function playmat(){$('zm').innerHTML='<img src="/playmat.webp" style="max-width:98vw;max-height:96vh">';$('zm').hidden=false}
-function fitBoard(){const m=$('mid');if(!m||!m.clientWidth||!m.clientHeight)return;const cs=getComputedStyle(m),px=k=>parseFloat(cs[k])||0,ch=[...m.children];let u=px('paddingTop')+px('paddingBottom')+px('rowGap')*Math.max(0,ch.length-1);ch.forEach(e=>{if(!e.classList.contains('sd'))u+=e.offsetHeight});const w=m.clientWidth-px('paddingLeft')-px('paddingRight'),h=(m.clientHeight-u)/2;m.style.setProperty('--bw',Math.floor(Math.max(150,Math.min(w,h*1.8,1100)))+'px')}
+function fitBoard(){const m=$('mid');if(!m||!m.clientWidth||!m.clientHeight)return;const cs=getComputedStyle(m),px=k=>parseFloat(cs[k])||0,ch=[...m.children].filter(e=>getComputedStyle(e).position!='absolute');let u=px('paddingTop')+px('paddingBottom')+px('rowGap')*Math.max(0,ch.length-1);ch.forEach(e=>{if(!e.classList.contains('sd'))u+=e.offsetHeight});const w=m.clientWidth-px('paddingLeft')-px('paddingRight'),h=(m.clientHeight-u)/2;m.style.setProperty('--bw',Math.floor(Math.max(150,Math.min(w,h*1.8,1100)))+'px')}
 function fitZones(){fitBoard();fitZ0();alignMg()}
 function fitZ0(){document.querySelectorAll('#mid .sd .z-av').forEach(z=>{const k=[...z.children].filter(x=>x.classList.contains('c'));k.forEach(c=>c.style.marginLeft='');if(k.length<2)return;const w=k[0].offsetWidth,gap=parseFloat(getComputedStyle(z).columnGap)||0,need=k.length*w+(k.length-1)*gap,av=z.clientWidth-2;if(need>av){const ov=(need-av)/(k.length-1);k.slice(1).forEach(c=>c.style.marginLeft=(-ov)+'px')}})}
 addEventListener('resize',()=>{handFit();fitZones()});try{window.ResizeObserver&&new ResizeObserver(()=>fitZones()).observe($('mid'));window.visualViewport&&visualViewport.addEventListener('resize',()=>fitZones())}catch(e){}addEventListener('orientationchange',()=>setTimeout(()=>{handFit();fitZones()},200));document.addEventListener('gesturestart',e=>e.preventDefault());
