@@ -981,7 +981,7 @@ const kill = (r, i, u, ns) => {
     const k10 = (f0.c.wr || []).findIndex(w => w.id === 'BT02-010');
     if (k10 >= 0 && nmHas(f0.c, 'ไอดอล')) { r.p[f0.i].hell.push(f0.c.wr.splice(k10, 1)[0]); log(r, '🛡 ทำลาย โอตะ รุ่นก่อตั้ง แทน ' + nmOf(f0.c)); return; }
     if (f0.c.ward) { delete f0.c.ward; log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกทำลาย (คุณพยาบาล)'); return; }
-    { const w14 = r.p[f0.i].mg.find(m => m.id === 'KD04-014' && m.at === f0.c.u && m.u14 !== r.g.n); if (w14 && !nf0 && !r.g.inB && r.g.turn !== f0.i) { w14.u14 = r.g.n; const dv = 1 + Math.floor(Math.random() * 6); log(r, '🎲 ไบโพล่า ชิลด์ ทอย ' + dv); if (dv % 2 === 0) { vfx(f0.c.u, 'burst', 'ไม่ถูกนำออกจากสนาม (ทอย ' + dv + ')', '#38bdf8'); log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนาม'); return; } } }
+    { const ws14 = r.p[f0.i].mg.filter(m => m.id === 'KD04-014' && m.at === f0.c.u && m.u14 !== r.g.n); if (ws14.length && !nf0 && !r.g.inB && r.g.turn !== f0.i) { ws14.forEach(w => { w.u14 = r.g.n; }); const ds = ws14.map(() => 1 + Math.floor(Math.random() * 6)), ev14 = ds.filter(d => d % 2 === 0).length; fx({ k: 'dice', i: f0.i, v: ds[0], vs: ds }); log(r, '🎲 ไบโพล่า ชิลด์ ' + ds.length + ' ใบ ทอยลูกเต๋า ' + ds.length + ' ลูกพร้อมกัน: ' + ds.join(', ') + (ev14 ? ' (มีเลขคู่ ' + ev14 + ' ลูก)' : ' (ไม่มีเลขคู่)')); if (ev14) { vfx(f0.c.u, 'burst', 'ไม่ถูกนำออกจากสนาม (ทอยได้คู่)', '#38bdf8'); log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนาม'); return; } } }
     if (f0.c.id === 'KD01-005' && !f0.c.half && !nf0) { f0.c.half = 1; const dv = Math.floor((B[f0.c.id].p || 0) / 2); f0.c.pw = (f0.c.pw || 0) - dv; fx({ k: 'say', id: f0.c.id, t: 'POWER ตั้งต้นลดครึ่ง แทนการถูกทำลาย' }); fx({ k: 'buff', u: f0.c.u, v: -dv }); log(r, '🛡 ' + nmOf(f0.c) + ': POWER ตั้งต้น -' + dv + ' แทนการถูกทำลาย'); return; }
     const k = (f0.c.wr || []).findIndex(w => w.id === 'SD04-002');
     if (k >= 0) { r.p[f0.i].hell.push(f0.c.wr.splice(k, 1)[0]); log(r, '🛡 ทำลาย จ่ามะนาว แทน ' + nmOf(f0.c)); return; }
@@ -1085,7 +1085,7 @@ function act(r, i, m) {
     case 'cast': {
       const f = own(m.u), c = B[f.c.id]; if (c.t !== 'Magic') E('ไม่ใช่ Magic');
       if (f.c.stl) E('การ์ดที่ขโมยมา ใช้เป็น Cost อัญเชิญ Avatar ได้เท่านั้น');
-      const def0 = MG[c.id] || (c.st === 'Modification' ? { mod: 1 } : {}), def = (c.st === 'Modification' && !Object.keys(def0).length) ? { mod: 1 } : def0;   // Modification ที่ลงทะเบียนเป็น {} (เช่น ตีแม่/ตีพ่อ BT01) ต้องสวมใส่ Avatar ได้
+      const def0 = MG[c.id] || (c.st === 'Modification' ? { mod: 1 } : {}), def = (c.st === 'Modification' && !Object.keys(def0).filter(k => k !== '__w').length) ? { mod: 1 } : def0;   // Modification ที่ลงทะเบียนเป็น {} (เช่น ตีแม่/ตีพ่อ BT01) ต้องสวมใส่ Avatar ได้
       if (!(f.z === 'hand' || (f.z === 'hell' && f.c.mh === g.n && c.st === 'Modification' && !g.used[i].Modification && mine && g.phase === 'main'))) E('ใช้จากโซนนี้ไม่ได้');
       if (c.st === 'React' || r049(r, i, c)) { if (!reactOK(r, i, c, def)) E('ใช้ React ตอนนี้ไม่ได้'); } else if (!mine && c.s === 'ฤษี' && ['Normal', 'Modification', 'Land'].includes(c.st) && hasRishi(r, i) && g.phase === 'main' && !g.ask && !g.pend) { /* BT05-011 ฤๅษี: ใช้ได้ในเทิร์นฝ่ายตรงข้าม */ } else mainOnly();
       const m2 = (g.mod2 && g.mod2.who === i && g.mod2.n === g.n && c.st === 'Modification') ? g.mod2 : null;
@@ -1670,7 +1670,7 @@ function mod05(r, x, f) {
   if (x.id === 'BT05-002' && !noFx(r, x)) v += r.p.flatMap(q => q.av).filter(a => a.u !== x.u && B[a.id].n.includes('แมลงปอ')).length;   // BT05-002
   if ((x.wr || []).some(w => w.id === 'BT05-007')) v += 1;   // BT05-007 ผู้สวมใส่ +1
   if (x.id === 'BT05-006' && x.tired && !noFx(r, x)) v += r.p[f.i].av.filter(a => a.u !== x.u && isPet(a)).length;   // BT05-006 ตราบเท่าที่นอน +1 ต่อ หมา/แมว {สัตว์} ใบอื่น
-  if (hasEq(r, x, 'BT03-051')) v += nmOf(x).includes('หุ่นนักรบผู้กล้า') ? 3 : 1;
+  { const nS = r.p.reduce((n, q) => n + q.mg.filter(m => m.at === x.u && m.id === 'BT03-051').length, 0); if (nS) v += nS * (nmOf(x).includes('หุ่นนักรบผู้กล้า') ? 3 : 1); }   // อีโบล่า ซอร์ด: สวมซ้ำหลายใบ POWER บวกซ้อนกัน
   if (hasEq(r, x, 'BT03-052')) v -= 2;
   if (!x.tk && nmOf(x).includes('แดรกคูลา') && landIs(r, 'BT03-060')) v += 1;
   return v;

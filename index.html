@@ -961,7 +961,7 @@ else if(f.k=='mill'){const w=f.i==S.i?'0':'1',a=rc(document.querySelector('[data
 const m=$('mid');m.classList.remove('shk');void m.offsetWidth;m.classList.add('shk');
 fxEl('<div class="fxbn">🕳 ธรณีสูบ! '+f.ids.length+' ใบ</div>',innerWidth/2,innerHeight*.4,1600);fxEl('<div class="fxhole"></div>',b.x,b.y,1600);
 f.ids.forEach((id,k)=>{const ar=art(id);setTimeout(()=>fxEl(`<div class="c im fxfall" style="--w:54px;--dx:${b.x-a.x}px;--dy:${b.y-a.y}px;${ar}">${ar?'':esc((C[id]||{}).n||'')}</div>`,a.x,a.y,1100),k*160)});sfx('hit')}
-else if(f.k=='dice'){const n=f.v,fc=['','⚀','⚁','⚂','⚃','⚄','⚅'];fxEl(`<div class="fxdice"><div class="dd">${fc[n]}</div><i>🎲 ${n} · ${n%2?'ออกคี่':'ออกคู่'}</i></div>`,innerWidth/2,innerHeight*.4,2600);sfx('play')}
+else if(f.k=='dice'){const n=f.v,fc=['','⚀','⚁','⚂','⚃','⚄','⚅'],vs=f.vs&&f.vs.length>1?f.vs:null;fxEl(vs?`<div class="fxdice"><div class="dd" style="letter-spacing:.15em">${vs.map(x=>fc[x]).join(' ')}</div><i>🎲 ${vs.join(' · ')} · ${vs.some(x=>x%2==0)?'มีเลขคู่ ✔':'ไม่มีเลขคู่'}</i></div>`:`<div class="fxdice"><div class="dd">${fc[n]}</div><i>🎲 ${n} · ${n%2?'ออกคี่':'ออกคู่'}</i></div>`,innerWidth/2,innerHeight*.4,2600);sfx('play')}
 else if(f.k=='coin'){fxEl(`<div class="fxcoin">${f.h?'หัว':'ก้อย'}</div>`,innerWidth/2,innerHeight*.4,1900);sfx('play')}
 else if(f.k=='rps'){const E={r:'✊',p:'✋',s:'✌'},m=f.i==S.i;fxEl(`<div class="fxrps"><span>${E[m?f.a:f.b]}</span><i>VS</i><span>${E[m?f.b:f.a]}</span></div>`,innerWidth/2,innerHeight*.4,2200);sfx('hit')}
 else if(f.k=='vfx'){const p=pos(f.u)||{x:innerWidth/2,y:innerHeight*.4},e=cel(f.u),c=f.c||'#fde047';
