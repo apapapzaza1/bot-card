@@ -1116,7 +1116,7 @@ const view = (r, i) => {
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
 const bc0 = r => r.p.forEach((p, i) => {
-  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', code: r.code, bot: r.bot ? r.bot.lv : 0, owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck })) }));
+  if (p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(r.g ? { t: 's', s: view(r, i) } : { t: 'lobby', code: r.code, bot: r.bot ? r.bot.lv : 0, owner: r.p[0] && r.p[0].name, exp: r.exp ? Math.max(0, r.exp - Date.now()) : 0, clock: r.cfg.clock, react: r.cfg.react, ban: r.cfg.ban, players: r.p.map(x => ({ name: x.name, ready: !!x.deck, pic: x.pic || null, lv: x.lv || 0 })) }));
 });
 const log = (r, s) => r.g.log.push(s);
 const ev = (r, id, ar) => { r.g.ev = { n: (r.g.ev ? r.g.ev.n : 0) + 1, id, ar: ar || null }; r.g.evw = { n: r.g.ev.n, ok: r.p.map(p => !!p.bot), t0: Date.now() }; };   // ป๊อปอัปรอทั้งสองฝ่ายกดข้าม (บอทกดอัตโนมัติ)
@@ -1366,7 +1366,7 @@ function act(r, i, m) {
       if (tk === 'av') { const t32 = op.av.find(x => x.u === m.tg); if (t32 && t32.id === 'BT05-032' && !noFx(r, t32)) { addTp(t32, -3); vfx(t32.u, 'aura', 'POWER -3', '#ef4444'); log(r, '🛡 เจ๊หมวย: ถูกเล็งเป้าหมาย POWER -3'); } }
       if (a.c.id === 'BT05-017' && !noFx(r, a.c) && me.hell.some(c => !c.tk && B[c.id].n === 'ของขวัญที่เมียทิ้งไว้ให้')) g.q.push(() => { if (!op.hand.length) return log(r, 'เจค: ฝ่ายตรงข้ามไม่มีการ์ดบนมือ'); const c = op.hand.splice(Math.floor(Math.random() * op.hand.length), 1)[0]; op.hell.push(c); vfx(a.c.u, 'burst', 'สุ่มทิ้ง!', '#38bdf8'); log(r, '🎯 เจค นักฆ่ามือเก๋า: สุ่มทิ้งการ์ดบนมือ ' + op.name + ' (' + B[c.id].n + ')'); });   // BT05-017
       g.q.push(() => bt8Redir(r, i, a.c, m.tg, tk, (ntg, ntk) => { m.tg = ntg; tk = ntk; }));
-      fx({ k: 'atkp', i }); g.q.push(() => fxAtk(r, i, a.c, m.tg, tk));
+      g.q.push(() => fx({ k: 'atkp', i, a: a.c.u, tg: m.tg, tk })); g.q.push(() => fxAtk(r, i, a.c, m.tg, tk));
       g.q.push(() => a.c.id === 'BT02-023' && !noFx(r, a.c) ? chooseTg(r, i, a.c, { who: 1 - i, k: 'atk', ai: i, u: m.u }) : shieldStep(r, { who: 1 - i, k: 'atk', ai: i, u: m.u, tg: m.tg, tk }));
       break;
     }
@@ -1712,7 +1712,7 @@ wss.on('connection', ws => {
         const mkP = name => ({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] });
         r = rooms[code] = { p: [mkP(ws.user), mkP('บอท (' + BOT_LV[lv].n + ')')], g: null, code, exp: Date.now() + 18e5, cfg: { clock: 0, react: 0, ban: true }, bot: { lv, tried: new Set(), at: 0, fail: 0, tn: -1 } };
         i = 0; const bp = r.p[1], bd = botDeck(); bp.bot = 1; bp.eq = {}; bp.deck = shuf(bd.main.map(inst)); bp.life = shuf(bd.life.map(id => ({ ...inst(id), up: 0 })));
-        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; }
+        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; r.p[0].pic = (ud && ud.pic) || null; r.p[0].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; }
         bc(r); return;
       }
       if (m.t === 'join') {
@@ -3880,7 +3880,7 @@ function bt8K651b(r, i, x) { const p = r.p[i], O = p.hell.filter(c => !isMag8(c)
 function bt8K652(r, i, x) { const p = r.p[i];
   ask(r, i, { text: 'โคกอีสานนูน: เลือก "อีสานสลิงเกอร์" ของเรา 1 ใบ', opts: bt8Sl(r, i).map(a => a.u), cancel: true, cb: us => {
     ask(r, i, { text: 'เลือก Avatar ฝ่ายตรงข้าม 1 ใบ ที่จะต่อสู้', opts: r.p[1 - i].av.map(a => a.u), cancel: true, cb: u2 => { const a = find(r, us[0]), t = find(r, u2[0]); if (!a || !t) return; vfx(a.c.u, 'burst', '⚔ ต่อสู้!', '#a855f7'); log(r, '⚔ โคกอีสานนูน: ' + nmOf(a.c) + ' ต่อสู้กับ ' + nmOf(t.c) + ' (ไม่เปลี่ยนเป็นสภาพนอน / ห้ามใช้ React Magic)');
-      const tired = a.c.tired; r.g.q.push(() => { fx({ k: 'atkp', i }); try { resolveAtk(r, { who: 1 - i, k: 'atk', ai: i, u: a.c.u, tg: t.c.u, tk: 'av' }); } finally { const q = find(r, a.c.u); if (q && q.z === 'av') q.c.tired = tired; } }); } }); } });
+      const tired = a.c.tired; r.g.q.push(() => { fx({ k: 'atkp', i, a: a.c.u, tg: t.c.u, tk: 'av' }); try { resolveAtk(r, { who: 1 - i, k: 'atk', ai: i, u: a.c.u, tg: t.c.u, tk: 'av' }); } finally { const q = find(r, a.c.u); if (q && q.z === 'av') q.c.tired = tired; } }); } }); } });
 }
 Object.assign(SUM, {
   'BT08-029': (r, i, x) => {   // เนียจัง — จุติ ถ้า LIFE หงาย ≥3 หรือมี มยุราซัง: อัญเชิญ ทัตดนัยซัง จากมือ/Deck
