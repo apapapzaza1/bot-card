@@ -169,6 +169,31 @@ body[data-bg=line] #top button{background:#fff;color:#111;border:2px solid #111}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;align-items:center}.chip{flex:none;border-radius:999px;margin:0;padding:6px 14px;white-space:nowrap}.chip.on{background:#3b82f6;color:#fff;border-color:#3b82f6}.chip .bs{height:30px}.chips .lab{flex:none;opacity:.7;font-size:.85em}
 .cta{margin:14px 0;text-align:center}.cta small{display:block;margin-top:6px;opacity:.7}.wait{padding:14px;border-radius:14px;background:#8883}
 details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck input{width:auto}
+.dst{display:inline-block;width:.95em;height:.95em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f1dcff,#a855f7 55%,#6d28d9);box-shadow:0 0 6px #a855f7;vertical-align:-2px}
+.dstb{color:#c58bff}.dstb b{color:#d9b3ff}
+.crb{background:linear-gradient(135deg,#8b3dff,#c026d3);color:#fff;border:0;border-radius:999px;padding:6px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.crb:hover{filter:brightness(1.12)}
+#md .cr{max-width:760px;margin:0 auto;padding:10px 12px 20px}
+#md .cr .crh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#md .cr .crh b{flex:1}
+#md .cr .crt{display:flex;gap:6px;margin-bottom:8px}
+#md .cr .crt button{flex:1;border:1px solid #a855f7;background:transparent;color:#d9b3ff;border-radius:8px;padding:7px;font-weight:700;cursor:pointer}
+#md .cr .crt button.on{background:#7c3aed;color:#fff}
+#md .cr input.crs{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #a855f755;background:rgba(0,0,0,.25);color:inherit;margin-bottom:6px}
+#md .cr .crf{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+#md .cr .crf button{border:1px solid #888;background:transparent;color:inherit;border-radius:999px;padding:3px 10px;cursor:pointer;font-size:.85em}
+#md .cr .crf button.on{background:#7c3aed;border-color:#a855f7;color:#fff}
+#md .cr .crr{display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #ffffff18}
+#md .cr .crr .cth{flex:none;width:46px;height:64px;border-radius:5px;background:#222 center top/cover no-repeat;cursor:pointer}
+#md .cr .crr .ci{flex:1;min-width:0;line-height:1.3}
+#md .cr .crr .ci small{display:block;opacity:.75}
+#md .cr .crr .ca{display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:92px}
+#md .cr .crr .ca input{width:100%;box-sizing:border-box;padding:4px;border-radius:6px;border:1px solid #a855f755;background:rgba(0,0,0,.3);color:inherit;text-align:center}
+#md .cr .crr .ca button{border:0;border-radius:6px;padding:5px 8px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer}
+#md .cr .crr .ca button.al{background:#be185d}
+#md .cr .crr .ca button:disabled{opacity:.4;cursor:not-allowed}
+#md .cr .rb{display:inline-block;padding:0 6px;border-radius:5px;font-weight:700;font-size:.8em;color:#111}
+#md .cr .nt{opacity:.7;font-size:.85em;margin:6px 0}
 #md.dkb{padding:0}#md.dkb .in.wide{border-radius:0;padding:0 12px 16px;max-width:none;background:var(--bg)}
 .bh{position:sticky;top:0;z-index:5;margin:0 -12px 10px;padding:10px 12px 8px;background:var(--bg);border-bottom:2px solid #8886;box-shadow:0 6px 14px #0004;gap:8px}
 .bh1{display:flex;align-items:center;gap:10px}.bh1>b{font-size:1.15em}.bars{flex:1;display:flex;flex-direction:column;gap:4px}.bar2{position:relative;height:16px;background:#8885;border-radius:8px;overflow:hidden}.bar2 i{position:absolute;inset:0 auto 0 0;background:#f59e0b;border-radius:8px;transition:width .2s}.bar2 i.ok{background:#22c55e}.bar2 span{position:relative;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;padding-left:8px;line-height:16px}
@@ -572,9 +597,9 @@ let SENT=0;const send=m=>{if(ws&&ws.readyState==1){SENT++;ws.send(JSON.stringify
 function go(){if(!rm.value)return alert('ใส่รหัสห้อง');music();wake();cur=rm.value;send({t:'join',room:rm.value})}
 function mkroom(){const c=Math.random().toString(36).slice(2,6).toUpperCase();music();wake();cur=c;send({t:'join',room:c,create:1})}
 function copyCode(){try{navigator.clipboard.writeText(cur)}catch(e){}toast('คัดลอกรหัสห้องแล้ว')}
-function mk(){const c=prompt('ชื่อโค้ด (A-Z 0-9)');if(c)send({t:'mkcode',c,gems:prompt('Gem ที่ได้ (0=ไม่มี)','0'),art:prompt('จำนวนการ์ดอาร์ตสุ่ม (0=ไม่มี)','0')})}
+function mk(){const c=prompt('ชื่อโค้ด (A-Z 0-9)');if(c)send({t:'mkcode',c,gems:prompt('Gem ที่ได้ (0=ไม่มี)','0'),dust:prompt('ผงวิเศษที่ได้ (0=ไม่มี)','0'),art:prompt('จำนวนการ์ดอาร์ตสุ่ม (0=ไม่มี)','0')})}
 function doAuth(t){send({t,name:aname.value,pw:apass.value})}
-function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · ${esc(m.name)} ${m.admin?'<button onclick="mk()">+โค้ด</button>':''}<button onclick="cfg.tok='';ap();location.reload()">ออกจากระบบ</button>`;$('bf').textContent=m.rq.length?'('+m.rq.length+')':'';if(!$('md').hidden&&$('md').dataset.pg=='room')roomPg();if(!$('md').hidden&&$('md').dataset.pg=='shop')shop();fillSv();if(RM&&!$('room').hidden)roomUI();return;$('sv').innerHTML=['SD01','SD02','SD03',...m.bought].map(k=>`<button onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(m.decks).map(n=>`<button data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">${esc(n)}</button>`).join('')}
+function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · <span class="dstb"><i class="dst"></i> <b>${m.dust||0}</b></span> · ${esc(m.name)} ${m.admin?'<button onclick="mk()">+โค้ด</button>':''}<button onclick="cfg.tok='';ap();location.reload()">ออกจากระบบ</button>`;$('bf').textContent=m.rq.length?'('+m.rq.length+')':'';if(!$('md').hidden&&$('md').dataset.pg=='room')roomPg();if(!$('md').hidden&&$('md').dataset.pg=='shop')shop();if(!$('md').hidden&&$('md').dataset.pg=='craft')craftPg();fillSv();if(RM&&!$('room').hidden)roomUI();return;$('sv').innerHTML=['SD01','SD02','SD03',...m.bought].map(k=>`<button onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(m.decks).map(n=>`<button data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">${esc(n)}</button>`).join('')}
 let bd;const oc=i=>Object.entries(ME.cards).reduce((a,[k,v])=>k.split('|')[0]==i?a+v:a,0),exp=o=>Object.entries(o).flatMap(([i,n])=>Array(n).fill(i)),sm=o=>Object.values(o).reduce((a,b)=>a+b,0);
 function decks(){bd=bd||{n:'',m:{},l:{},q:'',t:''};md.className='dkb';$('md').dataset.pg='';bdr();md.hidden=false}
 const lifeDup=()=>{const n=Object.keys(bd.l).flatMap(i=>Array(bd.l[i]).fill(C[i]?C[i].n:i));return n.length!=new Set(n).size};
@@ -583,6 +608,30 @@ function delDeck(){const n=(bd.n||'').trim();if(!ME.decks[n])return;if(!confirm(
 function bdc(i,d){const o=C[i].t=='Life'?bd.l:bd.m,n=(o[i]||0)+d;if(n<0||n>oc(i)||n>(C[i].lim||4))return;n?o[i]=n:delete o[i];bdr()}
 function ldst(s){const x=ST[s];if(!x)return;if(!confirm('โหลด '+x.name+' ลงตัวจัดเด็ค? (แทนที่ลิสต์ปัจจุบัน)'))return;bd={n:bd.n||x.name.slice(0,20),m:{},l:{},q:'',t:'',art:{},vr:{}};x.main.forEach(([i,n,r])=>{bd.m[i]=(bd.m[i]||0)+n;if(r)bd.vr[i+'|'+r]=(bd.vr[i+'|'+r]||0)+n});x.life.forEach(([i,n,r])=>{bd.l[i]=(bd.l[i]||0)+n;if(r)bd.vr[i+'|'+r]=(bd.vr[i+'|'+r]||0)+n});bdr()}
 function ldd(n){const k=ME.decks[n];if(!k)return;bd={n,m:{},l:{},q:'',t:'',art:{...(k.art||{})},vr:{...(k.vr||{})}};k.main.forEach(i=>bd.m[i]=(bd.m[i]||0)+1);k.life.forEach(i=>bd.l[i]=(bd.l[i]||0)+1);bdr()}
+/* ===== คราฟ / ย่อยการ์ด (ผงวิเศษ) ===== */
+const CR_R=['C','R','SR','UR'],DUSTV={C:50,R:100,SR:150,UR:200,SEC:250,PR:250,UBR:250,USEC:250};
+let CP={tab:'sell',q:'',rf:''};
+const crKeep=k=>{let v=4;Object.values(ME.decks||{}).forEach(d=>{v=Math.max(v,(d.vr&&d.vr[k])||0)});return v};
+const crTh=(i,r)=>`<div class="cth" onclick="zoom('${i}',0,'${r}')" style="${art(i,r)};background-size:cover;background-position:top"></div>`;
+const crRb=r=>`<span class="rb" style="background:${RC[r]||'#ccc'}">${r}</span>`;
+function craftPg(){const D=$('md');D.className='dkb';D.dataset.pg='craft';D.hidden=false;
+D.innerHTML=`<div class="in wide"><div class="cr"><div class="crh"><button class="xb" onclick="decks()">←</button><b><i class="dst"></i> คราฟ / ย่อยการ์ด</b><span class="dstb">ผง <b>${ME.dust||0}</b> · 💎 <b>${ME.gems}</b></span></div>
+<div class="crt"><button class="${CP.tab=='sell'?'on':''}" onclick="CP.tab='sell';craftPg()">♻ ย่อยการ์ด</button><button class="${CP.tab=='make'?'on':''}" onclick="CP.tab='make';craftPg()">🔮 คราฟการ์ด</button></div>
+<input class="crs" id="crq" placeholder="ค้นหา ชื่อ / รหัส เช่น BT01-001" value="${esc(CP.q)}" oninput="CP.q=this.value;crL()">
+<div class="crf">${(CP.tab=='sell'?[...CR_R,'SEC','PR','UBR','USEC']:CR_R).map(r=>`<button class="${CP.rf==r?'on':''}" onclick="CP.rf=CP.rf=='${r}'?'':'${r}';craftPg()">${r}</button>`).join('')}</div>
+<div class="nt">${CP.tab=='sell'?'ย่อยได้เฉพาะใบที่เกิน 4 ใบ (ต่อระดับ) และไม่ต่ำกว่าจำนวนที่เด็คที่บันทึกไว้ใช้ · ผงต่อใบ: C 50 · R 100 · SR 150 · UR 200 · SEC ขึ้นไป 250':'คราฟได้เฉพาะ C/R/SR/UR · มีใบนั้นแล้ว = 1000 ผง · ยังไม่มี = 2500 💎 + 1500 ผง · SEC ขึ้นไปคราฟไม่ได้'}</div>
+<div id="crl"></div></div></div>`;crL()}
+function crL(){const e=$('crl');if(!e)return;const q=(CP.q||'').trim().toLowerCase(),F=CP.rf,L=[];
+const hit=i=>!q||i.toLowerCase().includes(q)||((C[i]||{}).n||'').toLowerCase().includes(q);
+if(CP.tab=='sell'){Object.entries(ME.cards||{}).forEach(([k,n])=>{const[i,r]=k.split('|');if(!C[i]||!hit(i)||(F&&F!=r))return;const kp=crKeep(k),ex=n-kp;if(ex>0)L.push({i,r,k,n,ex,v:DUSTV[r]||50})});
+L.sort((a,b)=>RO.indexOf(a.r)-RO.indexOf(b.r)||a.i.localeCompare(b.i));
+e.innerHTML=(L.length?L.slice(0,80).map((x,j)=>`<div class="crr">${crTh(x.i,x.r)}<div class="ci"><b>${esc(C[x.i].n)}</b> ${crRb(x.r)}<small>${x.i} · มี ${x.n} · ย่อยได้ ${x.ex} · +${x.v} ผง/ใบ</small></div><div class="ca"><input type="number" id="cq${j}" min="1" max="${x.ex}" value="1" onchange="this.value=Math.max(1,Math.min(${x.ex},this.value|0))"><button onclick="crSell(${j})">ย่อย</button><button class="al" onclick="crSell(${j},1)">ย่อยทั้งหมด (+${x.ex*x.v})</button></div></div>`).join('')+(L.length>80?`<div class="nt">แสดง 80 รายการแรก — ใช้ช่องค้นหา/ตัวกรอง</div>`:''):'<div class="nt">ไม่มีการ์ดส่วนเกินที่ย่อยได้</div>');crL.s=L.slice(0,80)}
+else{Object.values(C).forEach(c=>{if(!hit(c.id))return;(c.v||[]).forEach(r=>{if(CR_R.includes(r)&&(!F||F==r))L.push({i:c.id,r})})});
+L.sort((a,b)=>a.i.localeCompare(b.i)||CR_R.indexOf(a.r)-CR_R.indexOf(b.r));
+if(!q&&!F){e.innerHTML='<div class="nt">พิมพ์ชื่อหรือรหัสการ์ด หรือเลือกระดับ เพื่อค้นหา</div>';return}
+e.innerHTML=L.length?L.slice(0,60).map((x,j)=>{const own=(ME.cards[x.i+'|'+x.r]||0),du=own?1000:1500,gm=own?0:2500,ok=(ME.dust||0)>=du&&ME.gems>=gm;return`<div class="crr">${crTh(x.i,x.r)}<div class="ci"><b>${esc(C[x.i].n)}</b> ${crRb(x.r)}<small>${x.i} · มี ${own} ใบ · ${own?du+' ผง':gm+' 💎 + '+du+' ผง'}</small></div><div class="ca"><button ${ok?'':'disabled'} onclick="crMake('${x.i}','${x.r}')">🔮 คราฟ</button></div></div>`}).join('')+(L.length>60?'<div class="nt">แสดง 60 รายการแรก — ค้นหาให้แคบลง</div>':''):'<div class="nt">ไม่พบการ์ดที่คราฟได้</div>'}}
+function crSell(j,all){const x=(crL.s||[])[j];if(!x)return;const n=all?x.ex:Math.max(1,Math.min(x.ex,($('cq'+j).value|0)||1));if(all&&!confirm('ย่อย '+C[x.i].n+' ('+x.r+') ทั้งหมด '+x.ex+' ใบ ได้ '+x.ex*x.v+' ผง ?'))return;send({t:'dust',id:x.i,r:x.r,n,all:all?1:0})}
+function crMake(i,r){const own=ME.cards[i+'|'+r]||0;if(!confirm('คราฟ '+C[i].n+' ('+r+') ใช้ '+(own?'1000 ผง':'2500 💎 + 1500 ผง')+' ?'))return;send({t:'craft',id:i,r})}
 let DV=[];
 function dvs(){md.className='';const row=c=>{const d=C[c.id]||{n:c.id};return`<div class="rw"><span class="th" onclick="zoom('${c.id}',0)" style="${art(c.id)}"></span><a onclick="zoom('${c.id}',0)">${esc(d.n)}</a><small>${c.id}</small><button onclick="dvm(${c.u},'hand')">มือ</button><button onclick="dvm(${c.u},'hell')">นรก</button><button onclick="dvp(${c.u},1)">บนสุด</button><button onclick="dvp(${c.u},0)">ใต้เด็ค</button></div>`};
 $('md').innerHTML=`<div class="in"><button onclick="md.hidden=true">ปิด</button><button onclick="send({t:'dshuf'});md.hidden=true">🔀 สับเด็คแล้วปิด</button><br>การ์ดในเด็ค (บนสุดอยู่บน) ${DV.length} ใบ${DV.map(row).join('')}</div>`;$('md').hidden=false}
@@ -654,7 +703,7 @@ return`<div class="dc"><div class="di${a?'':' nt'}" onclick="zoom('${rid}',0,'${
 row=(lab,k,o)=>`<div class="fr"><span class="lab">${lab}</span>${o.map(([x,t])=>`<button class="chip${fa(k).includes(String(x))?' on':''}" onclick="bflt('${k}','${x}')">${t??x}</button>`).join('')}</div>`,
 panel=bd.fo?`<div class="fp">${row('สีการ์ด','col',['แดง','ฟ้า','ม่วง','เขียว','ไม่มีสี'].map(x=>[x]))}${row('ชุดการ์ด','set',O.set.map(x=>[x]))}${row('Cost','cost',O.cost.map(x=>[x]))}${row('ความหายาก','rar',RO.slice().reverse().map(x=>[x]))}${row('สี gem','gc',[...O.gc,'ไม่มี'].map(x=>[x]))}${row('เผ่า','s',[...O.s,'ไม่มี'].map(x=>[x]))}${row('Magic','st',O.st.map(x=>[x]))}<div class="fr"><span class="lab">เรียง:</span>${[['id','รหัส'],['cost','Cost'],['name','ชื่อ']].map(([x,t])=>`<button class="chip${bd.so==x?' on':''}" onclick="bd.so='${x}';bdr()">${t}</button>`).join('')}</div></div>`:'';
 $('md').innerHTML=`<div class="in wide"><div class="mb"><span>Main ${mn}/50</span><span>LIFE ${ln}/5</span><span class="sp"></span><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button></div><div class="bh"><div class="bh1"><b>จัดเด็ค</b><div class="bars"><div class="bar2"><i class="${mn==50?'ok':''}" style="width:${Math.min(100,mn*2)}%"></i><span>Main ${mn}/50</span></div><div class="bar2"><i class="${ln==5?'ok':''}" style="width:${Math.min(100,ln*20)}%"></i><span>LIFE ${ln}/5</span></div></div><button class="xb" onclick="md.hidden=true">✕</button></div>
-<div class="bh2"><input class="pill" value="${esc(bd.n)}" placeholder="ชื่อเด็ค" maxlength="20" onchange="bd.n=this.value;bdr()"><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button>${ME.decks[(bd.n||'').trim()]?'<button class="dng xb" onclick="delDeck()">🗑</button>':''}</div>
+<div class="bh2"><input class="pill" value="${esc(bd.n)}" placeholder="ชื่อเด็ค" maxlength="20" onchange="bd.n=this.value;bdr()"><button class="pri" ${okk?'':'disabled'} onclick="saveDeck()">💾 บันทึก</button><button class="crb" onclick="craftPg()"><i class="dst"></i> คราฟ/ย่อย</button>${ME.decks[(bd.n||'').trim()]?'<button class="dng xb" onclick="delDeck()">🗑</button>':''}</div>
 ${okk?'':`<div class="mis">⚠ บันทึกได้เมื่อครบตามกฎ: ${[mn!=50?'Main ขาด/เกิน '+Math.abs(50-mn)+' ใบ':'',ln!=5?'LIFE ต้องมี 5 ใบ':'',lifeDup()?'LIFE ห้ามชื่อซ้ำ':''].filter(Boolean).join(' · ')}</div>`}
 ${(()=>{const bv=bdViol().filter(v=>v.k=='ban');return bv.length?`<div class="mis bn">⛔ ติดแบนลิสต์ — ใช้เล่นห้องที่เปิดโหมดแบนลิสต์ไม่ได้: ${bv.map(v=>esc(v.msg)).join(' · ')}</div>`:''})()}
 <div class="chips"><span class="lab">โหลดเด็ค:</span>${Object.keys(ME.decks).map(n=>`<button class="chip${n==bd.n?' on':''}" data-d="${esc(n)}" onclick="ldd(this.dataset.d)">${esc(n)}</button>`).join('')||'<small>ยังไม่มีเด็คที่บันทึก</small>'}</div>

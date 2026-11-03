@@ -52,13 +52,18 @@ const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await
 const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
 const sign = n => { const p = n + '|' + (Date.now() + 90 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
 const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'base64').toString(); if (crypto.createHmac('sha256', SEC).update(p).digest('hex') !== s) return; const [n, e] = p.split('|'); return +e > Date.now() ? n : null; } catch (e) { } };
-const prof = (n, d) => ({ name: n, gems: d.gems, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10'];
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
 const RT = ['C','R','SR','UR','SEC','PR','UBR','USEC'];
+// ระบบคราฟ/ย่อย: ผงวิเศษ
+const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, UBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
+const CRAFT_R = ['C', 'R', 'SR', 'UR'];   // คราฟได้เฉพาะระดับนี้ (SEC ขึ้นไปคราฟไม่ได้)
+const CRAFT_OWN = 1000, CRAFT_NEW_DUST = 1500, CRAFT_NEW_GEM = 2500, DUST_KEEP = 4;   // ย่อยได้เฉพาะใบที่เกิน 4
+
 const RW = { R: 92, SR: 7, UR: .8, SEC: .15, PR: .03, UBR: .015, USEC: .005 };
 const CW = { R: 70, SR: 24, UR: 4.5, SEC: 1, PR: .3, UBR: .15, USEC: .05 };
 const GW = { UR: 90, SEC: 8.5, PR: 1, UBR: .4, USEC: .1 };
@@ -1441,7 +1446,7 @@ wss.on('connection', ws => {
       }
       if (m.t === 'mkcode') {
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน'); const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ด 3-20 ตัว');
-        const T = (await dbGet('sys:codes')) || {}; T[c] = { gems: Math.max(0, +m.gems | 0), art: Math.min(50, Math.max(0, +m.art | 0)) };
+        const T = (await dbGet('sys:codes')) || {}; T[c] = { gems: Math.max(0, +m.gems | 0), dust: Math.max(0, +m.dust | 0), art: Math.min(50, Math.max(0, +m.art | 0)) };
         await dbPut('sys:codes', T); ws.send(JSON.stringify({ note: 'สร้างโค้ด ' + c })); return;
       }
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
@@ -1484,6 +1489,25 @@ wss.on('connection', ws => {
         d.rq = d.rq.filter(x => x !== t); if (m.ok) { d.fr = [...new Set([...(d.fr || []), t])]; o.fr = [...new Set([...(o.fr || []), ws.user])]; await dbPut(t, o); }
         await dbPut(ws.user, d); me_(d); if (m.ok) { ws.fr = new Set(d.fr || []); pushFst(ws, true); pushMe(t, '👫 ' + ws.user + ' ตอบรับเป็นเพื่อนแล้ว'); } return;
       }
+      if (m.t === 'dust') {   // ย่อยการ์ด → ผงวิเศษ (เก็บไว้ ≥4 ใบ/ระดับ และไม่ต่ำกว่าที่เด็คที่บันทึกไว้ใช้)
+        const d = await dbGet(ws.user), id = String(m.id), r = String(m.r), k = id + '|' + r, have = (d.cards && d.cards[k]) || 0;
+        if (!B[id] || !DUST[r]) E('ย่อยการ์ดนี้ไม่ได้');
+        let keep = DUST_KEEP; Object.values(d.decks || {}).forEach(dk => { keep = Math.max(keep, (dk.vr && dk.vr[k]) || 0); });
+        const ok = Math.max(0, have - keep), n = m.all ? ok : Math.min(ok, Math.max(0, m.n | 0));
+        if (n < 1) E('ย่อยได้เฉพาะใบที่เกิน ' + keep + ' ใบ (มี ' + have + ')');
+        d.cards[k] = have - n; if (!d.cards[k]) delete d.cards[k];
+        const got = n * DUST[r]; d.dust = (d.dust || 0) + got;
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🟣 ย่อย ' + n + ' ใบ ได้ ' + got + ' ผง' })); return;
+      }
+      if (m.t === 'craft') {   // คราฟการ์ด: มีแล้ว = 1000 ผง / ยังไม่มี = 2500 Gem + 1500 ผง
+        const d = await dbGet(ws.user), id = String(m.id), r = String(m.r), k = id + '|' + r;
+        if (!B[id] || !(B[id].v || []).includes(r)) E('ไม่พบการ์ด');
+        if (!CRAFT_R.includes(r)) E('การ์ดระดับ ' + r + ' คราฟไม่ได้');
+        const own = ((d.cards && d.cards[k]) || 0) > 0, gem = own ? 0 : CRAFT_NEW_GEM, du = own ? CRAFT_OWN : CRAFT_NEW_DUST;
+        if ((d.dust || 0) < du) E('ผงไม่พอ (ต้องใช้ ' + du + ')'); if (d.gems < gem) E('Gem ไม่พอ (ต้องใช้ ' + gem + ')');
+        d.gems -= gem; d.dust = (d.dust || 0) - du; add(d, { id, r });
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + B[id].n.trim() + ' (' + r + ') สำเร็จ' })); return;
+      }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
@@ -1493,9 +1517,9 @@ wss.on('connection', ws => {
       if (m.t === 'code') {
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, ...((await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); d.codes.push(c);
-        let ps = []; d.gems += X.gems || 0;
+        let ps = []; d.gems += X.gems || 0; d.dust = (d.dust || 0) + (X.dust || 0);
         if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','UBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: X.gems ? 'ได้ ' + X.gems + ' Gem' : '' })); return;
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: [X.gems ? 'ได้ ' + X.gems + ' Gem' : '', X.dust ? 'ได้ ' + X.dust + ' ผง' : ''].filter(Boolean).join(' · ') })); return;
       }
       if (m.t === 'bot') {
         if (rjRoom(ws.user)) E('มีเกมค้างอยู่ กดกลับเข้าเกมก่อน');
