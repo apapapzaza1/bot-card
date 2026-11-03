@@ -52,7 +52,26 @@ const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await
 const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
 const sign = n => { const p = n + '|' + (Date.now() + 90 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
 const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'base64').toString(); if (crypto.createHmac('sha256', SEC).update(p).digest('hex') !== s) return; const [n, e] = p.split('|'); return +e > Date.now() ? n : null; } catch (e) { } };
-const prof = (n, d) => ({ name: n, gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+// ===== ระบบโปรไฟล์ / เลเวล / ประวัติ / สถิติ =====
+const PF_NEED = L => 200 + 50 * L;   // EXP ที่ต้องใช้จากเลเวล L ไป L+1
+const pfLv = xp => { let L = 1, x = Math.max(0, xp | 0); while (x >= PF_NEED(L)) { x -= PF_NEED(L); L++; } return { lv: L, cur: x, need: PF_NEED(L) }; };
+const pfView = d => { const p = d.pf || {}, st = p.st || {}, l = pfLv(p.xp); return { xp: p.xp | 0, lv: l.lv, cur: l.cur, need: l.need, hist: p.hist || [], st: { g: st.g | 0, w: st.w | 0, l: st.l | 0, s: st.s | 0, b: st.b | 0 } }; };
+// รางวัลทุก 5 เลเวล: Gem 500 (+250 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150) ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / UBR 10%
+const pfReward = L => { if (L % 5) return null; const k = L / 5; return { lv: L, gems: 500 + 250 * (k - 1), dust: 300 + 150 * (k - 1), n: L % 10 ? 0 : L / 10 }; };
+const PF_ART_W = [['SEC', 65], ['UR', 25], ['UBR', 10]];
+const pfArt = () => { let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of PF_ART_W) { if ((x -= w) < 0) { r = t; break; } }
+  const pool = rr => { const A = []; CARDS.forEach(c => (c.v || []).includes(rr) && A.push({ id: c.id, r: rr })); return A; };
+  let A = pool(r); if (!A.length) A = pool('SEC'); if (!A.length) A = pool('UR'); return A.length ? pick(A) : null; };
+// EXP: PvP ชนะ 100 / แพ้ 50 ; บอท ชนะ 40 / แพ้ 20 (น้อยกว่าครึ่ง)
+function pfGain(d, win, bot, opName) {
+  const p = d.pf = d.pf || { xp: 0, hist: [], st: {} }, st = p.st = p.st || {};
+  const xp = bot ? (win ? 40 : 20) : (win ? 100 : 50), l0 = pfLv(p.xp).lv; p.xp = (p.xp | 0) + xp; const l1 = pfLv(p.xp).lv, rw = [];
+  for (let L = l0 + 1; L <= l1; L++) { const o = pfReward(L); if (!o) continue; d.gems += o.gems; d.dust = (d.dust || 0) + o.dust; o.cards = []; for (let k = 0; k < o.n; k++) { const c = pfArt(); if (c) { add(d, c); o.cards.push(c); } } rw.push(o); }
+  st.g = (st.g | 0) + 1; if (win) { st.w = (st.w | 0) + 1; st.s = (st.s | 0) + 1; st.b = Math.max(st.b | 0, st.s); } else { st.l = (st.l | 0) + 1; st.s = 0; }
+  p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
+  return { xp, l0, l1, rw };
+}
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10'];
@@ -87,7 +106,7 @@ async function pickDeck(m, user, ban) {
   return mkDeck(m.text || '', m.rand, m.skip, ban);
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn })); } }
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -934,7 +953,7 @@ function rjStatus(ws) {
   const l = LOST[ws.user]; if (l && Date.now() - l.at < 18e5) ws.send(JSON.stringify({ t: 'lost', op: l.op })); else delete LOST[ws.user];
 }
 const view = (r, i) => {
-  CR = r; const g = r.g, pub = p => ({ name: p.name, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
+  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
   return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (c.id.startsWith('BT09-') && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land'), gl: g.land.o === i ? glOf(r, i, g.land.c, 'land') : 0 }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
@@ -1190,7 +1209,7 @@ function act(r, i, m) {
       if (tk === 'av') { const t32 = op.av.find(x => x.u === m.tg); if (t32 && t32.id === 'BT05-032' && !noFx(r, t32)) { addTp(t32, -3); vfx(t32.u, 'aura', 'POWER -3', '#ef4444'); log(r, '🛡 เจ๊หมวย: ถูกเล็งเป้าหมาย POWER -3'); } }
       if (a.c.id === 'BT05-017' && !noFx(r, a.c) && me.hell.some(c => !c.tk && B[c.id].n === 'ของขวัญที่เมียทิ้งไว้ให้')) g.q.push(() => { if (!op.hand.length) return log(r, 'เจค: ฝ่ายตรงข้ามไม่มีการ์ดบนมือ'); const c = op.hand.splice(Math.floor(Math.random() * op.hand.length), 1)[0]; op.hell.push(c); vfx(a.c.u, 'burst', 'สุ่มทิ้ง!', '#38bdf8'); log(r, '🎯 เจค นักฆ่ามือเก๋า: สุ่มทิ้งการ์ดบนมือ ' + op.name + ' (' + B[c.id].n + ')'); });   // BT05-017
       g.q.push(() => bt8Redir(r, i, a.c, m.tg, tk, (ntg, ntk) => { m.tg = ntg; tk = ntk; }));
-      g.q.push(() => fxAtk(r, i, a.c, m.tg, tk));
+      fx({ k: 'atkp', i }); g.q.push(() => fxAtk(r, i, a.c, m.tg, tk));
       g.q.push(() => a.c.id === 'BT02-023' && !noFx(r, a.c) ? chooseTg(r, i, a.c, { who: 1 - i, k: 'atk', ai: i, u: m.u }) : shieldStep(r, { who: 1 - i, k: 'atk', ai: i, u: m.u, tg: m.tg, tk }));
       break;
     }
@@ -1427,6 +1446,11 @@ wss.on('connection', ws => {
         g.ask = null; g.pend = null; g.q = []; g.over = ws.user + ' ยอมแพ้'; g.win = 1 - k; log(q, '🏳 ' + ws.user + ' ยอมแพ้');
         bc(q); settle(q).catch(() => { }); ws.send(JSON.stringify({ t: 'lost', op: q.p[1 - k].name, self: 1 })); return;
       }
+      if (m.t === 'setpic') {   // เปลี่ยนรูปโปรไฟล์ (ต้องมีการ์ดใบนั้นจริง) ; k = 'id|rarity' หรือ '' = ไม่ใช้รูป
+        const d = await dbGet(ws.user), k = String(m.k || ''); if (k) { const id = k.split('|')[0]; if (!B[id] || !((d.cards || {})[k] > 0)) E('คุณไม่มีการ์ดใบนี้'); }
+        d.pic = k || null; await dbPut(ws.user, d); Object.values(rooms).forEach(q => q.p.forEach(p => { if (p.name === ws.user) p.pic = d.pic; }));
+        ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: 'เปลี่ยนรูปโปรไฟล์แล้ว' })); return;
+      }
       if (m.t === 'fstat') { ws.fr = new Set(((await dbGet(ws.user)).fr) || []); pushFst(ws, true); return; }
       if (m.t === 'finv') {
         const t = String(m.name || '').toLowerCase(), code = String(m.room || '').toUpperCase(), d = await dbGet(ws.user), q = rooms[code];
@@ -1538,7 +1562,7 @@ wss.on('connection', ws => {
         if (!r) { if (!m.create) E('ไม่พบห้อง'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5,10,20].includes(+m.clock) ? +m.clock : 0, react: [10,20,30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] }); }
-        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
+        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
@@ -3696,7 +3720,7 @@ function bt8K651b(r, i, x) { const p = r.p[i], O = p.hell.filter(c => !isMag8(c)
 function bt8K652(r, i, x) { const p = r.p[i];
   ask(r, i, { text: 'โคกอีสานนูน: เลือก "อีสานสลิงเกอร์" ของเรา 1 ใบ', opts: bt8Sl(r, i).map(a => a.u), cancel: true, cb: us => {
     ask(r, i, { text: 'เลือก Avatar ฝ่ายตรงข้าม 1 ใบ ที่จะต่อสู้', opts: r.p[1 - i].av.map(a => a.u), cancel: true, cb: u2 => { const a = find(r, us[0]), t = find(r, u2[0]); if (!a || !t) return; vfx(a.c.u, 'burst', '⚔ ต่อสู้!', '#a855f7'); log(r, '⚔ โคกอีสานนูน: ' + nmOf(a.c) + ' ต่อสู้กับ ' + nmOf(t.c) + ' (ไม่เปลี่ยนเป็นสภาพนอน / ห้ามใช้ React Magic)');
-      const tired = a.c.tired; r.g.q.push(() => { try { resolveAtk(r, { who: 1 - i, k: 'atk', ai: i, u: a.c.u, tg: t.c.u, tk: 'av' }); } finally { const q = find(r, a.c.u); if (q && q.z === 'av') q.c.tired = tired; } }); } }); } });
+      const tired = a.c.tired; r.g.q.push(() => { fx({ k: 'atkp', i }); try { resolveAtk(r, { who: 1 - i, k: 'atk', ai: i, u: a.c.u, tg: t.c.u, tk: 'av' }); } finally { const q = find(r, a.c.u); if (q && q.z === 'av') q.c.tired = tired; } }); } }); } });
 }
 Object.assign(SUM, {
   'BT08-029': (r, i, x) => {   // เนียจัง — จุติ ถ้า LIFE หงาย ≥3 หรือมี มยุราซัง: อัญเชิญ ทัตดนัยซัง จากมือ/Deck
