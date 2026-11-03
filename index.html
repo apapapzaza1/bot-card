@@ -127,6 +127,7 @@ input,textarea{-webkit-user-select:text;user-select:text;font-size:16px}
 #bt2 .bp{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);background:#000d;color:#fff;border-radius:12px;padding:0 12px;font-size:1.4em;font-weight:700;text-decoration:none;border:1px solid #fc3}
 #bt2 .la{animation:lf .45s both}#bt2 .ra{animation:rf .45s both}@keyframes lf{from{transform:translateX(-60vw)}}@keyframes rf{from{transform:translateX(60vw)}}
 #bt2 .dead .bcd{animation:dd 1s .5s both}@keyframes dd{to{filter:grayscale(1) brightness(.4);transform:rotate(12deg) scale(.9)}}
+#bt2 .bpf{position:absolute;left:50%;top:-52px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:2}#bt2 .bpf small{background:#000c;color:#fff;border-radius:8px;padding:0 6px;font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}#bt2 .bw{padding-top:56px}
 #bt2 .vs{font-size:2em;color:#fc3;text-shadow:0 0 14px #f60;animation:pop .6s .4s}
 #bt2 .tx{font-weight:700;font-size:1.15em;background:#000d;color:#fff;padding:6px 16px;border-radius:12px;margin-top:10px}
 .c.nw{animation:dr .55s backwards}@keyframes dr{from{transform:translateY(-70vh) scale(.3) rotate(-20deg);opacity:0}}
@@ -672,14 +673,14 @@ const crTh=(i,r)=>`<div class="cth" onclick="zoom('${i}',0,'${r}')" style="${art
 const crRb=r=>`<span class="rb" style="background:${RC[r]||'#ccc'}">${r}</span>`;
 function craftPg(){const D=$('md');D.className='dkb';D.dataset.pg='craft';D.hidden=false;
 D.innerHTML=`<div class="in wide"><div class="cr"><div class="crh"><button class="xb" onclick="decks()">←</button><b><i class="dst"></i> คราฟ / ย่อยการ์ด</b><span class="dstb">ผง <b>${ME.dust||0}</b> · 💎 <b>${ME.gems}</b></span></div>
-<div class="crt"><button class="${CP.tab=='sell'?'on':''}" onclick="CP.tab='sell';craftPg()">♻ ย่อยการ์ด</button><button class="${CP.tab=='make'?'on':''}" onclick="CP.tab='make';craftPg()">🔮 คราฟการ์ด</button></div>
+<div class="crt"><button class="${CP.tab=='sell'?'on':''}" onclick="CP.tab='sell';CP.rf='';craftPg()">♻ ย่อยการ์ด</button><button class="${CP.tab=='make'?'on':''}" onclick="CP.tab='make';CP.rf='';craftPg()">🔮 คราฟการ์ด</button></div>
 <input class="crs" id="crq" placeholder="ค้นหา ชื่อ / รหัส เช่น BT01-001" value="${esc(CP.q)}" oninput="CP.q=this.value;crL()">
-<div class="crf">${(CP.tab=='sell'?[...CR_R,'SEC','UBR','USEC']:CR_R).map(r=>`<button class="${CP.rf==r?'on':''}" onclick="CP.rf=CP.rf=='${r}'?'':'${r}';craftPg()">${r}</button>`).join('')}</div>
+<div class="crf">${(CP.tab=='sell'?[...CR_R,'SEC','PR','UBR','USEC']:CR_R).map(r=>`<button class="${CP.rf==r?'on':''}" onclick="CP.rf=CP.rf=='${r}'?'':'${r}';craftPg()">${r}</button>`).join('')}</div>
 <div class="nt">${CP.tab=='sell'?'ย่อยได้เฉพาะใบที่เกิน 4 ใบ (ต่อระดับ) และไม่ต่ำกว่าจำนวนที่เด็คที่บันทึกไว้ใช้ · ผงต่อใบ: C 50 · R 100 · SR 150 · UR 200 · SEC ขึ้นไป 250':'คราฟได้เฉพาะ C/R/SR/UR · มีใบนั้นแล้ว = 1000 ผง · ยังไม่มี = 2500 💎 + 1500 ผง · SEC ขึ้นไปคราฟไม่ได้'}</div>
 <div id="crl"></div></div></div>`;crL()}
 function crL(){const e=$('crl');if(!e)return;const q=(CP.q||'').trim().toLowerCase(),F=CP.rf,L=[];
 const hit=i=>!q||i.toLowerCase().includes(q)||((C[i]||{}).n||'').toLowerCase().includes(q);
-if(CP.tab=='sell'){Object.entries(ME.cards||{}).forEach(([k,n])=>{const[i,r]=k.split('|');if(!C[i]||!hit(i)||r=='PR'||(F&&F!=r))return;const kp=crKeep(k),ex=n-kp;if(ex>0)L.push({i,r,k,n,ex,v:DUSTV[r]||50})});
+if(CP.tab=='sell'){Object.entries(ME.cards||{}).forEach(([k,n])=>{const[i,r]=k.split('|');if(!C[i]||!hit(i)||(F&&F!=r))return;const kp=crKeep(k),ex=n-kp;if(ex>0)L.push({i,r,k,n,ex,v:DUSTV[r]||50})});
 L.sort((a,b)=>RO.indexOf(a.r)-RO.indexOf(b.r)||a.i.localeCompare(b.i));
 e.innerHTML=(L.length?L.slice(0,80).map((x,j)=>`<div class="crr">${crTh(x.i,x.r)}<div class="ci"><b>${esc(C[x.i].n)}</b> ${crRb(x.r)}<small>${x.i} · มี ${x.n} · ย่อยได้ ${x.ex} · +${x.v} ผง/ใบ</small></div><div class="ca"><input type="number" id="cq${j}" min="1" max="${x.ex}" value="1" onchange="this.value=Math.max(1,Math.min(${x.ex},this.value|0))"><button onclick="crSell(${j})">ย่อย</button><button class="al" onclick="crSell(${j},1)">ย่อยทั้งหมด (+${x.ex*x.v})</button></div></div>`).join('')+(L.length>80?`<div class="nt">แสดง 80 รายการแรก — ใช้ช่องค้นหา/ตัวกรอง</div>`:''):'<div class="nt">ไม่มีการ์ดส่วนเกินที่ย่อยได้</div>');crL.s=L.slice(0,80)}
 else{Object.values(C).forEach(c=>{if(!hit(c.id))return;(c.v||[]).forEach(r=>{if(CR_R.includes(r)&&(!F||F==r))L.push({i:c.id,r})})});
@@ -916,7 +917,7 @@ const cv=(id,n,p,cl)=>{const a=id?art(id):'';return`<div class="bk2 ${cl}"><div 
 const ld=b.res=='lose'||b.res=='both',rd=b.res=='win'||b.res=='both',L=cv(b.aid,b.an,b.pa,'la'+(ld?' dead':''));let R,t;
 if(b.tg=='life'){const a=b.cid?art(b.cid):'';R=`<div class="bk2 ra"><div class="bcd${a?'':' nt'}" style="${a}">${a?'':esc(b.cid?(C[b.cid]||{}).n||'LIFE':'LIFE')}</div><s class="bp">LIFE</s></div>`;t=b.res=='ko'?'LIFE หมด! จบเกม':b.res=='life'?esc(b.an)+' ทำให้ LIFE หงาย!':'Power 0 ไม่สร้างความเสียหาย'}
 else{R=cv(b.did,b.dn,b.pd,'ra'+(rd?' dead':''));t={win:esc(b.an)+' ชนะ!',lose:esc(b.an)+' พ่ายแพ้',both:'ตายทั้งคู่!',none:'เสมอ ไม่มีใครตาย'}[b.res]}
-const e=$('bt2');e.innerHTML=`<div class="bw"><div class="bs2">${L}<div class="vs">⚔</div>${R}</div><div class="tx">${t}</div></div>`;e.hidden=false;clearTimeout(btl.t);btl.t=setTimeout(()=>e.hidden=true,2400)}
+const e=$('bt2');e.innerHTML=`<div class="bw"><div class="bs2">${L}<div class="vs">⚔</div>${R}</div><div class="tx">${t}</div></div>`;{const bdg=(who,cl)=>{const p=who==S.i?S.me:S.op,k=e.querySelector('.bk2.'+cl);if(k&&p)k.insertAdjacentHTML('afterbegin','<div class="bpf">'+pav(p.pic,/^บอท/.test(p.name),'md')+'<small>'+esc(p.name)+'</small></div>')};bdg(b.ai,'la');bdg(1-b.ai,'ra')}e.hidden=false;clearTimeout(btl.t);btl.t=setTimeout(()=>e.hidden=true,2400)}
 function endUI(){const e=$('end');if(!S||!S.over){e.hidden=true;e.dataset.k='';endHide=false;GAIN=0;RMQ=0;MYRM=0;return}
 if(S.spec){e.className='';e.hidden=false;e.innerHTML='<div class="eb"><div class="et">🏁</div><h1>จบการแข่ง</h1><div>'+esc(S.over)+'</div><button onclick="location.reload()">🏠 ออก</button></div>';return}
 if(endHide){e.hidden=true;return}
@@ -1083,7 +1084,7 @@ const fxEl=(h,x,y,ms)=>{const d=document.createElement('div');d.className='fxl';
 const cel=u=>document.querySelector('#mid [data-u="'+u+'"]'),pos=u=>rc(cel(u))||POS[u]||null;
 const updPos=()=>{if(Object.keys(POS).length>300)POS={};document.querySelectorAll('#mid .c[data-u]').forEach(e=>POS[e.dataset.u]=rc(e))};
 function playFx(){const L=S.fx||[];if(lastFx==-1){lastFx=L.length?L[L.length-1].n:0;return}if(['rx','akp','bt2','zm','pkr'].some(k=>{const e=$(k);return e&&!e.hidden})){clearTimeout(playFx.t);playFx.t=setTimeout(()=>{if(S)playFx()},200);return}L.filter(f=>f.n>lastFx).forEach(f=>{lastFx=f.n;try{fx1(f)}catch(e){}})}
-function fx1(f){if(f.k=='atkp'){atkPop(f);return}
+function fx1(f){if(f.k=='atkp')return;
 if(f.k=='buff'){const p=pos(f.u);if(!p)return;const e=cel(f.u);e&&e.classList.add(f.v>0?'fxu':'fxd');fxEl(`<div class="fxb ${f.v>0?'up':'dn'}">${f.v>0?'▲ +':'▼ '}${f.v}</div>`,p.x,p.y);sfx(f.v>0?'play':'hit')}
 else if(f.k=='die'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxboom"></div>',p.x,p.y,800);fxEl(`<div class="c im fxgd" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,900);sfx('hit')}
 else if(f.k=='bounce'){const p=pos(f.u);p&&fxEl('<div class="fxb nt">↩ กลับมือ</div>',p.x,p.y)}
