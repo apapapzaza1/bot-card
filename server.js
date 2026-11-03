@@ -151,7 +151,7 @@ function qArt() {
 const qTH = () => { const t = Date.now() + 7 * 36e5, day = Math.floor(t / 864e5), wk = Math.floor((day + 3) / 7); return { day, wk, dEnd: (day + 1) * 864e5 - 7 * 36e5 - Date.now(), wEnd: (wk * 7 - 3 + 7) * 864e5 - 7 * 36e5 - Date.now() }; };
 function qRng(seed) { let a = 0; for (const ch of String(seed)) a = (a * 31 + ch.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function qPick(len, n, seed) { const R = qRng(seed), I = Array.from({ length: len }, (_, i) => i); for (let i = I.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [I[i], I[j]] = [I[j], I[i]]; } return I.slice(0, Math.min(n, len)); }
-let QCH = null;
+let QCH = null, QCHDIRTY = 0;
 async function qCh() {   // รายการชาเลนจ์ (เก็บใน sys:challenges) — โหลดครั้งแรกแล้วแคช
   if (QCH) return QCH; const o = await dbGet('sys:challenges');
   if (o && Array.isArray(o.list)) QCH = o.list; else { QCH = QCH_DEF.map((c, k) => ({ ...c, id: 'c' + (1000 + k), t: 0 })); await dbPut('sys:challenges', { list: QCH }); }
@@ -181,13 +181,13 @@ function qView(d, admin) {
   const dI = qPick(QD.length, 10, 'D' + T.day), wI = qPick(QW.length, 30, 'W' + T.wk);
   const dl = dI.map(i => { const t = QD[i]; return mk(qText(t[0], t[1], t[2]), q.dp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.dc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
   const wl = wI.map(i => { const t = QW[i]; return mk(qText(t[0], t[1], t[2]), q.wp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.wc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
-  const cl = (QCH || []).map(c => mk((c.name ? c.name + ' — ' : '') + qText(c.m, c.md, c.need), q.cp[c.id], c.need, c, q.ch.includes(c.id), c.id));
+  const cl = (QCH || []).map(c => Object.assign(mk((c.name ? c.name + ' — ' : '') + qText(c.m, c.md, c.need), q.cp[c.id], c.need, c, q.ch.includes(c.id), c.id), { lim: c.lim | 0, cn: c.cn | 0, full: (c.lim | 0) > 0 && (c.cn | 0) >= (c.lim | 0) && !q.ch.includes(c.id) ? 1 : 0 }));
   const al = QACH.map(a => {
     const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0), t = q.ac[a.id] | 0;
     if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0 };
     const o = qAchR(t); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0 };
   });
-  const rd = x => x.filter(y => !y.cl && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl), a: rd(al) };
+  const rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl), a: rd(al) };
   const v = { d: dl, w: wl, c: cl, a: al, rd: R, red: R.d + R.w + R.c + R.a, rs: { d: T.dEnd, w: T.wEnd } };
   if (admin) v.meta = { m: Object.keys(QT).filter(k => k !== 'st').map(k => [k, QT[k]]), md: Object.keys(QMN).map(k => [k, QMN[k]]) };
   return v;
@@ -204,8 +204,8 @@ function qClaim(d, kind, id, all) {   // รับรางวัล: คืน 
       while ((q.ac[a.id] | 0) < a.tiers.length && cur >= a.tiers[q.ac[a.id] | 0]) { give(qAchR(q.ac[a.id] | 0)); q.ac[a.id] = (q.ac[a.id] | 0) + 1; }
       continue;
     }
-    if (x.cl || x.p < x.n) continue;
-    if (kind === 'd') q.dc.push(x.id); else if (kind === 'w') q.wc.push(x.id); else if (kind === 'c') q.ch.push(x.id); else continue;
+    if (x.cl || x.full || x.p < x.n) continue;
+    if (kind === 'd') q.dc.push(x.id); else if (kind === 'w') q.wc.push(x.id); else if (kind === 'c') { const cc = (QCH || []).find(z => z.id === x.id); if (cc && (cc.lim | 0) > 0) { if ((cc.cn | 0) >= (cc.lim | 0)) continue; cc.cn = (cc.cn | 0) + 1; QCHDIRTY = 1; } q.ch.push(x.id); } else continue;
     give(x);
   }
   return tot;
@@ -216,6 +216,7 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
   if (m.t === 'qget') { sendQ(); return true; }
   if (m.t === 'qclaim') {
     const k = ['d', 'w', 'c', 'a'].includes(m.k) ? m.k : E('ประเภทเควสผิด'), tot = qClaim(d, k, m.id, !!m.all); if (!tot.n) E('ยังรับรางวัลไม่ได้');
+    if (QCHDIRTY) { QCHDIRTY = 0; await dbPut('sys:challenges', { list: QCH }); }
     await dbPut(ws.user, d); const note = '🎁 รับรางวัลเควส' + (tot.gems ? ' 💎 ' + tot.gems.toLocaleString('en-US') : '') + (tot.dust ? ' ✨ ' + tot.dust.toLocaleString('en-US') : '') + (tot.cards.length ? ' 🃏 ' + tot.cards.length + ' ใบ' : '');
     sendQ(); if (tot.cards.length) { const ps = []; for (let i = 0; i < tot.cards.length; i += 5) ps.push(tot.cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note })); } else ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note }));
     return true;
@@ -225,7 +226,7 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
   if (m.t === 'qchadd') {
     const M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md); if (!QT[M] || M === 'st' || !QM[MD] && MD !== 'any') E('ชนิดชาเลนจ์ไม่ถูกต้อง');
     const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), need = cl(m.need, 1e6); if (!need) E('ใส่จำนวนเป้าหมาย');
-    L.push({ id: 'c' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), m: M, md: MD, need, gems: cl(m.gems, 1e6), dust: cl(m.dust, 1e6), art: cl(m.art, 20), t: Date.now() });
+    L.push({ id: 'c' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), m: M, md: MD, need, gems: cl(m.gems, 1e6), dust: cl(m.dust, 1e6), art: cl(m.art, 20), lim: cl(m.lim, 1e6), cn: 0, t: Date.now() });
     await dbPut('sys:challenges', { list: L }); QCH = L; sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มชาเลนจ์แล้ว' })); return true;
   }
   const k = L.findIndex(c => c.id === String(m.id)); if (k < 0) E('ไม่พบชาเลนจ์');
