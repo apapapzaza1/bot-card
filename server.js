@@ -71,7 +71,7 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10'];
@@ -82,6 +82,162 @@ const RT = ['C','R','SR','UR','SEC','PR','UBR','USEC'];
 const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, UBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
 const CRAFT_R = ['C', 'R', 'SR', 'UR'];   // คราฟได้เฉพาะระดับนี้ (SEC ขึ้นไปคราฟไม่ได้)
 const CRAFT_OWN = 1000, CRAFT_NEW_DUST = 1500, CRAFT_NEW_GEM = 2500, DUST_KEEP = 4;   // ย่อยได้เฉพาะใบที่เกิน 4
+/* ===================== ระบบเควส (รายวัน / รายสัปดาห์ / ชาเลนจ์ / ความสำเร็จ) =====================
+   - ตัวนับ (metric): g เล่นครบ, w ชนะ, wf ชนะภายใน 12 เทิร์น, sm อัญเชิญ Avatar, bd ก่อสร้าง Construct, mg ใช้ Magic,
+     ak โจมตี, us ใช้ความสามารถ, s5 อัญเชิญ Avatar Cost 5+, op เปิดซอง, cr คราฟการ์ด, st ชนะติดต่อกัน (เฉพาะความสำเร็จ)
+   - โหมด (mode): any ทุกโหมด / bot เล่นกับบอท / pvp เล่นกับเพื่อน / hard บอทระดับยาก
+   - รีเซ็ตตามเวลาไทย (UTC+7): รายวัน 00:00 ทุกวัน, รายสัปดาห์ 00:00 คืนวันอาทิตย์ (เริ่มสัปดาห์ใหม่วันจันทร์)
+   - ปรับเควส/รางวัลได้ที่ตาราง QD (รายวัน) QW (รายสัปดาห์) QCH_DEF (ชาเลนจ์ตั้งต้น) QACH (ความสำเร็จ) ในบล็อกนี้ที่เดียว */
+const QM = { any: '', bot: ' (เล่นกับบอท)', pvp: ' (เล่นกับเพื่อน)', hard: ' (เล่นกับบอทระดับยาก)' };
+const QMN = { any: 'ทุกโหมด', bot: 'เล่นกับบอท', pvp: 'เล่นกับเพื่อน', hard: 'บอทระดับยาก' };
+const QT = { g: 'เล่นให้ครบ N เกม', w: 'ชนะ N เกม', wf: 'ชนะภายใน 12 เทิร์น N เกม', sm: 'อัญเชิญ Avatar N ใบ', bd: 'ก่อสร้าง Construct N ใบ', mg: 'ใช้ Magic N ใบ', ak: 'โจมตีด้วย Avatar N ครั้ง', us: 'ใช้ความสามารถ N ครั้ง', s5: 'อัญเชิญ Avatar Cost 5 ขึ้นไป N ใบ', op: 'เปิดซองการ์ด N ซอง', cr: 'คราฟการ์ด N ใบ', st: 'ชนะติดต่อกัน N เกม' };
+const QNOMODE = ['op', 'cr', 'st'];   // ตัวนับที่ไม่แยกโหมด
+const qText = (m, md, n) => QT[m].replace('N', n.toLocaleString('en-US')) + (QNOMODE.includes(m) ? '' : (QM[md] || ''));
+// รายวัน: [metric, mode, เป้า, Gem, ผง, การ์ดอาร์ท] — สุ่มมา 10 ข้อ/วัน
+const QD = [
+  ['g', 'any', 1, 30, 0], ['g', 'any', 3, 60, 0], ['g', 'bot', 2, 30, 0], ['g', 'pvp', 1, 50, 0], ['g', 'pvp', 2, 80, 0],
+  ['w', 'any', 1, 50, 0], ['w', 'any', 2, 90, 40], ['w', 'bot', 1, 40, 0], ['w', 'pvp', 1, 70, 0], ['w', 'hard', 1, 100, 40],
+  ['sm', 'any', 5, 30, 0], ['sm', 'any', 10, 50, 0], ['sm', 'any', 15, 70, 40], ['sm', 'bot', 8, 40, 0], ['sm', 'pvp', 8, 60, 0],
+  ['bd', 'any', 2, 30, 0], ['bd', 'any', 4, 60, 0],
+  ['mg', 'any', 3, 30, 0], ['mg', 'any', 6, 50, 0], ['mg', 'any', 10, 80, 40],
+  ['ak', 'any', 5, 30, 0], ['ak', 'any', 10, 50, 0], ['ak', 'any', 15, 80, 40],
+  ['us', 'any', 5, 40, 0], ['wf', 'any', 1, 90, 40], ['op', 'any', 1, 50, 0], ['op', 'any', 3, 100, 40], ['s5', 'any', 2, 50, 0]];
+// รายสัปดาห์ (ยากกว่ารายวัน รางวัลมากกว่า) — สุ่มมา 30 ข้อ/สัปดาห์
+const QW = [
+  ['g', 'any', 10, 150, 50], ['g', 'any', 20, 250, 100], ['g', 'any', 30, 350, 150], ['g', 'pvp', 8, 250, 100], ['g', 'pvp', 15, 400, 150], ['g', 'bot', 12, 200, 50],
+  ['w', 'any', 5, 200, 100], ['w', 'any', 10, 350, 150], ['w', 'any', 15, 500, 200, 1], ['w', 'pvp', 5, 300, 100], ['w', 'pvp', 10, 500, 200], ['w', 'bot', 8, 200, 50],
+  ['w', 'hard', 3, 250, 100], ['w', 'hard', 6, 400, 150], ['w', 'hard', 10, 550, 250, 1],
+  ['sm', 'any', 40, 200, 50], ['sm', 'any', 80, 300, 100], ['sm', 'any', 120, 450, 150], ['sm', 'pvp', 40, 300, 100], ['sm', 'bot', 50, 200, 50],
+  ['bd', 'any', 10, 200, 50], ['bd', 'any', 20, 350, 100],
+  ['mg', 'any', 20, 200, 50], ['mg', 'any', 40, 350, 100], ['mg', 'any', 60, 500, 150],
+  ['ak', 'any', 30, 200, 50], ['ak', 'any', 60, 350, 100], ['ak', 'any', 100, 500, 150],
+  ['us', 'any', 30, 250, 100], ['us', 'any', 60, 400, 150],
+  ['wf', 'any', 2, 250, 100], ['wf', 'any', 4, 450, 200, 1],
+  ['op', 'any', 5, 300, 100], ['op', 'any', 10, 500, 200], ['op', 'any', 20, 800, 300, 1],
+  ['cr', 'any', 1, 300, 0], ['cr', 'any', 3, 600, 0],
+  ['s5', 'any', 10, 250, 50], ['s5', 'any', 20, 450, 100]];
+// ชาเลนจ์ตั้งต้น (แอดมินเพิ่ม/ลบเองได้ในเกม) — ครั้งเดียวต่อบัญชี ไม่รีเซ็ต นับตั้งแต่ชาเลนจ์ถูกเพิ่ม
+const QCH_DEF = [
+  { name: 'นักล่าบอทระดับยาก', m: 'w', md: 'hard', need: 30, gems: 3000, dust: 1000, art: 1 },
+  { name: 'ราชาแห่งสนาม', m: 'w', md: 'pvp', need: 50, gems: 5000, dust: 2000, art: 2 },
+  { name: 'สายฟ้าแลบ', m: 'wf', md: 'any', need: 20, gems: 4000, dust: 1500, art: 1 },
+  { name: 'จอมอัญเชิญ', m: 'sm', md: 'any', need: 500, gems: 3000, dust: 1000, art: 1 },
+  { name: 'จอมเวทย์ประจำสนาม', m: 'mg', md: 'any', need: 300, gems: 3000, dust: 1000, art: 1 },
+  { name: 'นักสะสมตัวยง', m: 'op', md: 'any', need: 100, gems: 6000, dust: 2500, art: 2 }];
+// ความสำเร็จ (ตลอดบัญชี): ขั้นแรกง่าย ขั้นต่อไปยากขึ้น รางวัลเพิ่มตามขั้น
+const QACH = [
+  { id: 'a_w', ic: '🏆', name: 'ชนะสะสม', m: 'w', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 350, 500, 750, 1000] },
+  { id: 'a_g', ic: '🎮', name: 'นักสู้ตัวยง (เล่นสะสม)', m: 'g', md: 'any', tiers: [5, 10, 25, 50, 100, 200, 350, 500, 750, 1000] },
+  { id: 'a_h', ic: '🤖', name: 'ผู้พิชิตบอทระดับยาก', m: 'w', md: 'hard', tiers: [1, 3, 5, 10, 20, 35, 50, 75, 100] },
+  { id: 'a_p', ic: '👥', name: 'คู่ปรับเพื่อนฝูง (ชนะเล่นกับเพื่อน)', m: 'w', md: 'pvp', tiers: [1, 3, 5, 10, 20, 35, 50, 75, 100, 150, 200] },
+  { id: 'a_s', ic: '🔥', name: 'ชนะรวด', m: 'st', md: 'any', tiers: [2, 3, 4, 5, 7, 10, 15, 20] },
+  { id: 'a_f', ic: '⚡', name: 'สายฟ้าแลบ (ชนะภายใน 12 เทิร์น)', m: 'wf', md: 'any', tiers: [1, 3, 5, 10, 20, 35, 50, 100] },
+  { id: 'a_sm', ic: '🧙', name: 'นักอัญเชิญ', m: 'sm', md: 'any', tiers: [10, 50, 100, 250, 500, 1000, 2000, 3500, 5000] },
+  { id: 'a_bd', ic: '🏗', name: 'นักก่อสร้าง', m: 'bd', md: 'any', tiers: [5, 20, 50, 100, 250, 500, 1000, 2000] },
+  { id: 'a_mg', ic: '✨', name: 'จอมเวทย์', m: 'mg', md: 'any', tiers: [10, 50, 100, 250, 500, 1000, 2000, 3500] },
+  { id: 'a_ak', ic: '⚔', name: 'นักรบสายบุก', m: 'ak', md: 'any', tiers: [20, 100, 250, 500, 1000, 2500, 5000, 8000] },
+  { id: 'a_us', ic: '🎯', name: 'เจ้าแห่งความสามารถ', m: 'us', md: 'any', tiers: [10, 50, 100, 250, 500, 1000, 2500] },
+  { id: 'a_s5', ic: '🦖', name: 'ยักษ์ใหญ่ (Avatar Cost 5+)', m: 's5', md: 'any', tiers: [5, 25, 100, 250, 500, 1000] },
+  { id: 'a_op', ic: '📦', name: 'นักเปิดซอง', m: 'op', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 400, 700, 1000] },
+  { id: 'a_cr', ic: '🔮', name: 'ช่างคราฟ', m: 'cr', md: 'any', tiers: [1, 3, 5, 10, 20, 40, 80] }];
+const qAchR = t => ({ gems: 100 + 125 * t, dust: t >= 1 ? 100 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // รางวัลต่อขั้น (t เริ่มที่ 0)
+const Q_ART_W = [['SEC', 70], ['PR', 20], ['UBR', 10]];   // การ์ดอาร์ทสุ่ม SEC 70% / PR 20% / UBR 10%
+function qArt() {
+  let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of Q_ART_W) { if ((x -= w) < 0) { r = t; break; } }
+  const pool = rr => { const A = []; CARDS.forEach(c => (c.v || []).includes(rr) && A.push({ id: c.id, r: rr })); return A; };
+  let A = pool(r); for (const t of ['SEC', 'PR', 'UBR']) if (!A.length) A = pool(t);
+  return A.length ? pick(A) : null;
+}
+const qTH = () => { const t = Date.now() + 7 * 36e5, day = Math.floor(t / 864e5), wk = Math.floor((day + 3) / 7); return { day, wk, dEnd: (day + 1) * 864e5 - 7 * 36e5 - Date.now(), wEnd: (wk * 7 - 3 + 7) * 864e5 - 7 * 36e5 - Date.now() }; };
+function qRng(seed) { let a = 0; for (const ch of String(seed)) a = (a * 31 + ch.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function qPick(len, n, seed) { const R = qRng(seed), I = Array.from({ length: len }, (_, i) => i); for (let i = I.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [I[i], I[j]] = [I[j], I[i]]; } return I.slice(0, Math.min(n, len)); }
+let QCH = null;
+async function qCh() {   // รายการชาเลนจ์ (เก็บใน sys:challenges) — โหลดครั้งแรกแล้วแคช
+  if (QCH) return QCH; const o = await dbGet('sys:challenges');
+  if (o && Array.isArray(o.list)) QCH = o.list; else { QCH = QCH_DEF.map((c, k) => ({ ...c, id: 'c' + (1000 + k), t: 0 })); await dbPut('sys:challenges', { list: QCH }); }
+  return QCH;
+}
+function qInit(d) {   // เตรียม/รีเซ็ตข้อมูลเควสของผู้เล่น (รีเซ็ตเมื่อข้ามวัน/สัปดาห์)
+  const T = qTH(), q = d.qs = d.qs || {};
+  if (!q.lt) { const st = (d.pf && d.pf.st) || {}; q.lt = { 'g:any': st.g | 0, 'w:any': st.w | 0 }; }
+  if (q.day !== T.day) { q.day = T.day; q.dp = {}; q.dc = []; }
+  if (q.wk !== T.wk) { q.wk = T.wk; q.wp = {}; q.wc = []; }
+  q.cp = q.cp || {}; q.ch = q.ch || []; q.ac = q.ac || {};
+  return q;
+}
+function qAdd(d, m, n, modes) {
+  if (!(n > 0)) return; const q = qInit(d), MD = modes || ['any'];
+  MD.forEach(md => { const k = m + ':' + md; q.dp[k] = (q.dp[k] | 0) + n; q.wp[k] = (q.wp[k] | 0) + n; q.lt[k] = (q.lt[k] | 0) + n; });
+  (QCH || []).forEach(c => { if (c.m === m && MD.includes(c.md) && !q.ch.includes(c.id)) q.cp[c.id] = (q.cp[c.id] | 0) + n; });
+}
+const qModes = r => { const md = ['any', r.bot ? 'bot' : 'pvp']; if (r.bot && r.bot.lv === 3) md.push('hard'); return md; };
+function qGame(d, r, k, win) {   // เรียกตอนเกมจบ: โอนตัวนับในเกมเข้าบัญชี
+  const g = r.g, md = qModes(r), c = r.p[k].qc || {}; r.p[k].qc = {};
+  Object.entries(c).forEach(([m, n]) => qAdd(d, m, n, md));
+  if (g.n >= 3) { qAdd(d, 'g', 1, md); if (win) { qAdd(d, 'w', 1, md); if (g.n <= 12) qAdd(d, 'wf', 1, md); } }   // เกมที่ยอมแพ้ตั้งแต่ต้นไม่นับ
+}
+function qView(d, admin) {
+  const q = qInit(d), T = qTH(), mk = (tx, p, n, o, cl, id) => ({ id, tx, p: Math.min(n, p | 0), n, gems: o.gems | 0, dust: o.dust | 0, art: o.art | 0, cl: cl ? 1 : 0 });
+  const dI = qPick(QD.length, 10, 'D' + T.day), wI = qPick(QW.length, 30, 'W' + T.wk);
+  const dl = dI.map(i => { const t = QD[i]; return mk(qText(t[0], t[1], t[2]), q.dp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.dc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
+  const wl = wI.map(i => { const t = QW[i]; return mk(qText(t[0], t[1], t[2]), q.wp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.wc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
+  const cl = (QCH || []).map(c => mk((c.name ? c.name + ' — ' : '') + qText(c.m, c.md, c.need), q.cp[c.id], c.need, c, q.ch.includes(c.id), c.id));
+  const al = QACH.map(a => {
+    const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0), t = q.ac[a.id] | 0;
+    if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0 };
+    const o = qAchR(t); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0 };
+  });
+  const rd = x => x.filter(y => !y.cl && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl), a: rd(al) };
+  const v = { d: dl, w: wl, c: cl, a: al, rd: R, red: R.d + R.w + R.c + R.a, rs: { d: T.dEnd, w: T.wEnd } };
+  if (admin) v.meta = { m: Object.keys(QT).filter(k => k !== 'st').map(k => [k, QT[k]]), md: Object.keys(QMN).map(k => [k, QMN[k]]) };
+  return v;
+}
+const qRed = d => { try { return qView(d).red; } catch (e) { return 0; } };
+function qGive(d, o, cards) { d.gems += o.gems | 0; d.dust = (d.dust || 0) + (o.dust | 0); for (let k = 0; k < (o.art | 0); k++) { const c = qArt(); if (c) { add(d, c); cards.push(c); } } }
+function qClaim(d, kind, id, all) {   // รับรางวัล: คืน { gems, dust, cards, n }
+  const q = qInit(d), V = qView(d), tot = { gems: 0, dust: 0, cards: [], n: 0 }, give = o => { qGive(d, o, tot.cards); tot.gems += o.gems | 0; tot.dust += o.dust | 0; tot.n++; };
+  const L = (V[kind] || []).filter(x => all || String(x.id) === String(id));
+  for (const x of L) {
+    if (kind === 'a') {
+      const a = QACH.find(z => z.id === x.id); if (!a) continue;
+      const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0);
+      while ((q.ac[a.id] | 0) < a.tiers.length && cur >= a.tiers[q.ac[a.id] | 0]) { give(qAchR(q.ac[a.id] | 0)); q.ac[a.id] = (q.ac[a.id] | 0) + 1; }
+      continue;
+    }
+    if (x.cl || x.p < x.n) continue;
+    if (kind === 'd') q.dc.push(x.id); else if (kind === 'w') q.wc.push(x.id); else if (kind === 'c') q.ch.push(x.id); else continue;
+    give(x);
+  }
+  return tot;
+}
+async function qHandle(ws, m) {   // ข้อความ WebSocket ของระบบเควส (คืน true ถ้าจัดการแล้ว)
+  if (m.t !== 'qget' && m.t !== 'qclaim' && m.t !== 'qchadd' && m.t !== 'qchdel') return false;
+  await qCh(); const d = await dbGet(ws.user), adm = ws.user === ADMIN, sendQ = () => ws.send(JSON.stringify({ t: 'qs', q: qView(d, adm) }));
+  if (m.t === 'qget') { sendQ(); return true; }
+  if (m.t === 'qclaim') {
+    const k = ['d', 'w', 'c', 'a'].includes(m.k) ? m.k : E('ประเภทเควสผิด'), tot = qClaim(d, k, m.id, !!m.all); if (!tot.n) E('ยังรับรางวัลไม่ได้');
+    await dbPut(ws.user, d); const note = '🎁 รับรางวัลเควส' + (tot.gems ? ' 💎 ' + tot.gems.toLocaleString('en-US') : '') + (tot.dust ? ' ✨ ' + tot.dust.toLocaleString('en-US') : '') + (tot.cards.length ? ' 🃏 ' + tot.cards.length + ' ใบ' : '');
+    sendQ(); if (tot.cards.length) { const ps = []; for (let i = 0; i < tot.cards.length; i += 5) ps.push(tot.cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note })); } else ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note }));
+    return true;
+  }
+  if (!adm) E('เฉพาะแอดมิน');
+  const L = QCH;
+  if (m.t === 'qchadd') {
+    const M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md); if (!QT[M] || M === 'st' || !QM[MD] && MD !== 'any') E('ชนิดชาเลนจ์ไม่ถูกต้อง');
+    const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), need = cl(m.need, 1e6); if (!need) E('ใส่จำนวนเป้าหมาย');
+    L.push({ id: 'c' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), m: M, md: MD, need, gems: cl(m.gems, 1e6), dust: cl(m.dust, 1e6), art: cl(m.art, 20), t: Date.now() });
+    await dbPut('sys:challenges', { list: L }); QCH = L; sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มชาเลนจ์แล้ว' })); return true;
+  }
+  const k = L.findIndex(c => c.id === String(m.id)); if (k < 0) E('ไม่พบชาเลนจ์');
+  L.splice(k, 1); await dbPut('sys:challenges', { list: L }); QCH = L; sendQ(); ws.send(JSON.stringify({ note: 'ลบชาเลนจ์แล้ว' })); return true;
+}
+function qCount(r, i, m, pre) {   // นับการลงการ์ด/โจมตี ระหว่างเกม (เก็บไว้ในห้อง แล้วโอนเข้าบัญชีตอนเกมจบ)
+  const w = r.p[i] && r.p[i].ws; if (!w || !w.user) return;   // นับเฉพาะผู้เล่นจริง
+  const c = r.p[i].qc = r.p[i].qc || {}, up = k => { c[k] = (c[k] | 0) + 1; };
+  if (m.t === 'summon') { up('sm'); if (pre.id && B[pre.id] && (B[pre.id].c | 0) >= 5) up('s5'); }
+  else if (m.t === 'build') up('bd'); else if (m.t === 'cast') up('mg'); else if (m.t === 'atk') up('ak'); else if (m.t === 'use') up('us');
+}
+/* ===================== จบระบบเควส ===================== */
 
 const RW = { R: 92, SR: 7, UR: .8, SEC: .15, PR: .03, UBR: .015, USEC: .005 };
 const CW = { R: 70, SR: 24, UR: 4.5, SEC: 1, PR: .3, UBR: .15, USEC: .05 };
@@ -106,7 +262,8 @@ async function pickDeck(m, user, ban) {
   return mkDeck(m.text || '', m.rand, m.skip, ban);
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
+  await qCh().catch(() => { });
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -1468,6 +1625,7 @@ wss.on('connection', ws => {
         q.spec = q.spec || []; if (q.spec.length >= 10 && !q.spec.includes(ws)) E('ผู้ชมเต็ม');
         if (!q.spec.includes(ws)) q.spec.push(ws); ws.sp = q; ws.send(JSON.stringify({ t: 's', s: sview(q) })); return;
       }
+      if (await qHandle(ws, m)) return;
       if (m.t === 'mkcode') {
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน'); const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ด 3-20 ตัว');
         const T = (await dbGet('sys:codes')) || {}; T[c] = { gems: Math.max(0, +m.gems | 0), dust: Math.max(0, +m.dust | 0), art: Math.min(50, Math.max(0, +m.art | 0)) };
@@ -1530,12 +1688,14 @@ wss.on('connection', ws => {
         const own = ((d.cards && d.cards[k]) || 0) > 0, gem = own ? 0 : CRAFT_NEW_GEM, du = own ? CRAFT_OWN : CRAFT_NEW_DUST;
         if ((d.dust || 0) < du) E('ผงไม่พอ (ต้องใช้ ' + du + ')'); if (d.gems < gem) E('Gem ไม่พอ (ต้องใช้ ' + gem + ')');
         d.gems -= gem; d.dust = (d.dust || 0) - du; add(d, { id, r });
+        await qCh(); qAdd(d, 'cr', 1);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + B[id].n.trim() + ' (' + r + ') สำเร็จ' })); return;
       }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
         const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= 50); if (p.some(x => ['UR','SEC','PR','UBR','USEC'].includes(x.r))) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
       if (m.t === 'code') {
@@ -5160,6 +5320,16 @@ function botTick() {
 }
 setInterval(botTick, 300);
 
+// ระบบเควส: นับการลงการ์ด/โจมตีของผู้เล่นจริง (ห่อ act ชั้นนอกสุด — นับเมื่อคำสั่งสำเร็จเท่านั้น)
+const _actQ = act;
+act = function (r, i, m) {
+  let pre = null;
+  if (m && ['summon', 'build', 'cast', 'atk', 'use'].includes(m.t) && r.g && !r.g.over) { try { const f = m.u != null ? find(r, m.u) : null; pre = { id: f ? f.c.id : null }; } catch (e) { pre = { id: null }; } }
+  const out = _actQ(r, i, m);
+  if (pre) { try { qCount(r, i, m, pre); } catch (e) { } }
+  return out;
+};
+qCh().catch(() => { });
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 // กันหลุดเอง: ส่ง ping ทุก 25 วิ ให้ proxy ไม่ตัด WebSocket ที่นิ่งๆ (เช่นเล่นกับบอท)
 setInterval(() => { try { wss.clients.forEach(w => { if (w.readyState === 1) w.ping(); }); } catch (e) { } }, 25000);
