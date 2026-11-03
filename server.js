@@ -1684,6 +1684,7 @@ wss.on('connection', ws => {
       if (m.t === 'craft') {   // คราฟการ์ด: มีแล้ว = 1000 ผง / ยังไม่มี = 2500 Gem + 1500 ผง
         const d = await dbGet(ws.user), id = String(m.id), r = String(m.r), k = id + '|' + r;
         if (!B[id] || !(B[id].v || []).includes(r)) E('ไม่พบการ์ด');
+        if (/^(PRMO|FPRO|ODY1|CC0)/.test(id)) E('การ์ดโปรโม/พิเศษ คราฟไม่ได้');
         if (!CRAFT_R.includes(r)) E('การ์ดระดับ ' + r + ' คราฟไม่ได้');
         const own = ((d.cards && d.cards[k]) || 0) > 0, gem = own ? 0 : CRAFT_NEW_GEM, du = own ? CRAFT_OWN : CRAFT_NEW_DUST;
         if ((d.dust || 0) < du) E('ผงไม่พอ (ต้องใช้ ' + du + ')'); if (d.gems < gem) E('Gem ไม่พอ (ต้องใช้ ' + gem + ')');
