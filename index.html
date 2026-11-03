@@ -616,7 +616,7 @@ fmt=bad=>' — ผิดที่: '+bad.slice(0,3).join(', ')+(bad.length>3?' �
 if(c.if&&cnt[c.if]){
 if(c.avatarsText){const bad=badL(d=>!d.n.includes(c.avatarsText)&&!(d.e||'').includes(c.avatarsText));if(bad.length)V.push({k:'ban',names:[c.if,...bad],msg:c.msg+fmt(bad)})}
 if(c.onlySymbol&&(!only||C[only].s!==c.onlySymbol))V.push({k:'ban',names:[c.if,...(only?[C[only].n]:[])],msg:c.msg})}
-if(c.ifOnlyName&&only&&C[only].n.includes(c.ifOnlyName)&&c.avatarsSymbol){const bad=badL(d=>d.s!==c.avatarsSymbol&&!(d.e||'').includes('symbol '+c.avatarsSymbol));if(bad.length)V.push({k:'ban',names:[C[only].n,...bad],msg:c.msg+fmt(bad)})}});
+if(c.ifOnlyName&&only&&C[only].n.trim()===c.ifOnlyName&&c.avatarsSymbol){const bad=badL(d=>d.s!==c.avatarsSymbol&&!(d.e||'').includes('symbol '+c.avatarsSymbol));if(bad.length)V.push({k:'ban',names:[C[only].n,...bad],msg:c.msg+fmt(bad)})}});
 return V}
 let bwT;
 function bwShow(vs){let e=$('bw');if(!e){e=document.createElement('div');e.id='bw';e.onclick=()=>{e.hidden=true};document.body.append(e)}

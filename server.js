@@ -888,7 +888,7 @@ function checkBan(main) {
       if (c.avatarsText) main.forEach(i => { const d = B[i]; if (d.t === 'Avatar' && !d.n.includes(c.avatarsText) && !(d.e || '').includes(c.avatarsText)) E(c.msg + ' — ผิดที่: ' + d.n); });
       if (c.onlySymbol && (!only || B[only].s !== c.onlySymbol)) E(c.msg);
     }
-    if (c.ifOnlyName && only && B[only].n.includes(c.ifOnlyName) && c.avatarsSymbol) main.forEach(i => { const d = B[i]; if (d.t === 'Avatar' && d.s !== c.avatarsSymbol && !(d.e || '').includes('symbol ' + c.avatarsSymbol)) E(c.msg + ' — ผิดที่: ' + d.n); });
+    if (c.ifOnlyName && only && B[only].n.trim() === c.ifOnlyName && c.avatarsSymbol) main.forEach(i => { const d = B[i]; if (d.t === 'Avatar' && d.s !== c.avatarsSymbol && !(d.e || '').includes('symbol ' + c.avatarsSymbol)) E(c.msg + ' — ผิดที่: ' + d.n); });
   }
 }
 function mkDeck(text, rand, skip, ban) {
