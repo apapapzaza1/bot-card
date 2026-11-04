@@ -152,6 +152,9 @@ const qTH = () => { const t = Date.now() + 7 * 36e5, day = Math.floor(t / 864e5)
 function qRng(seed) { let a = 0; for (const ch of String(seed)) a = (a * 31 + ch.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function qPick(len, n, seed) { const R = qRng(seed), I = Array.from({ length: len }, (_, i) => i); for (let i = I.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [I[i], I[j]] = [I[j], I[i]]; } return I.slice(0, Math.min(n, len)); }
 let QCH = null, QCHDIRTY = 0;
+let CODELOCK = Promise.resolve();
+const codeLock = fn => { const p = CODELOCK.then(fn); CODELOCK = p.catch(() => {}); return p; };
+const codesMsg = T => JSON.stringify({ t: 'codes', list: Object.entries(T || {}).map(([c, x]) => ({ c, gems: x.gems | 0, dust: x.dust | 0, art: x.art | 0, max: x.max | 0, u: x.u | 0, exp: x.exp | 0, t: x.t | 0 })).sort((a, b) => b.t - a.t) });
 async function qCh() {   // รายการชาเลนจ์ (เก็บใน sys:challenges) — โหลดครั้งแรกแล้วแคช
   if (QCH) return QCH; const o = await dbGet('sys:challenges');
   if (o && Array.isArray(o.list)) QCH = o.list; else { QCH = QCH_DEF.map((c, k) => ({ ...c, id: 'c' + (1000 + k), t: 0 })); await dbPut('sys:challenges', { list: QCH }); }
@@ -1628,9 +1631,23 @@ wss.on('connection', ws => {
       }
       if (await qHandle(ws, m)) return;
       if (m.t === 'mkcode') {
-        if (ws.user !== ADMIN) E('เฉพาะแอดมิน'); const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ด 3-20 ตัว');
-        const T = (await dbGet('sys:codes')) || {}; T[c] = { gems: Math.max(0, +m.gems | 0), dust: Math.max(0, +m.dust | 0), art: Math.min(50, Math.max(0, +m.art | 0)) };
-        await dbPut('sys:codes', T); ws.send(JSON.stringify({ note: 'สร้างโค้ด ' + c })); return;
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ดต้องเป็น A-Z หรือ 0-9 ยาว 3-20 ตัว');
+        const now = Date.now(), ttl = Math.min(525600, Math.max(0, +m.ttl | 0)); let exp = 0;
+        if (ttl > 0) exp = now + ttl * 6e4; else if (+m.exp) { if (+m.exp <= now) E('เวลาหมดอายุต้องเป็นเวลาในอนาคต'); exp = Math.min(+m.exp, now + 366 * 864e5); }
+        const gems = Math.max(0, +m.gems | 0), dust = Math.max(0, +m.dust | 0), art = Math.min(50, Math.max(0, +m.art | 0)); if (!gems && !dust && !art) E('ต้องใส่รางวัลอย่างน้อย 1 อย่าง');
+        await codeLock(async () => {
+          const T = (await dbGet('sys:codes')) || {}; T[c] = { gems, dust, art, max: Math.min(1e6, Math.max(0, +m.max | 0)), u: 0, exp, t: now };
+          await dbPut('sys:codes', T); ws.send(JSON.stringify({ note: 'สร้างโค้ด ' + c + ' แล้ว' })); ws.send(codesMsg(T));
+        }); return;
+      }
+      if (m.t === 'codelist' || m.t === 'delcode') {
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        await codeLock(async () => {
+          const T = (await dbGet('sys:codes')) || {};
+          if (m.t === 'delcode') { const c = String(m.c || '').trim().toUpperCase(); if (!T[c]) E('ไม่พบโค้ด'); delete T[c]; await dbPut('sys:codes', T); }
+          ws.send(codesMsg(T));
+        }); return;
       }
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
@@ -1700,12 +1717,13 @@ wss.on('connection', ws => {
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
-      if (m.t === 'code') {
+      if (m.t === 'code') { await codeLock(async () => { let SC;
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
-        const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, WUPDATE: { gems: 1000 }, DUST: { dust: 555 }, QUEST: { gems: 500, dust: 150 }, PROFILE: { art: 1 }, ...((await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); d.codes.push(c);
+        const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, WUPDATE: { gems: 1000 }, DUST: { dust: 555 }, QUEST: { gems: 500, dust: 150 }, PROFILE: { art: 1 }, ...(SC = (await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); if (SC[c]) { if (X.exp && Date.now() > X.exp) E('โค้ดนี้หมดอายุแล้ว'); if (X.max > 0 && (X.u | 0) >= X.max) E('โค้ดนี้มีผู้รับครบจำนวนแล้ว'); X.u = (X.u | 0) + 1; await dbPut('sys:codes', SC); } d.codes.push(c);
         let ps = []; d.gems += X.gems || 0; d.dust = (d.dust || 0) + (X.dust || 0);
         if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','UBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: [X.gems ? 'ได้ ' + X.gems + ' Gem' : '', X.dust ? 'ได้ ' + X.dust + ' ผง' : ''].filter(Boolean).join(' · ') })); return;
+      }); return;
       }
       if (m.t === 'bot') {
         if (rjRoom(ws.user)) E('มีเกมค้างอยู่ กดกลับเข้าเกมก่อน');
