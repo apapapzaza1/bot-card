@@ -71,10 +71,13 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
-const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10'];
+const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','CC01'];
+// BOC (CC): ซองละ 5 ใบ ใบ 1-4 = SR, ใบที่ 5 = ช่องลุ้น · ราคา 200/1,800 · การันตีแยกจาก BT (ทุก 20 ซอง)
+const isCC = set => /^CC/.test(set), CC_PITY = 20;
+const CCW = { SR: 90, UR: 7, SEC: 2.5, PR: .5 }, CCG = { UR: 90, SEC: 9, PR: 1 };
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
 const RT = ['C','R','SR','UR','SEC','PR','UBR','USEC'];
@@ -250,6 +253,7 @@ function eff(av, W) { const o = {}; for (const t of RT) { const w = W[t]; if (!w
 function pack(set, gar) {
   const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
   const av = new Set(R.map(x => x.r)), by = r => R.filter(x => x.r === r);
+  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(W).filter(([t]) => av.has(t)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
   const roll = W => { const e = eff(av, W), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return 'R'; };
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
@@ -1733,9 +1737,9 @@ wss.on('connection', ws => {
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + B[id].n.trim() + ' (' + r + ') สำเร็จ' })); return;
       }
       if (m.t === 'open') {
-        const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cost = n === 10 ? 900 : 100;
+        const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; for (let k = 0; k < n; k++) { d.pity = (d.pity || 0) + 1; const p = pack(m.set, d.pity >= 50); if (p.some(x => ['UR','SEC','PR','UBR','USEC'].includes(x.r))) d.pity = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = []; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim); if (p.some(x => ['UR','SEC','PR','UBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
