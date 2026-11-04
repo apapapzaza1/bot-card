@@ -417,9 +417,30 @@ function ask(r, who, o) {
     cards: opts.map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z } : { u }; }) };
   return true;
 }
-const sendHell = (r, u) => { const f0 = find(r, u); if (f0 && f0.z === 'hand') (r.g.dh9 = r.g.dh9 || {})[f0.i] = r.g.n; if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => sendHell(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { sendHell(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (f0 && f0.z === 'av' && f0.c.mgImm >= r.g.n && !r.g.inB && r.g.turn !== f0.i) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนามด้วย Magic'); const f = take(r, u); if (!f.c.tk) r.p[f.i].hell.push(f.c); };
+// ===== ไพรมอล รัททาทุย (SD08-001) สกิล 2: อัตโนมัติ เทิร์นละครั้ง เมื่อจะออกจากสนาม เนรเทศ {รัททาทุย} ในนรก 5 ใบ → ไม่ออกจากสนาม =====
+// คืน true = เปิดหน้าต่างถามแล้ว (ผู้เรียกต้อง return) ; retry = ทำต่อแบบเดิมถ้าผู้เล่นไม่ใช้/ยกเลิก
+function primalSave(r, f0, retry) {
+  if (!f0 || f0.z !== 'av' || f0.c.id !== 'SD08-001' || f0.c.tk || f0.c.prBy || r.g.ask || noFx(r, f0.c) || f0.c.pr2 === r.g.n) return false;
+  const p = r.p[f0.i], L = () => p.hell.filter(c => !c.tk && symOf(c) === 'รัททาทุย'), u = f0.c.u;
+  if (L().length < 5) return false;
+  const go = () => { const c = find(r, u); if (c) c.c.prBy = 1; try { retry(); } finally { if (c) delete c.c.prBy; } };
+  ask(r, f0.i, { yn: true, text: 'ไพรมอล รัททาทุย: จะออกจากสนาม — เนรเทศการ์ด {รัททาทุย} ในนรก 5 ใบ เพื่อไม่ให้ออกจากสนามไหม? (เทิร์นละครั้ง)', cb: y => {
+    if (!y) return go();
+    const O = L().map(c => c.u);
+    if (O.length < 5 || !find(r, u)) return go();
+    ask(r, f0.i, { text: 'ไพรมอล รัททาทุย: เลือกการ์ด {รัททาทุย} ในนรก 5 ใบ เพื่อเนรเทศ (กดยกเลิก = ไม่ใช้สกิล)', opts: O, n: 5, min: 5, cancel: true, onCancel: go, cb: us => {
+      const f1 = find(r, u); if (!f1 || f1.z !== 'av') return;
+      if (us.length < 5) return go();
+      us.forEach(x => { const q = p.hell.findIndex(h => h.u === x); if (q >= 0) { const c = p.hell.splice(q, 1)[0]; p.dk.push(c); fx({ k: 'exile', u: c.u, id: c.kd || c.id }); } });
+      f1.c.pr2 = r.g.n; vfx(f1.c.u, 'burst', '🌀 เนรเทศ 5 ใบ — ไม่ออกจากสนาม', '#38bdf8');
+      log(r, '🛡 ไพรมอล รัททาทุย: เนรเทศ {รัททาทุย} 5 ใบจากนรก — ไม่ออกจากสนาม');
+    } });
+  } });
+  return true;
+}
+const sendHell = (r, u) => { const f0 = find(r, u); if (f0 && f0.z === 'hand') (r.g.dh9 = r.g.dh9 || {})[f0.i] = r.g.n; if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => sendHell(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { sendHell(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (f0 && f0.z === 'av' && f0.c.mgImm >= r.g.n && !r.g.inB && r.g.turn !== f0.i) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนามด้วย Magic'); if (primalSave(r, f0, () => sendHell(r, u))) return; const f = take(r, u); if (!f.c.tk) r.p[f.i].hell.push(f.c); };
 const destroyAv = (r, u) => { const f = find(r, u); if (f && f.z === 'av') kill(r, f.i, u); };
-const bounce = (r, u) => { const f0 = find(r, u); if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => bounce(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { bounce(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); const f = take(r, u); fx({ k: 'bounce', u }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
+const bounce = (r, u) => { const f0 = find(r, u); if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => bounce(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { bounce(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (primalSave(r, f0, () => bounce(r, u))) return; const f = take(r, u); fx({ k: 'bounce', u }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
 function summonFree(r, i, c) {
   const p = r.p[i]; if (!canPlaceAv(r, i, c)) { log(r, 'Avatar เต็ม อัญเชิญไม่ได้'); return false; }
   const k = p.hell.findIndex(h => h.u === c.u); if (k < 0) return false; p.hell.splice(k, 1);
@@ -1195,7 +1216,8 @@ const kill = (r, i, u, ns) => {
     const k10 = (f0.c.wr || []).findIndex(w => w.id === 'BT02-010');
     if (k10 >= 0 && nmHas(f0.c, 'ไอดอล')) { r.p[f0.i].hell.push(f0.c.wr.splice(k10, 1)[0]); log(r, '🛡 ทำลาย โอตะ รุ่นก่อตั้ง แทน ' + nmOf(f0.c)); return; }
     if (f0.c.ward) { delete f0.c.ward; log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกทำลาย (คุณพยาบาล)'); return; }
-    { const ws14 = r.p[f0.i].mg.filter(m => m.id === 'KD04-014' && m.at === f0.c.u && m.u14 !== r.g.n); if (ws14.length && !nf0 && !r.g.inB && r.g.turn !== f0.i) { ws14.forEach(w => { w.u14 = r.g.n; }); const ds = ws14.map(() => 1 + Math.floor(Math.random() * 6)), ev14 = ds.filter(d => d % 2 === 0).length; fx({ k: 'dice', i: f0.i, v: ds[0], vs: ds }); log(r, '🎲 ไบโพล่า ชิลด์ ' + ds.length + ' ใบ ทอยลูกเต๋า ' + ds.length + ' ลูกพร้อมกัน: ' + ds.join(', ') + (ev14 ? ' (มีเลขคู่ ' + ev14 + ' ลูก)' : ' (ไม่มีเลขคู่)')); if (ev14) { vfx(f0.c.u, 'burst', 'ไม่ถูกนำออกจากสนาม (ทอยได้คู่)', '#38bdf8'); log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนาม'); return; } } }
+    { const ws14 = r.p[f0.i].mg.filter(m => m.id === 'KD04-014' && m.at === f0.c.u && m.u14 !== r.g.n); if (ws14.length && !nf0 && (r.g.inB || r.g.turn !== f0.i)) { ws14.forEach(w => { w.u14 = r.g.n; }); const ds = ws14.map(() => 1 + Math.floor(Math.random() * 6)), ev14 = ds.filter(d => d % 2 === 0).length; fx({ k: 'dice', i: f0.i, v: ds[0], vs: ds }); log(r, '🎲 ไบโพล่า ชิลด์ ' + ds.length + ' ใบ ทอยลูกเต๋า ' + ds.length + ' ลูกพร้อมกัน: ' + ds.join(', ') + (ev14 ? ' (มีเลขคู่ ' + ev14 + ' ลูก)' : ' (ไม่มีเลขคู่)')); if (ev14) { vfx(f0.c.u, 'burst', 'ไม่ถูกนำออกจากสนาม (ทอยได้คู่)', '#38bdf8'); log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนาม'); return; } } }
+    if (primalSave(r, f0, () => kill(r, i, u, 1))) return;   // SD08-001 ไพรมอล: สกิล 2
     if (f0.c.id === 'KD01-005' && !f0.c.half && !nf0) { f0.c.half = 1; const dv = Math.floor((B[f0.c.id].p || 0) / 2); f0.c.pw = (f0.c.pw || 0) - dv; fx({ k: 'say', id: f0.c.id, t: 'POWER ตั้งต้นลดครึ่ง แทนการถูกทำลาย' }); fx({ k: 'buff', u: f0.c.u, v: -dv }); log(r, '🛡 ' + nmOf(f0.c) + ': POWER ตั้งต้น -' + dv + ' แทนการถูกทำลาย'); return; }
     const k = (f0.c.wr || []).findIndex(w => w.id === 'SD04-002');
     if (k >= 0) { r.p[f0.i].hell.push(f0.c.wr.splice(k, 1)[0]); log(r, '🛡 ทำลาย จ่ามะนาว แทน ' + nmOf(f0.c)); return; }
@@ -2089,6 +2111,7 @@ const costOf = x => x.tk ? 0 : (B[x.id].c || 0);
 function exileAv(r, u) {
   const f = find(r, u); if (!f || f.z !== 'av') return;
   if (f.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f.c) + ' ไม่รับผลความสามารถ');
+  if (primalSave(r, f, () => exileAv(r, u))) return;
   fx({ k: 'exile', u, id: f.c.tk ? null : (f.c.kd || f.c.id), nm: f.c.tk ? f.c.tk.n : null });
   take(r, u); if (!f.c.tk) r.p[f.i].dk.push(f.c);
   log(r, '🌀 เนรเทศ ' + nmOf(f.c));
