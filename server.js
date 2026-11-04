@@ -1088,20 +1088,56 @@ const lifeFx = (r, i, id) => {
   if (/จั่วการ์ด 1 ใบ/.test(c.e) && /main phase/i.test(c.e)) { draw(r, p, 1); log(r, '❤ ' + c.n + ': ' + p.name + ' จั่ว 1 ใบ'); } else log(r, '❤ LIFE ' + c.n + ': ' + c.e + ' (ใช้เอง)');
 };
 
-const BAN = JSON.parse(fs.readFileSync(path.join(__dirname, 'banlist.json'), 'utf8'));
-function checkBan(main) {
-  const cnt = {}; main.forEach(i => { const n = B[i].n; cnt[n] = (cnt[n] || 0) + 1; if (B[i].o === 'ลำเอียง') E('ห้ามใช้การ์ดลำเอียง: ' + n); });
-  for (const n in cnt) { if (BAN.ban.includes(n)) E('การ์ดบาป ห้ามใส่: ' + n); if (BAN.lim[n] && cnt[n] > BAN.lim[n]) E('จำกัด ' + BAN.lim[n] + ' ใบ: ' + n); }
-  for (const [a, b] of BAN.pairs) if (cnt[a] && cnt[b]) E('เลือกใส่ได้อย่างใดอย่างหนึ่ง: ' + a + ' / ' + b);
-  const only = main.find(i => B[i].o === 'Only #1');
-  for (const c of (BAN.cond || [])) {
-    if (c.if && cnt[c.if]) {
-      if (c.avatarsText) main.forEach(i => { const d = B[i]; if (d.t === 'Avatar' && !d.n.includes(c.avatarsText) && !(d.e || '').includes(c.avatarsText)) E(c.msg + ' — ผิดที่: ' + d.n); });
-      if (c.onlySymbol && (!only || B[only].s !== c.onlySymbol)) E(c.msg);
-    }
-    if (c.ifOnlyName && only && B[only].n.trim() === c.ifOnlyName && c.avatarsSymbol) main.forEach(i => { const d = B[i]; if (d.t === 'Avatar' && d.s !== c.avatarsSymbol && !(d.e || '').includes('symbol ' + c.avatarsSymbol)) E(c.msg + ' — ผิดที่: ' + d.n); });
-  }
+// ===== แบนลิสต์ + กฎการสร้างเด็ค (ตามหนังสือกฎ v3.2) =====
+const nk = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();          // normalize ชื่อ (ช่องว่างซ้ำ/ท้ายชื่อ)
+const CNAME = {}; CARDS.forEach(c => { CNAME[nk(c.n)] = c.n; });                  // ชื่อ normalize -> ชื่อจริงบนการ์ด
+const normBan = o => {
+  o = o || {}; const nm = s => { const k = nk(s); return CNAME[k] || k; };
+  const ban = [...new Set((Array.isArray(o.ban) ? o.ban : []).map(nm).filter(Boolean))];
+  const lim = {}; Object.entries(o.lim || {}).forEach(([n, v]) => { v = v | 0; if (v >= 1 && v <= 3) lim[nm(n)] = v; }); ban.forEach(n => delete lim[n]);
+  const pairs = (Array.isArray(o.pairs) ? o.pairs : []).filter(p => Array.isArray(p) && p.length === 2 && nk(p[0]) && nk(p[1]) && nk(p[0]) !== nk(p[1])).map(p => [nm(p[0]), nm(p[1])]);
+  const cond = (Array.isArray(o.cond) ? o.cond : []).filter(c => c && typeof c === 'object' && c.msg && (c.if || c.ifOnlyName)).map(c => ({ ...c, ...(c.if ? { if: nm(c.if) } : {}), ...(c.ifOnlyName ? { ifOnlyName: nm(c.ifOnlyName) } : {}) }));
+  return { asof: String(o.asof || '').slice(0, 20), ban, lim, pairs, cond, upd: +o.upd || 0 };
+};
+const BAN_FILE = path.join(__dirname, 'banlist.json');
+let BAN = normBan(JSON.parse(fs.readFileSync(BAN_FILE, 'utf8')));
+(async () => { try { const s = await dbGet('sys:banlist'); if (s && Array.isArray(s.ban)) { BAN = normBan(s); console.log('banlist: โหลดจากฐานข้อมูล (แอดมินแก้ไว้)', BAN.asof); } } catch (e) { console.log('banlist load error', e); } })();
+const pushBan = () => wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ t: 'ban', ban: BAN })); });
+// กฎประจำตัว "#การ์ดใบนี้นับเป็นชื่อ X" (X ไม่มีเครื่องหมาย "…") = ชื่อหลักที่ 2 ต้องนับรวมกันในโควตา 4 ใบ ; ถ้ามี "…" = ชื่อเสริม ไม่นับ
+const extraName = c => { const e = c.e || '', k = e.indexOf('#'); if (k < 0) return ''; const m = /นับเป็นชื่อ\s*([^"“”#\n]+?)\s*(?:#|$)/.exec(e.slice(k)); return m ? nk(m[1]) : ''; };
+const limOf = c => c.lim || (/ได้มากสุด 50 ใบ/.test(c.e || '') ? 50 : (c.o === 'Only #1' ? 1 : 4));
+const namesOf = c => { const x = extraName(c), a = [nk(c.n)]; if (x && x !== a[0]) a.push(x); return a; };
+const LIMNAME = {}; CARDS.forEach(c => { const n = nk(c.n); LIMNAME[n] = Math.min(LIMNAME[n] || 99, limOf(c)); });
+const countNames = main => { const cnt = {}; main.forEach(i => namesOf(B[i]).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; })); return cnt; };
+const sumV = V => V.slice(0, 3).join(' · ') + (V.length > 3 ? ' (+' + (V.length - 3) + ' ข้อ)' : '');
+// กฎจัดเด็คพื้นฐาน → คืนรายการข้อผิดทั้งหมด (ไม่หยุดที่ข้อแรก)
+function deckViol(main, life) {
+  const V = [], cnt = countNames(main), seen = new Set();
+  if (main.length !== 50) V.push('Main ต้อง 50 ใบ (มี ' + main.length + ')');
+  if (life.length !== 5 || new Set(life.map(i => nk(B[i].n))).size !== life.length) V.push('LIFE ต้อง 5 ใบ ชื่อไม่ซ้ำ');
+  main.forEach(i => namesOf(B[i]).forEach((n, k) => { if (seen.has(n)) return; const l = k ? (LIMNAME[n] || 4) : limOf(B[i]); if (cnt[n] > l) { seen.add(n); V.push('ซ้ำเกิน ' + l + ' ใบ: ' + n + (k || cnt[n] !== main.filter(x => nk(B[x].n) === n).length ? ' (นับรวมชื่อหลักที่ 2 = ' + cnt[n] + ')' : '')); } }));
+  const o1 = main.filter(i => B[i].o === 'Only #1').length, f = main[0], all50 = main.length === 50 && main.every(i => nk(B[i].n) === nk(B[f].n)) && limOf(B[f]) === 50;   // การ์ดที่ใส่ได้ 50 ใบ เลือกไม่ใส่ Only#1 ได้
+  if (!all50 && o1 !== 1) V.push(o1 ? 'ใส่ Only#1 ได้แค่ 1 ใบ (มี ' + o1 + ')' : 'ต้องมี Only#1 1 ใบ');
+  return V;
 }
+// กฎแบนลิสต์ → คืนรายการข้อผิดทั้งหมด
+function banViol(main) {
+  const V = [], cnt = countNames(main), lim = {}, bn = new Set(BAN.ban.map(nk));
+  Object.entries(BAN.lim).forEach(([n, v]) => { lim[nk(n)] = v; });
+  [...new Set(main.filter(i => B[i].o === 'ลำเอียง').map(i => nk(B[i].n)))].forEach(n => V.push('ห้ามใช้การ์ดลำเอียง: ' + n));
+  for (const n in cnt) { if (bn.has(n)) V.push('การ์ดบาป ห้ามใส่: ' + n); if (lim[n] && cnt[n] > lim[n]) V.push('จำกัด ' + lim[n] + ' ใบ: ' + n + ' (มี ' + cnt[n] + ')'); }
+  for (const [a, b] of BAN.pairs) if (cnt[nk(a)] && cnt[nk(b)]) V.push('เลือกใส่ได้อย่างใดอย่างหนึ่ง: ' + a + ' / ' + b);
+  const only = main.find(i => B[i].o === 'Only #1'), av = main.filter(i => B[i].t === 'Avatar').map(i => B[i]), fmt = bad => ' — ผิดที่: ' + [...new Set(bad.map(d => nk(d.n)))].slice(0, 3).join(', ');
+  for (const c of BAN.cond) {
+    if (c.if && cnt[nk(c.if)]) {
+      if (c.avatarsText) { const bad = av.filter(d => !d.n.includes(c.avatarsText) && !(d.e || '').includes(c.avatarsText)); if (bad.length) V.push(c.msg + fmt(bad)); }
+      if (c.onlySymbol && (!only || B[only].s !== c.onlySymbol)) V.push(c.msg);
+    }
+    if (c.ifOnlyName && only && nk(B[only].n) === nk(c.ifOnlyName) && c.avatarsSymbol) { const bad = av.filter(d => d.s !== c.avatarsSymbol && !(d.e || '').includes('symbol ' + c.avatarsSymbol)); if (bad.length) V.push(c.msg + fmt(bad)); }
+  }
+  return V;
+}
+function checkBan(main) { const V = banViol(main); if (V.length) E(sumV(V)); }
 function mkDeck(text, rand, skip, ban) {
   let main = [], life = [];
   if (rand) {
@@ -1118,11 +1154,7 @@ function mkDeck(text, rand, skip, ban) {
       for (let i = 0; i < (+m[2] || 1); i++) (c.t === 'Life' ? life : main).push(c.id);
     }
     if (!skip) {
-      if (main.length !== 50) E('Main ต้อง 50 ใบ (มี ' + main.length + ')');
-      if (life.length !== 5 || new Set(life.map(i => B[i].n)).size !== 5) E('LIFE 5 ใบชื่อไม่ซ้ำ');
-      const cnt = {}; main.forEach(i => cnt[B[i].n] = (cnt[B[i].n] || 0) + 1);
-      for (const i of main) if (cnt[B[i].n] > (B[i].lim || (/ได้มากสุด 50 ใบ/.test(B[i].e || '') ? 50 : (B[i].o === 'Only #1' ? 1 : 4)))) E('ซ้ำเกิน: ' + B[i].n);
-      if (main.filter(i => B[i].o === 'Only #1').length !== 1) E('ต้องมี Only#1 1 ใบ');
+      const V = deckViol(main, life); if (V.length) E(sumV(V));
       if (ban) checkBan(main);
     }
   }
@@ -1658,6 +1690,18 @@ wss.on('connection', ws => {
         if (!q.spec.includes(ws)) q.spec.push(ws); ws.sp = q; ws.send(JSON.stringify({ t: 's', s: sview(q) })); return;
       }
       if (await qHandle(ws, m)) return;
+      if (m.t === 'banset' || m.t === 'banreset') {   // แอดมินแก้ไข/รีเซ็ตแบนลิสต์ (เก็บถาวร + ประกาศให้ผู้เล่นออนไลน์ทันที)
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        if (m.t === 'banreset') { BAN = normBan(JSON.parse(fs.readFileSync(BAN_FILE, 'utf8'))); await dbPut('sys:banlist', { reset: 1, upd: Date.now() }); }
+        else {
+          const x = m.ban || {}, bad = [], chk = n => { if (!CNAME[nk(n)]) bad.push(nk(n)); };
+          (x.ban || []).forEach(chk); Object.keys(x.lim || {}).forEach(chk); (x.pairs || []).forEach(p => (p || []).forEach(chk)); (x.cond || []).forEach(c => { if (c && c.if) chk(c.if); if (c && c.ifOnlyName) chk(c.ifOnlyName); });
+          if (bad.length) E('ไม่พบการ์ดชื่อ: ' + [...new Set(bad)].slice(0, 5).join(', '));
+          const nb = normBan(x); nb.upd = Date.now(); BAN = nb; await dbPut('sys:banlist', BAN);
+        }
+        console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
+        pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
+      }
       if (m.t === 'mkcode') {
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ดต้องเป็น A-Z หรือ 0-9 ยาว 3-20 ตัว');
