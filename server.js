@@ -388,6 +388,7 @@ function P(r, x) {
     v += mod456(r, x, f) + mod03(r, x, f) + mod04(r, x, f) + mod05(r, x, f) + mod07(r, x, f) + mod08(r, x, f) + modCC1(r, x, f);
     r.p.forEach(q => q.mg.forEach(m => { if (m.at === x.u) {
       if (m.id === 'SD01-016') v += 1;
+      if (m.id === 'SD04-019') v += m.cp || 0;   // ถาดหลุม: +2/-2 สะสมถาวร
       if (B[m.id].n.trim() === 'ตีแม่') v += 2;   // ตีแม่: POWER +2 ให้ Avatar ที่สวมใส่
       if ((m.id === 'SD03-018' || m.id === 'KD02-019') && s === 'นรก') v += 1;
       if (m.id === 'SD07-018') v += B[x.id].n.startsWith('กวนอู') ? 2 : 1;
@@ -749,7 +750,8 @@ const AB = {
   'SD04-001': wearUse, 'SD04-002': wearUse, 'SD04-003': wearUse,
   'SD06-008': { z: 'av', can: (r, i, c) => r.p[i].av.some(a => a.u !== c.u && canWear(a, c)), steps: [{ key: 't', text: 'เลือก Avatar ที่จะสวมใส่ บุญช่วย', opts: (r, i, cx) => r.p[i].av.filter(a => a.u !== cx.card.u && canWear(a, cx.card)).map(a => a.u) }],
     run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (!t) return; take(r, cx.card.u); wearOn(r, i, t.c, cx.card); } },
-  'SD04-019': { z: 'mg', run: (r, i, cx) => { const t = find(r, cx.card.at); const h = Math.random() < .5; log(r, '🪙 ถาดหลุม: ทอยเหรียญ ' + (h ? 'หัว +2' : 'ก้อย -2')); t && addTp(t.c, h ? 2 : -2); } },
+  'SD04-019': { z: 'mg', run: (r, i, cx) => { const t = find(r, cx.card.at); if (!t) return; const h = Math.random() < .5; fx({ k: 'coin', h }); cx.card.cp = (cx.card.cp || 0) + (h ? 2 : -2);   // สะสมถาวรตราบที่ยังสวมอยู่ (เก็บที่การ์ด ไม่หายตอนจบเทิร์น)
+    vfx(t.c.u, 'aura', (h ? 'POWER +2 ถาวร' : 'POWER -2 ถาวร'), h ? '#22c55e' : '#ef4444'); log(r, '🪙 ถาดหลุม: ทอยเหรียญ ' + (h ? 'หัว' : 'ก้อย') + ' — ' + nmOf(t.c) + ' POWER ' + (h ? '+2' : '-2') + ' ถาวร (รวมจากถาดหลุม ' + (cx.card.cp > 0 ? '+' : '') + cx.card.cp + ')'); } },
   'SD04-020': { z: 'land', steps: [{ key: 't', text: 'เลือก Avatar {คน} ของเรา 1 ใบ เปลี่ยนเป็นสภาพนอน', opts: myAv(a => symOf(a) === 'คน') }],
     run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); t && (t.c.tired = true); const p = r.p[i], c = p.deck[p.deck.length - 1]; if (!c) return;
       ask(r, i, { yn: true, text: 'สอดแนม: ใบบนสุดคือ ' + B[c.id].n + ' — ไว้บนสุดต่อไหม? (ไม่ = ใต้ Deck)', cb: y => { if (!y) { p.deck.pop(); p.deck.unshift(c); log(r, '⬇ นำไว้ใต้ Deck'); } } }); } },
@@ -827,7 +829,10 @@ function winFx(r, i, w, df) {
   if ((w.wr || []).some(x => x.id === 'SD04-003')) ask(r, i, { yn: true, text: 'จ่าแดงเดือด: ทำลายการ์ดที่สวมใส่ เพื่อให้ ' + nmOf(w) + ' กลับเป็นสภาพตื่น?', cb: y => { if (!y) return; const k = (w.wr || []).findIndex(x => x.id === 'SD04-003'); if (k < 0) return; r.p[i].hell.push(w.wr.splice(k, 1)[0]); w.tired = false; log(r, '🪖 ' + nmOf(w) + ' กลับเป็นสภาพตื่น'); } });
 }
 function surviveFx(r, i, a) {
-  if (a.id === 'SD05-002' && find(r, a.u) && a.us !== r.g.n && r.p[i].av.some(x => x.u !== a.u && isPeopleF(x))) { a.us = r.g.n; const d = 1 + Math.floor(Math.random() * 6); log(r, '🎲 คุณเค้นท์ ทอย ' + d); if (d % 2 && a.tired) { a.tired = false; log(r, '✨ คุณเค้นท์ กลับเป็นสภาพตื่น'); } }
+  if (a.id === 'SD05-002' && find(r, a.u) && a.k52 !== r.g.n && !noFx(r, a) && r.p[i].av.some(x => x.u !== a.u && isPeopleF(x))) {   // สั่งใช้ (เทิร์นละครั้ง): ถามก่อน แล้วทอยเต๋า
+    ask(r, i, { yn: true, text: 'คุณเค้นท์ (สั่งใช้): ทอยลูกเต๋า 1 ครั้ง ถ้าออกเลขคี่ คุณเค้นท์ที่นอนอยู่จะกลับเป็นสภาพตื่น — ใช้ไหม?', cb: y => {
+      if (!y || !find(r, a.u) || a.k52 === r.g.n) return; a.k52 = r.g.n; fx({ k: 'say', id: a.id, t: 'ทอยลูกเต๋า' }); const d = bt6Dice(r, i);
+      if (d % 2) { if (a.tired) { a.tired = false; vfx(a.u, 'aura', '🎲 ' + d + ' คี่ → ตื่น', '#22c55e'); log(r, '✨ คุณเค้นท์ ออกเลขคี่ กลับเป็นสภาพตื่น'); } else log(r, 'คุณเค้นท์ ออกเลขคี่ (ตื่นอยู่แล้ว)'); } else { vfx(a.u, 'aura', '🎲 ' + d + ' คู่', '#94a3b8'); log(r, 'คุณเค้นท์ ออกเลขคู่ — ไม่มีผล'); } } }); }
 }
 function afterBattle(r, p, a, d, res, pa, pd) {
   bt7After(r, p, a); ccAfterBattle(r, p, a);
@@ -5560,8 +5565,7 @@ function ccNote(r, i, c) {   // เรียกจาก noteSum (ทุกค�
 function ccEndPhase(r, i) {   // 013 เจนนี่: ทุก End Phase ของทั้ง 2 ฝ่าย ทอยลูกเต๋า
   const list = []; r.p.forEach((q, qi) => q.av.forEach(a => { if (a.id === 'CC01-013' && !noFx(r, a)) list.push({ a, qi }); }));
   list.forEach(({ a }) => r.g.q.push(() => {
-    const f = find(r, a.u); if (!f || f.z !== 'av') return; const d = 1 + Math.floor(Math.random() * 6);
-    fx({ k: 'vfx', u: null, t: 'burst', txt: '🎲 ' + d, c: '#facc15' }); log(r, '🎲 เจนนี่: ทอยได้ ' + d);
+    const f = find(r, a.u); if (!f || f.z !== 'av') return; const d = bt6Dice(r, f.i);
     if (d === 4) { vfx(a.u, 'burst', '💥 เจนนี่แตก', '#ef4444'); log(r, '💥 เจนนี่: ออก 4 — ทำลาย และหงาย LIFE ของ ' + r.p[f.i].name); kill(r, f.i, a.u); r.g.q.push(() => lifeUp(r, f.i)); }
     else if (stealCard(r, 1 - f.i, a.u)) { a.tired = false; vfx(a.u, 'burst', '🔄 เปลี่ยนมือ', '#a855f7'); log(r, '🔄 เจนนี่: ย้ายไปอยู่ฝั่ง ' + r.p[1 - f.i].name); }
   }));
