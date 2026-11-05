@@ -403,7 +403,7 @@ function P(r, x) {
       if (k.id === 'BT06-064' && r.g.turn === f.i && r.g.phase === 'battle') v += 1;   // BT06-064
     });
     (x.hd || []).forEach(h => { if (h.until >= r.g.n) v += h.v; });
-    if (x.id === 'SD03-005') v += new Set(p.hell.filter(h => isAv(h) && isNir(h)).map(h => B[h.id].n)).size;
+    if (x.id === 'SD03-005' || (x.id === 'BT08-023' && x.gain8 === 'SD03-005')) v += new Set(p.hell.filter(h => isAv(h) && isNir(h)).map(h => B[h.id].n)).size;
   }
   if (x.id === 'BT04-008' && f && f.z === 'av' && !noFx(r, x)) v += r.p[1 - f.i].hand.length;   // BT04-008 ลูกคนรวย: POWER = จำนวนการ์ดบนมือฝ่ายตรงข้าม (base 0)
   if (f && f.z === 'av') v = bt6P(r, x, f, v);
@@ -418,12 +418,30 @@ function ask(r, who, o) {
   const opts = (o.yn || o.choices) ? [] : o.opts;
   if (!o.yn && !o.choices && !opts.length) { o.none && o.none(); return false; }
   const n = Math.min(o.n || 1, opts.length), min = Math.min(o.min == null ? n : o.min, n);
-  r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
+  r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, rps: !!o.rps, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
     cards: opts.map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z } : { u }; }) };
   return true;
 }
 // ===== ไพรมอล รัททาทุย (SD08-001) สกิล 2: อัตโนมัติ เทิร์นละครั้ง เมื่อจะออกจากสนาม เนรเทศ {รัททาทุย} ในนรก 5 ใบ → ไม่ออกจากสนาม =====
 // คืน true = เปิดหน้าต่างถามแล้ว (ผู้เรียกต้อง return) ; retry = ทำต่อแบบเดิมถ้าผู้เล่นไม่ใช้/ยกเลิก
+// เป่ายิ้งฉุบ: ทั้งสองฝ่ายเลือกเอง (ลับ) → เปิดพร้อมกัน + แอนิเมชัน → เสมอเป่าใหม่จนกว่าจะมีผู้ชนะ
+function rpsDuel(r, i, done) {
+  const K = ['r', 'p', 's'], N = { r: 'ค้อน', p: 'กระดาษ', s: 'กรรไกร' }, CH = ['✊ ค้อน', '✋ กระดาษ', '✌ กรรไกร'];
+  let rd = 0;
+  const round = () => {
+    rd++; const pk = {};
+    const choose = (who, nxt) => ask(r, who, { rps: true, text: 'เป่ายิ้งฉุบ' + (rd > 1 ? ' (เสมอ เป่าใหม่ รอบที่ ' + rd + ')' : '') + ': เลือก ค้อน / กระดาษ / กรรไกร', choices: CH, cb: k => { if (!K[k]) return choose(who, nxt); pk[who] = K[k]; nxt(); } });
+    choose(i, () => choose(1 - i, () => {
+      const a = pk[i], b = pk[1 - i];
+      if (a === b) { fx({ k: 'rps', a, b, i, w: -1 }); log(r, '✊ เป่ายิ้งฉุบ: ' + r.p[i].name + ' ' + N[a] + ' vs ' + r.p[1 - i].name + ' ' + N[b] + ' → เสมอ เป่าใหม่'); return round(); }
+      const w = ((K.indexOf(a) - K.indexOf(b) + 3) % 3 === 1) ? i : 1 - i;
+      fx({ k: 'rps', a, b, i, w });
+      log(r, '✊ เป่ายิ้งฉุบ: ' + r.p[i].name + ' ' + N[a] + ' vs ' + r.p[1 - i].name + ' ' + N[b] + ' → ' + r.p[w].name + ' ชนะ');
+      done(w);
+    }));
+  };
+  round();
+}
 function primalSave(r, f0, retry) {
   if (!f0 || f0.z !== 'av' || f0.c.id !== 'SD08-001' || f0.c.tk || f0.c.prBy || r.g.ask || noFx(r, f0.c) || f0.c.pr2 === r.g.n) return false;
   const p = r.p[f0.i], L = () => p.hell.filter(c => !c.tk && symOf(c) === 'รัททาทุย'), u = f0.c.u;
@@ -1033,7 +1051,7 @@ function deathFx2(r, f, nf) {
 }
 Object.assign(MG, {
   'BT02-042': { run: (r, i) => { r.p[i].av.forEach(a => a.tired = true); const sum = allAv(r).filter(a => a.x.tired).reduce((s, a) => s + P(r, a.x), 0); log(r, '🗳 ประชามติ: Avatar ฝ่ายเราเป็นสภาพนอน ผลรวม POWER นอน = ' + sum); const L = allAv(r).filter(a => P(r, a.x) < sum).map(a => a.x.u); ask(r, i, { text: 'เลือก Avatar ที่ POWER ต่ำกว่า ' + sum + ' ทำลาย', opts: L, cb: us => destroyAv(r, us[0]) }); } },
-  'BT02-043': { run: (r, i) => { const E2 = ['r', 'p', 's'], N = { r: 'ค้อน', p: 'กระดาษ', s: 'กรรไกร' }; let a, b; do { a = rnd(E2); b = rnd(E2); } while (a === b); const w = ((E2.indexOf(a) - E2.indexOf(b) + 3) % 3 === 1) ? i : 1 - i; fx({ k: 'rps', a, b, i }); log(r, '✊ เป่ายิ้งฉุบ: ' + r.p[i].name + ' ' + N[a] + ' vs ' + r.p[1 - i].name + ' ' + N[b] + ' → ' + r.p[w].name + ' ชนะ'); r.g.q.push(() => ask(r, w, { text: 'ชนะเป่ายิ้งฉุบ: เลือก Avatar 1 ใบบนสนาม ทำลาย', opts: allAv(r).map(x => x.x.u), cb: us => destroyAv(r, us[0]) })); } },
+  'BT02-043': { run: (r, i) => rpsDuel(r, i, w => ask(r, w, { text: 'ชนะเป่ายิ้งฉุบ: เลือก Avatar 1 ใบบนสนาม ทำลาย', opts: allAv(r).map(x => x.x.u), cb: us => destroyAv(r, us[0]) })) },
   'BT02-044': { run: (r, i) => ask(r, i, { text: 'ด่านลอย: เลือกค่า Cost (0-9)', choices: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cb: n => { const op = r.p[1 - i]; if (!op.hand.length) return log(r, 'ศัตรูไม่มีการ์ดบนมือ'); const c = rnd(op.hand); log(r, '🎯 ด่านลอย เลือก Cost ' + n + ' — สุ่มได้ ' + B[c.id].n); if (isAv(c) && B[c.id].c === n) { sendHell(r, c.u); log(r, '💥 ตรงค่า Cost! ส่งลงนรก'); } else log(r, 'ไม่ตรง'); } }) },
   'BT02-045': { steps: [{ key: 't', text: 'เลือก Avatar ฝ่ายเรา POWER +4 (ถูกทำลายตอน End Phase)', opts: (r, i) => r.p[i].av.map(a => a.u) }], run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t) { addTp(t.c, 4); t.c.endDie = 1; } } },
   'BT02-046': pickOp('เลือก Avatar ศัตรู 1 ใบ นำขึ้นมือ', (r, i, t) => bounce(r, t.u)),
@@ -1180,7 +1198,7 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (/^(BT09-|CC02-)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land'), gl: g.land.o === i ? glOf(r, i, g.land.c, 'land') : 0 }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (/^(BT09-|CC02-)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land'), gl: g.land.o === i ? glOf(r, i, g.land.c, 'land') : 0 }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -2534,7 +2552,7 @@ const BT4A = {
     } });
   },
 };
-function bt4Atk(r, i, a, tg, tk) { bt10AtkAny(r, i, a, tg, tk); if (noFx(r, a)) return; const f = BT4A[a.id]; f && f(r, i, a, tg, tk); }
+function bt4Atk(r, i, a, tg, tk) { bt10AtkAny(r, i, a, tg, tk); if (noFx(r, a)) return; const f = BT4A[a.id] || (a.id === 'BT08-023' && a.gain8 && BT4A[a.gain8]); f && f(r, i, a, tg, tk); }
 Object.assign(SUM, {
   'BT04-004': (r, i, x) => {   // อีช่า: เซ่นไหว้ Avatar ใบอื่น 1 ใบ → ยึด Avatar {คน/เทพ/นรก} ของศัตรู
     const p = r.p[i], SY = ['คน', 'เทพ', 'นรก'], tgs = () => r.p[1 - i].av.filter(a => SY.includes(symOf(a)) && !protectedFrom(r, i, a)).map(a => a.u);
@@ -3518,7 +3536,7 @@ function bt7Guess(r, i, srcName, win) {   // ประกาศประเภ�
   typeAsk(r, i, srcName + ': ประกาศประเภทของการ์ดบนสุดของ Deck ฝ่ายตรงข้าม', t => { const top = op.deck[op.deck.length - 1]; fx({ k: 'scout', i, ids: [top.kd || top.id] }); const ok = B[top.id].t === t;
     log(r, '🔎 ' + srcName + ': ประกาศ ' + t + ' · สอดแนมเจอ ' + B[top.id].n + (ok ? ' ✔ ถูก' : ' ✘ ผิด')); win(ok, top, op); }); }
 function bt7After(r, p, a) {   // 028 ไอ้ดำ: หลังจบการต่อสู้
-  if (!a || a.id !== 'BT07-028' || noFx(r, a) || a.ou7 === r.g.n || !find(r, a.u)) return; const i = p.ai, L = r.p[i].av.filter(x => x.u !== a.u).map(x => x.u); if (!L.length) return;
+  if (!a || (a.id !== 'BT07-028' && !(a.id === 'BT08-023' && a.gain8 === 'BT07-028')) || noFx(r, a) || a.ou7 === r.g.n || !find(r, a.u)) return; const i = p.ai, L = r.p[i].av.filter(x => x.u !== a.u).map(x => x.u); if (!L.length) return;
   ask(r, i, { yn: true, text: 'ไอ้ดำ จากนรก: เซ่นไหว้ Avatar ใบอื่น 1 ใบ เพื่อเปลี่ยนเป็นสภาพตื่น?', cb: y => { if (!y) return; ask(r, i, { text: 'เลือก Avatar ที่จะเซ่นไหว้', opts: L, cb: us => { a.ou7 = r.g.n; sac(r, us[0]); a.tired = false; vfx(a.u, 'aura', '🔥 ตื่น', '#a855f7'); log(r, '🔥 ไอ้ดำ: เซ่นไหว้แล้วเปลี่ยนเป็นสภาพตื่น'); } }); } }); }
 function bt7Draw(r, i) {   // 040 หมอเลิฟ: Draw Phase ที่ 2 หลังทำงาน → การ์ดในนรกขึ้นมือ
   ccDrawPhase(r, i);
@@ -3701,7 +3719,7 @@ Object.assign(SUM, {
   'BT08-023': (r, i, x) => {   // มฤตยูเทวี — จุติ: ได้ความสามารถของ Avatar {นรก} Cost 5 ในนรก (ถ้ามี จุติ แสดงผลทันที)
     const p = r.p[i], L = p.hell.filter(h => isAv(h) && symOf(h) === 'นรก' && B[h.id].c === 5).map(h => h.u);
     ask(r, i, { text: 'จุติ: เลือก Avatar {นรก} Cost 5 ในนรก เพื่อรับความสามารถ', opts: L, cb: us => { const h = p.hell.find(k => k.u === us[0]); if (!h) return; const id = CANON[h.id] || h.id; x.gain8 = id; vfx(x.u, 'aura', '🔥 รับความสามารถ ' + B[h.id].n, '#a855f7'); log(r, '🔥 มฤตยูเทวี: ได้รับความสามารถของ ' + B[h.id].n);
-      if (SUM[id] && id !== 'BT08-023') { fx({ k: 'say', id, t: 'จุติ' }); SUM[id](r, i, x); } } });
+      if (id !== 'BT08-023') { if (SUM[id]) { fx({ k: 'say', id, t: 'จุติ' }); SUM[id](r, i, x); } else if ((B[id].e || '').includes('จุติ')) { const sh = Object.create(x); sh.id = id; fx({ k: 'say', id, t: 'จุติ' }); fxSummon0(r, i, sh); } } } });
   },
   'BT08-024': (r, i, x) => {   // อีสานสลิงเกอร์ ปิ๊ก — จุติ ธรณีสูบ 3 : นำ โคกอีสานนูน จาก Deck/นรก ขึ้นมือ
     const p = r.p[i]; if (p.deck.length < 1) return;
@@ -5030,7 +5048,7 @@ function bt10AtkBlock(r, atk, tgt) {
 // เป็นเป้าความสามารถ/Magic ไม่ได้ (038 8 ชื่อ, 070 ดินแดนยุติธรรม)
 const bt10Prot = (r, who, x, mg) => {
   if (who === undefined || !x || x.tk) return false; const oi = r.p.findIndex(q => q.av.includes(x)); if (oi < 0 || oi === who) return false;
-  if (mg && x.id === 'BT10-038' && !noFx(r, x) && banks10(r, oi) >= 8) return true;
+  if (mg && (x.id === 'BT10-038' || (x.id === 'BT08-023' && x.gain8 === 'BT10-038')) && !noFx(r, x) && banks10(r, oi) >= 8) return true;
   if (r.g.land && r.g.land.c.id === 'BT10-070' && r.g.land.o === oi && (nmOf(x).includes('เพมมุ') || (B[x.id].e || '').includes('เพมมุ')) && r.p[oi].av.some(a => (nmOf(a).includes('เพมมุ') || nmOf(a).includes('สไปรท์')) && linked9(r, a))) return true;
   return false;
 };
@@ -5368,7 +5386,7 @@ function botAsk(r, k) {
   bt.ar = (bt.ak === a.text ? bt.ar + 1 : 1); bt.ak = a.text;   // คำถามเดิมวนซ้ำ = คำตอบเราไม่ผ่านเงื่อนไขในใจเซิร์ฟเวอร์ -> ตอบแบบ "ไม่เลือก" กันลูป
   if (bt.ar >= 3 && !a.yn && !a.choices) { bt.ar = 0; if (botAct(r, k, { t: 'pick', us: a.opts.slice(0, a.min) })) return; if (a.cancel) return botAct(r, k, { t: 'pick', cancel: 1 }); }
   let m;
-  if (a.choices) m = { t: 'pick', i: rnd ? Math.floor(Math.random() * a.choices.length) : 0 };
+  if (a.choices) m = { t: 'pick', i: (rnd || a.rps) ? Math.floor(Math.random() * a.choices.length) : 0 };
   else if (a.yn) {
     const tx = a.text || ''; let y = /ทิ้งการ์ดทั้งหมด/.test(tx) ? +(lv === 3 && r.p[k].hand.length <= 2) : (rnd ? +(Math.random() < .5) : 1);
     if (/^อู๊ดลูกเสือ: เซ่นไหว้/.test(tx)) { const h = a.hint || {}, at = find(r, h.u), tg = find(r, h.tg); y = +(lv >= 2 && !!at && !!tg && P(r, at.c) >= P(r, tg.c)); }   // เซ่นไหว้ก็ต่อเมื่อเป้าจะตาย
