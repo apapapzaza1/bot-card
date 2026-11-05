@@ -25,6 +25,7 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
   } catch (err) { console.log('unzip error', err.message); }
 })();
 const srv = http.createServer((q, r) => {
+  if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
   if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
