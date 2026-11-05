@@ -228,6 +228,11 @@ details summary{cursor:pointer;margin:8px 0}.ck{display:block;margin:4px 0}.ck i
 .vfx.aura{border:4px solid var(--vc);box-shadow:0 0 26px var(--vc),inset 0 0 20px var(--vc);animation:vaura 1s ease-out forwards}@keyframes vaura{0%{transform:scale(.3);opacity:1}100%{transform:scale(1.9);opacity:0}}
 .vfx.burst{background:radial-gradient(circle,#fff 0,var(--vc) 30%,#0000 70%);animation:vburst .8s ease-out forwards}@keyframes vburst{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.4);opacity:0}}
 .vfx.heal{background:radial-gradient(circle,#fff8,var(--vc) 40%,#0000 70%);animation:vburst 1s ease-out forwards}
+.vfx.ring{border:3px solid var(--vc);box-shadow:0 0 18px var(--vc);animation:vring .9s ease-out forwards}@keyframes vring{0%{transform:scale(.2);opacity:1}60%{opacity:.9}100%{transform:scale(2.6);opacity:0}}
+.vfx.rise{background:radial-gradient(circle,var(--vc) 0,#0000 60%);animation:vrise 1.1s ease-out forwards}@keyframes vrise{0%{transform:translateY(30px) scale(.4);opacity:0}30%{opacity:1}100%{transform:translateY(-70px) scale(1.4);opacity:0}}
+.vfx.slash{border-radius:0;background:linear-gradient(115deg,#0000 40%,#fff 48%,var(--vc) 52%,#0000 60%);filter:drop-shadow(0 0 8px var(--vc));animation:vslash .45s ease-out forwards}@keyframes vslash{0%{transform:translateX(-40px) scale(1.2);opacity:0}30%{opacity:1}100%{transform:translateX(40px) scale(1.6);opacity:0}}
+.vfx.bolt{border-radius:0;width:36px;left:-18px;top:-90px;height:180px;background:linear-gradient(#0000,#fff 30%,var(--vc) 55%,#0000);filter:drop-shadow(0 0 12px var(--vc));animation:vbolt .6s ease-out forwards}@keyframes vbolt{0%{transform:scaleY(.1);opacity:1}40%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1.1) scaleX(2);opacity:0}}
+.vfx.beam{border-radius:0;width:20px;left:-10px;top:-120px;height:240px;background:linear-gradient(#0000,var(--vc),#0000);animation:vbeam .9s ease-out forwards}@keyframes vbeam{0%{transform:scaleX(.2);opacity:0}30%{opacity:.9}100%{transform:scaleX(3);opacity:0}}
 .vtx{font-size:20px;font-weight:900;color:#fff;white-space:nowrap;text-shadow:0 0 10px var(--vc),0 2px 0 #000;animation:vtx 1.4s ease-out forwards}@keyframes vtx{0%{transform:translateY(8px) scale(.5);opacity:0}20%{transform:translateY(-8px) scale(1.2);opacity:1}100%{transform:translateY(-58px) scale(1);opacity:0}}
 .bh .seg{margin:0}.bh .chips{margin:0}
 #game{grid-template-rows:auto 1fr auto auto auto}
@@ -1137,8 +1142,8 @@ else if(f.k=='coin'){fxEl(`<div class="fxcoin">${f.h?'หัว':'ก้อย'}
 else if(f.k=='rps'){const E={r:'✊',p:'✋',s:'✌'},m=f.i==S.i;fxEl(`<div class="fxrps"><span>${E[m?f.a:f.b]}</span><i>VS</i><span>${E[m?f.b:f.a]}</span></div>`,innerWidth/2,innerHeight*.4,2200);sfx('hit')}
 else if(f.k=='vfx'){const p=pos(f.u)||{x:innerWidth/2,y:innerHeight*.4},e=cel(f.u),c=f.c||'#fde047';
 if(f.t=='shake'&&e){e.classList.remove('vshk');void e.offsetWidth;e.classList.add('vshk');setTimeout(()=>e.classList.remove('vshk'),700)}
-if(f.t=='aura'||f.t=='burst'||f.t=='heal')fxEl(`<div class="vfx ${f.t}" style="--vc:${c}"></div>`,p.x,p.y,1100);
-if(f.txt)fxEl(`<div class="vtx" style="--vc:${c}">${esc(f.txt)}</div>`,p.x,p.y-20,1500);sfx(f.t=='burst'?'hit':'play')}
+if(['aura','burst','heal','ring','rise','slash','bolt','beam'].includes(f.t))fxEl(`<div class="vfx ${f.t}" style="--vc:${c}"></div>`,p.x,p.y,1100);
+if(f.txt)fxEl(`<div class="vtx" style="--vc:${c}">${esc(f.txt)}</div>`,p.x,p.y-20,1500);sfx(f.t=='burst'||f.t=='slash'||f.t=='bolt'?'hit':'play')}
 else if(f.k=='sac'){const p=pos(f.u);if(!p)return;fxEl('<div class="fxsac"></div>',p.x,p.y,1000);sfx('hit')}
 else if(f.k=='summon'){const p=pos(f.u);if(!p)return;fxEl('<div class="fxsum"></div><div class="fxsum s2"></div>',p.x,p.y,1000);sfx('play')}
 else if(f.k=='exile'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxexv"></div>',p.x,p.y,1300);fxEl(`<div class="c im fxexc" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,1300);fxEl('<div class="fxbn ex">🌀 เนรเทศ!</div>',innerWidth/2,innerHeight*.4,1500);sfx('hit')}
