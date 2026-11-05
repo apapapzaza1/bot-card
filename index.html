@@ -597,6 +597,8 @@ body.ing #bg::before{animation:none}
 .qf input:first-child{grid-column:1/-1}
 .chi{margin-top:10px;padding:8px 10px;border-radius:10px;background:rgba(192,132,252,.12);border:1px solid rgba(192,132,252,.35);font-size:12px;line-height:1.5}
 #vlog{position:fixed;inset:0;z-index:2147483000;background:#000a;display:flex;align-items:center;justify-content:center}#vlog .vb{width:min(92vw,460px);max-height:80vh;overflow:auto;background:var(--pn);border:2px solid #8886;border-radius:16px;padding:16px;box-shadow:0 0 50px #0009;text-align:left;color:inherit}#vlog h3{margin:0 0 6px}#vlog .vv{margin:12px 0 4px;font-weight:700;color:#fc3}#vlog ul{margin:0;padding-left:20px}#vlog li{margin:4px 0;font-size:.92em;line-height:1.4}#vlog button{margin-top:14px;width:100%;padding:8px}
+.vnb{display:inline-block;background:#ef4444;color:#fff;border-radius:8px;padding:1px 7px;margin-right:6px;font-weight:700;opacity:1;animation:vnbl 1.1s ease-in-out infinite}@keyframes vnbl{50%{opacity:.35}}
+.vupd{position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;text-align:center;font-weight:700;padding:10px 12px;cursor:pointer;box-shadow:0 2px 10px #0006}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -622,10 +624,17 @@ let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator
 const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};let b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};if(x.nmo)b={...b,n:x.nmo,s:x.sy||b.s};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json?'+Date.now()).then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
-fetch('/version.json').then(r=>r.json()).then(a=>{const d=new Date(a.t),o={timeZone:'Asia/Bangkok'},dt=d.toLocaleDateString('th-TH',{...o,day:'numeric',month:'short',year:'numeric'}),tm=d.toLocaleTimeString('th-TH',{...o,hour:'2-digit',minute:'2-digit',hour12:false});$('ver').textContent=a.v+' (อัปเดตล่าสุดวันที่ '+dt+' เวลา '+tm+' น.) ▸ กดดูอัปเดต'}).catch(e=>{});
+let CURV=null,LOADV=null;const VK='bot_seen_ver',vKey=a=>a.v+'|'+a.t;
+const markV=()=>{try{CURV&&localStorage.setItem(VK,vKey(CURV))}catch(e){}const b=document.getElementById('vnb');b&&b.remove();const v=$('ver');v&&(v.style.opacity='.7')};
+const chkVer=()=>fetch('/version.json',{cache:'no-store'}).then(r=>r.json()).then(a=>{CURV=a;const d=new Date(a.t),o={timeZone:'Asia/Bangkok'},dt=d.toLocaleDateString('th-TH',{...o,day:'numeric',month:'short',year:'numeric'}),tm=d.toLocaleTimeString('th-TH',{...o,hour:'2-digit',minute:'2-digit',hour12:false}),v=$('ver');
+if(v){v.textContent=a.v+' (อัปเดตล่าสุดวันที่ '+dt+' เวลา '+tm+' น.) ▸ กดดูอัปเดต';let s=null;try{s=localStorage.getItem(VK)}catch(e){}
+if(s!==vKey(a)){const b=document.createElement('span');b.id='vnb';b.className='vnb';b.textContent='⚠ อัปเดตใหม่';v.prepend(b);v.style.opacity='1'}}
+if(LOADV&&LOADV!==vKey(a)&&!document.getElementById('vupd')){const u=document.createElement('div');u.id='vupd';u.className='vupd';u.textContent='🔔 มีอัปเดตใหม่ ('+a.v+') — กดเพื่อรีเฟรชเกม';u.onclick=()=>location.reload();document.body.appendChild(u)}
+LOADV=LOADV||vKey(a)}).catch(e=>{});
+chkVer();setInterval(chkVer,60000);
 (()=>{const vb=$('ver');if(!vb)return;vb.style.cursor='pointer';vb.style.textDecoration='underline';vb.title='กดดูรายการอัปเดต';
 const close=()=>{const o=document.getElementById('vlog');o&&o.remove()};
-vb.addEventListener('click',e=>{e.stopPropagation();close();
+vb.addEventListener('click',e=>{e.stopPropagation();close();markV();
 fetch('/changelog.json',{cache:'no-store'}).then(r=>r.json()).then(a=>{
 const o=document.createElement('div');o.id='vlog';o.onclick=ev=>{if(ev.target===o)close()};
 const b=document.createElement('div');b.className='vb';
@@ -639,7 +648,7 @@ const LEG={SCR:'SEC',CBR:'UBR'};
 const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';return`background-image:url(/${k}.webp);background-size:100% 100%;background-position:center`};
 const ZL={av:'Avatar Zone',co:'Construct Zone',mg:'Magic Zone'},ZS={av:'มี Avatar บนสนามได้สูงสุด 4 ใบ',co:'มี Construct ได้สูงสุด 3 ใบ',mg:'เล่น Magic ได้ประเภทละครั้ง'};
 function conn(){if(ws&&ws.readyState<2)return;const w=ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
-w.onopen=()=>cfg.tok&&send({t:'tok',tok:cfg.tok});w.onclose=()=>{if(w!==ws)return;dropped();setTimeout(conn,2000)};
+w.onopen=()=>{try{chkVer()}catch(e){}cfg.tok&&send({t:'tok',tok:cfg.tok})};w.onclose=()=>{if(w!==ws)return;dropped();setTimeout(conn,2000)};
 w.onmessage=e=>{const m=JSON.parse(e.data);if(m.t==='chinfo'){window.CHI=m;chiUp();return}if(m.err){if(/เซสชัน/.test(m.err)){cfg.tok='';ap();$('ld').hidden=true;$('auth').hidden=false;return}if((RJ||RJX||FFQ)&&/ไม่พบห้อง|ไม่มีเกมที่ค้างอยู่/.test(m.err))return rjLobby('เกมนี้จบไปแล้ว หรือห้องถูกปิด');return alert(m.err)}
 if(m.t=='auth'){cfg.tok=m.tok;ap();me(m.me);$('auth').hidden=true;$('ld').hidden=true;$('lobby').hidden=false;if(FFQ){FFQ=0;send({t:'rjff'})}else if(cur)send({t:'join',room:cur})}
 if(m.t=='me'){if(m.gain)GAIN=m.gain;me(m.me);if(S&&S.over)endUI();if(m.pfx)pfGainUI(m.pfx);if(m.claim)pfClaimUI(m.claim)}if(m.note&&m.t!='packs')toast(m.note);

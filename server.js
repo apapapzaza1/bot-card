@@ -4,10 +4,14 @@ const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'ut
 const B = {}; CARDS.forEach(c => B[c.id] = c);
 // ไพรมอล รัททาทุย (SD08-001): เพิ่มการ์ดอาร์ท PR และ CBR (ในระบบ CBR = UBR) — ไฟล์รูป SD08-001-PR.webp / SD08-001-UBR.webp
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.2';
+const VERSION = process.env.APP_VERSION || 'v1.3';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.3', d: '2026-11-06', items: [
+    'เพิ่มเครื่องหมาย "⚠ อัปเดตใหม่" ที่แถบเวอร์ชันหน้าล็อบบี้ ทุกครั้งที่มีอัปเดต (หายเมื่อกดดูรายการอัปเดต)',
+    'ถ้าเปิดเกมค้างไว้แล้วมีอัปเดต จะขึ้นแถบเตือน "มีอัปเดตใหม่ กดเพื่อรีเฟรช" ให้อัตโนมัติ'
+  ] },
   { v: 'v1.2', d: '2026-11-06', items: [
     'แก้ อนันตวดี ราชินีแห่งนาค: ใช้เป็น Cost จ่ายให้ อนันต์ ราชาแห่งนาค ได้แล้ว นับเป็น 6 GEM สีแดง (เดิมหน้าเว็บคิดเป็น 4 ทำให้ขึ้น "Gem ไม่พอ")',
     'ช่างแอร์ดวงซวย: เปลี่ยน GEM เป็นไร้สี (ครบทุกใบที่พิมพ์ซ้ำ: KD01-012 / SD01-006 / ODY1-043)',
@@ -18,6 +22,10 @@ const CHANGELOG = [
 const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR'];
 function patchCardV(c) { if (c && c.id === 'SD08-001') { c.v = Array.isArray(c.v) && c.v.length ? c.v : ['C']; ['PR', 'UBR'].forEach(x => { if (!c.v.includes(x)) c.v.push(x); }); } }
 CARDS.forEach(patchCardV);
+// การ์ดที่ GEM จริงเป็นสีไร้สี แต่ข้อมูลเดิมระบุเป็นสีอื่น — ใส่รหัสการ์ดในลิสต์นี้ แล้วระบบจะเปลี่ยนเป็น GEM ไร้สีให้ (ทุกสีจ่ายได้)
+const COLORLESS_GEM = [];
+function patchGem(c) { if (c && COLORLESS_GEM.includes(c.id)) delete c.gc; }
+CARDS.forEach(patchGem);
 
 const MT={'.json':'application/json','.html':'text/html;charset=utf-8','.mp4':'video/mp4','.webm':'video/webm','.webp':'image/webp','.jpg':'image/jpeg','.png':'image/png','.mp3':'audio/mpeg'};
 const IMG = path.join(require('os').tmpdir(), 'bot-img');
@@ -47,7 +55,7 @@ const srv = http.createServer((q, r) => {
     if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, log: CHANGELOG })); }
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
     if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, u0.slice(1))).find(f => fs.existsSync(f)), 'utf8'));   // artmap.json อาจอยู่ในโฟลเดอร์รูป (แตกมาจาก imgs*.zip)
-      if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(patchCardV);
+      if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(c => { patchCardV(c); patchGem(c); });
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
