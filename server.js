@@ -36,7 +36,7 @@ const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
-    if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync(path.join(__dirname, u0.slice(1)), 'utf8'));
+    if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, u0.slice(1))).find(f => fs.existsSync(f)), 'utf8'));   // artmap.json อาจอยู่ในโฟลเดอร์รูป (แตกมาจาก imgs*.zip)
       if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(patchCardV);
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
