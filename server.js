@@ -4,8 +4,17 @@ const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'ut
 const B = {}; CARDS.forEach(c => B[c.id] = c);
 // ไพรมอล รัททาทุย (SD08-001): เพิ่มการ์ดอาร์ท PR และ CBR (ในระบบ CBR = UBR) — ไฟล์รูป SD08-001-PR.webp / SD08-001-UBR.webp
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.1';
+const VERSION = process.env.APP_VERSION || 'v1.2';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
+// รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
+const CHANGELOG = [
+  { v: 'v1.2', d: '2026-11-06', items: [
+    'แก้ อนันตวดี ราชินีแห่งนาค: ใช้เป็น Cost จ่ายให้ อนันต์ ราชาแห่งนาค ได้แล้ว นับเป็น 6 GEM สีแดง (เดิมหน้าเว็บคิดเป็น 4 ทำให้ขึ้น "Gem ไม่พอ")',
+    'ช่างแอร์ดวงซวย: เปลี่ยน GEM เป็นไร้สี (ครบทุกใบที่พิมพ์ซ้ำ: KD01-012 / SD01-006 / ODY1-043)',
+    'แก้ บ่าวแสม ซามูไรปักษ์ใต้: POWER +1 เป็นแบบถาวรและสะสมได้ (เดิมหายทุกจบเทิร์น เลยไม่สะสม)',
+    'แถบเวอร์ชันหน้าล็อบบี้: กดเพื่อดูรายการอัปเดตได้'
+  ] }
+];
 const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR'];
 function patchCardV(c) { if (c && c.id === 'SD08-001') { c.v = Array.isArray(c.v) && c.v.length ? c.v : ['C']; ['PR', 'UBR'].forEach(x => { if (!c.v.includes(x)) c.v.push(x); }); } }
 CARDS.forEach(patchCardV);
@@ -35,6 +44,7 @@ console.log('extra art:', EXTRA_ART.map(n => n + (fs.existsSync(path.join(IMG, n
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];
+    if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, log: CHANGELOG })); }
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
     if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, u0.slice(1))).find(f => fs.existsSync(f)), 'utf8'));   // artmap.json อาจอยู่ในโฟลเดอร์รูป (แตกมาจาก imgs*.zip)
       if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(patchCardV);
@@ -5015,7 +5025,7 @@ Object.assign(SUM, {
 Object.assign(BT4A, {
   // BT10-012 บ่าวแสม — เทิร์นละครั้ง เมื่อโจมตี: เนรเทศบนสุดของ Deck เรา 1 ใบ แล้วเลือกผลตามจำนวนการ์ดในมิติมืดเรา
   'BT10-012': (r, i, a) => { if (a.ou === r.g.n) return; const p = r.p[i]; if (!p.deck.length) return; a.ou = r.g.n; const c = p.deck.pop(); p.dk.push(c); fx({ k: 'exile', u: c.u, id: c.id }); log(r, '🌀 เนรเทศ ' + B[c.id].n + ' (มิติมืด ' + p.dk.length + ' ใบ)');
-    const n = p.dk.length, opt = [['POWER +1', 1, () => { addTp(a, 1); vfx(a.u, 'aura', 'POWER +1', '#facc15'); }], ['เปลี่ยนเป็นสภาพตื่น', 2, () => { a.tired = false; vfx(a.u, 'aura', 'ตื่น', '#22c55e'); }], ['สุ่มทิ้งการ์ดบนมือฝ่ายตรงข้าม 1 ใบ', 3, () => { const h = r.p[1 - i].hand; if (h.length) sendHell(r, rnd(h).u); }]].filter(o => n >= o[1]);
+    const n = p.dk.length, opt = [['POWER +1', 1, () => { addPw(a, 1); vfx(a.u, 'aura', 'POWER +1', '#facc15'); log(r, '🗡 บ่าวแสม POWER +1 (ถาวร)'); }], ['เปลี่ยนเป็นสภาพตื่น', 2, () => { a.tired = false; vfx(a.u, 'aura', 'ตื่น', '#22c55e'); }], ['สุ่มทิ้งการ์ดบนมือฝ่ายตรงข้าม 1 ใบ', 3, () => { const h = r.p[1 - i].hand; if (h.length) sendHell(r, rnd(h).u); }]].filter(o => n >= o[1]);
     if (!opt.length) return; ask(r, i, { text: 'บ่าวแสม: เลือกผล 1 อย่าง (มิติมืด ' + n + ' ใบ)', choices: opt.map((o, k) => (k + 1) + ') ' + o[0]), cb: k => opt[k][2]() }); },
   // BT10-027 — เทิร์นละครั้ง เมื่อโจมตี ธรณีสูบ 1 ใบ: POWER +1 ตามจำนวน Avatar {นรก} บน Avatar Zone เรา จนจบเทิร์น (ส่วน [Link] รอ)
   'BT10-027': (r, i, a) => { if (a.ou === r.g.n || !linked9(r, a)) return; ask(r, i, { yn: true, text: 'นายนิรยบาล นิมมา: ธรณีสูบ 1 ใบ เพื่อ POWER +1 ตามจำนวน Avatar {นรก} บน Avatar Zone เรา ไหม?', cb: y => { if (!y) return; a.ou = r.g.n; mill(r, i, 1); const n = r.p[i].av.filter(x => symOf(x) === 'นรก').length; addTp(a, n); vfx(a.u, 'aura', 'POWER +' + n, '#a855f7'); log(r, '🔥 นิมมา POWER +' + n); } }); },

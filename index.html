@@ -596,6 +596,7 @@ body.ing #bg::before{animation:none}
 .qf input,.qf select{min-width:0}
 .qf input:first-child{grid-column:1/-1}
 .chi{margin-top:10px;padding:8px 10px;border-radius:10px;background:rgba(192,132,252,.12);border:1px solid rgba(192,132,252,.35);font-size:12px;line-height:1.5}
+#vlog{position:fixed;inset:0;z-index:2147483000;background:#000a;display:flex;align-items:center;justify-content:center}#vlog .vb{width:min(92vw,460px);max-height:80vh;overflow:auto;background:var(--pn);border:2px solid #8886;border-radius:16px;padding:16px;box-shadow:0 0 50px #0009;text-align:left;color:inherit}#vlog h3{margin:0 0 6px}#vlog .vv{margin:12px 0 4px;font-weight:700;color:#fc3}#vlog ul{margin:0;padding-left:20px}#vlog li{margin:4px 0;font-size:.92em;line-height:1.4}#vlog button{margin-top:14px;width:100%;padding:8px}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -621,7 +622,18 @@ let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator
 const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};let b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};if(x.nmo)b={...b,n:x.nmo,s:x.sy||b.s};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
 let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json?'+Date.now()).then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
-fetch('/version.json').then(r=>r.json()).then(a=>{const d=new Date(a.t),o={timeZone:'Asia/Bangkok'},dt=d.toLocaleDateString('th-TH',{...o,day:'numeric',month:'short',year:'numeric'}),tm=d.toLocaleTimeString('th-TH',{...o,hour:'2-digit',minute:'2-digit',hour12:false});$('ver').textContent=a.v+' (อัปเดตล่าสุดวันที่ '+dt+' เวลา '+tm+' น.)'}).catch(e=>{});
+fetch('/version.json').then(r=>r.json()).then(a=>{const d=new Date(a.t),o={timeZone:'Asia/Bangkok'},dt=d.toLocaleDateString('th-TH',{...o,day:'numeric',month:'short',year:'numeric'}),tm=d.toLocaleTimeString('th-TH',{...o,hour:'2-digit',minute:'2-digit',hour12:false});$('ver').textContent=a.v+' (อัปเดตล่าสุดวันที่ '+dt+' เวลา '+tm+' น.) ▸ กดดูอัปเดต'}).catch(e=>{});
+(()=>{const vb=$('ver');if(!vb)return;vb.style.cursor='pointer';vb.style.textDecoration='underline';vb.title='กดดูรายการอัปเดต';
+const close=()=>{const o=document.getElementById('vlog');o&&o.remove()};
+vb.addEventListener('click',e=>{e.stopPropagation();close();
+fetch('/changelog.json',{cache:'no-store'}).then(r=>r.json()).then(a=>{
+const o=document.createElement('div');o.id='vlog';o.onclick=ev=>{if(ev.target===o)close()};
+const b=document.createElement('div');b.className='vb';
+const t=document.createElement('h3');t.textContent='รายการอัปเดต';b.appendChild(t);
+(a.log||[]).forEach(L=>{const v=document.createElement('div');v.className='vv';v.textContent=L.v+(L.d?' · '+new Date(L.d+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}):'')+(L.v===a.v?' (ปัจจุบัน)':'');b.appendChild(v);
+const ul=document.createElement('ul');(L.items||[]).forEach(x=>{const li=document.createElement('li');li.textContent=x;ul.appendChild(li)});b.appendChild(ul)});
+const bt=document.createElement('button');bt.textContent='ปิด';bt.onclick=close;b.appendChild(bt);o.appendChild(b);document.body.appendChild(o)}).catch(()=>{})});
+document.addEventListener('keydown',e=>{e.key==='Escape'&&close()})})();
 let AM=null;fetch('/artmap.json?'+Date.now()).then(r=>r.json()).then(a=>{AM=new Set(a);try{pfChip()}catch(e){}if(S&&!$('game').hidden)render()}).catch(e=>{});
 const LEG={SCR:'SEC',CBR:'UBR'};
 const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';return`background-image:url(/${k}.webp);background-size:100% 100%;background-position:center`};
@@ -926,7 +938,7 @@ step()}
 const find=u=>{for(const w of['me','op'])for(const z of['hand','av','mg','co','hell','life'])for(const x of S[w][z]||[])if(x.u===u)return{x,z,o:w=='op'};for(const w of['me','op'])for(const h of S[w].av||[])for(const q of h.wl||[])if(q.u===u)return{x:{...q,at:h.u,ab:(q.sk&&q.sk.length)?1:0},z:'wr',o:w=='op'};if(S.land&&S.land.c.u===u)return{x:S.land.c,z:'land',o:S.land.o!=S.i}};
 const mullOK=()=>S.phase=='mull'&&!S.md[S.i]&&(S.mine||S.md[1-S.i]);
 const isMod=x=>{const c=info(x);return !!c&&c.t=='Magic'&&c.st=='Modification'};
-const gvF=(c,d)=>(c.t=='Construct'&&d.id=='BT06-021')?5:(S.land&&S.land.c.id=='BT05-069'&&S.land.o==S.i&&c.t=='Avatar'&&c.s=='ยักษ์'&&d.t=='Avatar'&&d.s=='ยักษ์'&&d.p>0)?d.p:0;
+const gvF=(c,d)=>(c.n&&d.n&&c.n.trim()=='อนันต์ ราชาแห่งนาค'&&d.n.trim()=='อนันตวดี ราชินีแห่งนาค')?6:(c.t=='Construct'&&d.id=='BT06-021')?5:(S.land&&S.land.c.id=='BT05-069'&&S.land.o==S.i&&c.t=='Avatar'&&c.s=='ยักษ์'&&d.t=='Avatar'&&d.s=='ยักษ์'&&d.p>0)?d.p:0;
 const gemSum=f=>{const c=info(f.x);return S.me.hand.reduce((a,y)=>{if(y.u==f.x.u)return a;const d=info(y),gv=gvF(c,d);return a+(gv?gv:((d.g&&!(d.gc&&c.col&&d.gc!=c.col))?d.g:0))},0)};
 const gemMsg=f=>'Gem ในมือไม่พอ ('+gemSum(f)+'/'+info(f.x).c+')';
 const supOK=x=>!x.tired&&!x.tk&&(/สามัคคี/.test(info(x).e||'')||x.sg)&&x.u!=atk;
