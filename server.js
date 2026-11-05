@@ -5399,6 +5399,7 @@ function botMull(r, k) {
 }
 function botMain(r, k) {
   const g = r.g, me = r.p[k], bt = r.bot, lv = Math.min(bt.lv, 3), W = bt.w || CHW0, T = bt.tried, ops = [];
+  if (bt.lv === 4) { for (const [x, z] of chZones(me)) { if (T.has('u' + x.u) || !abOf(r, k, x, z) || !chAbilEarly(r, k, x)) continue; T.add('u' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true; } }   // ท้าทาย: สกิลจั่ว/ค้นหา ใช้ก่อนลงการ์ด
   me.hand.forEach(h => {
     const d = B[h.id]; if (!d || T.has('s' + h.u)) return;
     if (d.t === 'Avatar') { if (h.id === 'SD03-003' || (g.lim && g.lim[k] && d.s !== g.lim[k]) || !canPlaceAv(r, k, h)) return; }
@@ -5419,7 +5420,7 @@ function botMain(r, k) {
       if (botAct(r, k, { t: 'cast', u: h.u })) return true;
     }
     for (const [x, z] of [...me.av.map(x => [x, 'av']), ...me.mg.map(x => [x, 'mg']), ...me.co.map(x => [x, 'co'])]) {   // ใช้ความสามารถ
-      if (T.has('u' + x.u) || !abOf(r, k, x, z)) continue;
+      if (T.has('u' + x.u) || !abOf(r, k, x, z) || (bt.lv === 4 && !chAbilOK(r, k, x))) continue;
       T.add('u' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true;
     }
   }
@@ -5458,13 +5459,14 @@ function botBattle(r, k) {
 }
 function botEnd(r, k) {
   const me = r.p[k];
+  if (r.bot.lv === 4 && me.hand.length <= 7) { const T = r.bot.tried; for (const [x, z] of chZones(me)) { if (T.has('e' + x.u)) continue; const d = AB[x.id] || ABIL[x.id]; if (!d || !d.end || !abOf(r, k, x, z) || !chAbilOK(r, k, x)) continue; T.add('e' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true; } }   // ท้าทาย: ใช้สกิล End Phase
   if (me.hand.length > 7) return botAct(r, k, { t: 'discardm', us: me.hand.slice().sort((a, b) => botCv(r, a) - botCv(r, b)).slice(0, me.hand.length - 7).map(c => c.u) });
   return botAct(r, k, { t: 'next' });
 }
 // เลือกเป้าหมายตอบคำถามของสกิล: จ่าย Cost -> ใบของเราที่ไม่สำคัญ / ทำลาย-ลด POWER -> ศัตรูที่แรงสุด / อื่นๆ -> ใบของเราที่ดีสุด
 function botSel(r, k, a) {
   const cs = a.cards || [], own = u => { const c = cs.find(x => x.u === u); return c ? c.i === k : true; };
-  const val = u => { const f = allCards(r, u); return f ? botCv(r, f.c) : 0; };
+  const val = u => { const f = allCards(r, u); if (!f) return 0; return botCv(r, f.c) + (r.bot && r.bot.lv === 4 ? chSelAdj(r, k, f, a.text || '', cost, harm) : 0); };
   const t = a.text || '', n = a.n, min = a.min;
   const cost = /ฝ่ายเรา|ทิ้ง|ส่ง.*ลงนรก|เซ่นไหว้|เป็น Cost|ให้อีกฝ่าย/.test(t), harm = !cost && /ทำลาย|POWER -|ยึด|ศัตรู|กลับขึ้นมือ/.test(t);
   let pool = a.opts.slice(), cnt;
@@ -6166,8 +6168,16 @@ function chBuild(col, oi, nz) {
   const canAdd = c => namesOf(c).every((n, j) => { const l = j ? (LIMNAME[n] || 4) : limOf(c), x = (cnt[n] || 0) + 1; return x <= l && (!lim[n] || x <= lim[n]) && !(pairs[n] || []).some(p => cnt[p]); });
   const Q = { Avatar: 32, Magic: 12, Construct: 4 }, got = { Avatar: 1, Magic: 0, Construct: 0 };   // Only#1 นับเป็น Avatar 1 ใบ
   let big = (only.c || 0) >= 5 ? 1 : 0;
-  const rankCopies = i => i < 10 ? 4 : i < 22 ? 3 : 2;
-  ['Avatar', 'Magic', 'Construct'].forEach(t => { const L = pool.filter(x => x.c.t === t); L.forEach((x, i) => { const want = rankCopies(i); for (let k = 0; k < want; k++) { if (main.length >= 50 || got[t] >= Q[t]) break; add1(x.c); } }); });
+  const bk = c => (c.c || 0) <= 2 ? 0 : c.c === 3 ? 1 : c.c === 4 ? 2 : 3, CAPB = [12, 9, 7, 6], MINB = [8, 7, 5, 0], bc = [0, 0, 0, 0], cp = {}; bc[bk(only)]++; cp[only.id] = 1;
+  const gp = [...pool.filter(x => x.c.t === 'Avatar').slice(0, 110), ...pool.filter(x => x.c.t === 'Magic').slice(0, 45), ...pool.filter(x => x.c.t === 'Construct').slice(0, 20)];
+  while (main.length < 50) {   // เลือกทีละใบ: คะแนนพื้นฐาน + เส้นโค้ง Cost + คู่คอมโบที่ชนะบ่อย - ค่าสำเนาซ้ำ
+    let best = null, bs = -1e9; const have = [...new Set(main)];
+    for (const x of gp) { const c = x.c; if (got[c.t] >= Q[c.t] || (cp[c.id] | 0) >= 4 || !canAdd(c)) continue;
+      let v = x.s - (cp[c.id] | 0) * .35; if (c.t === 'Avatar') { const b = bk(c); if (bc[b] >= CAPB[b]) continue; if (bc[b] < MINB[b]) v += 1.2; if ((c.c || 0) >= 5 && big >= 6) continue; }
+      for (const id2 of have) v += chBon(CH.tk.cb[chPair(c.id, id2)], 6, 3) * .5;
+      if (v > bs) { bs = v; best = c; } }
+    if (!best || !add1(best)) break; cp[best.id] = (cp[best.id] | 0) + 1; if (best.t === 'Avatar') bc[bk(best)]++;
+  }
   function add1(c) { if (main.length >= 50 || !canAdd(c)) return false; if (c.t === 'Avatar' && (c.c || 0) >= 5 && big >= 6) return false; main.push(c.id); namesOf(c).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; }); got[c.t]++; if ((c.c || 0) >= 5) big++; return true; }
   for (const x of pool) { while (main.length < 50 && canAdd(x.c) && (cnt[nk(x.c.n)] || 0) < 4) { if (!add1(x.c)) break; } if (main.length >= 50) break; }   // แก้: add1 ปฏิเสธ (Avatar Cost>=5 เกินโควตา) แล้ววนซ้ำไม่จบ -> เซิร์ฟเวอร์ค้าง   // เติมให้ครบ 50 ผ่อนโควตา
   // LIFE 5 ใบ ชื่อไม่ซ้ำ
@@ -6348,6 +6358,28 @@ function botReactGen(r, k, p, atF, tgF) {
   if (p.k === 'atk') { if (p.tk === 'life') return me.life.filter(l => !l.up).length <= 2; return !!atF && !!tgF && P(r, atF.c) >= P(r, tgF.c) && botCv(r, tgF.c) >= 2.5; }
   if (p.ev && p.ev.k === 'summon') { const f = find(r, p.ev.u); return !!f && f.i !== k && botCv(r, f.c) >= 3.5; }
   return false;
+}
+/* ----- รอบ 2: เลือกเป้าสกิลฉลาดขึ้น / จังหวะใช้สกิล ----- */
+const chZones = me => [...me.av.map(x => [x, 'av']), ...me.mg.map(x => [x, 'mg']), ...me.co.map(x => [x, 'co'])];
+const chTxt = x => (B[x.id] && B[x.id].e) || '';
+const CH_COSTW = /ทิ้ง|เซ่นไหว้|เป็น Cost|ส่ง.*ลงนรก/, CH_HARMW = /ทำลาย|POWER\s*-|ยึด|กลับขึ้นมือ/;
+function chAbilEarly(r, k, x) { const t = chTxt(x); return /จั่ว|ค้นหา/.test(t) && !CH_COSTW.test(t); }   // ได้การ์ดเพิ่มก่อน -> ลงการ์ดได้ตัวเลือกมากขึ้น
+function chAbilOK(r, k, x) {
+  const t = chTxt(x), me = r.p[k], op = r.p[1 - k]; if (!t) return true;
+  if (CH_COSTW.test(t)) { const hv = me.hand.map(h => botCv(r, h)).sort((a, b) => a - b); if (me.hand.length < 3 || hv[0] > 4) return false; }   // ต้องจ่ายการ์ด: ทำเมื่อมือเหลือเฟือและมีใบราคาถูกให้จ่าย
+  if (CH_HARMW.test(t) && !/ฝ่ายเรา/.test(t) && !op.av.length && !op.co.length) return false;   // ไม่มีเป้าศัตรู -> ไม่เปลืองสกิล
+  return true;
+}
+function chSelAdj(r, k, f, text, cost, harm) {   // f = { c, z, i } ของตัวเลือก ปรับค่า "ความอยากเลือก" (สูง = ยิ่งมีค่า)
+  const c = f.c; if (f.z !== 'av') return 0; let v = 0;
+  const buff = !cost && !harm && /POWER\s*\+|\+\s*\d+\s*POWER|เพิ่ม POWER|POWER เพิ่ม/.test(text);
+  if (cost) { if (c.tired) v -= 1.2; if ((c.wr || []).length) v += .8; if (c.tk) v -= .8; }   // จ่ายเป็น Cost: เสียตัวที่นอนอยู่/โทเคนก่อน เก็บตัวที่ใส่อาวุธ
+  else if (harm) { if (f.i !== k) { if (AB[c.id] || ABIL[c.id]) v += 1; if (!c.tired) v += .8; if ((c.wr || []).length) v += .6; } }   // ทำร้ายศัตรู: ตัวที่พร้อมสู้/มีสกิล/ใส่อาวุธ
+  else if (f.i === k) {
+    if (!c.tired) v += 1;
+    if (buff) { const m = text.match(/\+\s*(\d+)/), amt = m ? +m[1] : 1, op = r.p[1 - k], pa = P(r, c); v += op.av.filter(d => P(r, d) >= pa && P(r, d) < pa + amt).length * 1.8 + (op.av.every(d => P(r, d) < pa) ? -1 : 0); }   // บัฟ: เลือกตัวที่บัฟแล้วพลิกชนะศัตรูได้
+  }
+  return v;
 }
 /* ===== จบโหมดท้าทาย ===== */
 
