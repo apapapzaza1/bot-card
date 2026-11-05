@@ -3,6 +3,9 @@ const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
 // ไพรมอล รัททาทุย (SD08-001): เพิ่มการ์ดอาร์ท PR และ CBR (ในระบบ CBR = UBR) — ไฟล์รูป SD08-001-PR.webp / SD08-001-UBR.webp
+// เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
+const VERSION = process.env.APP_VERSION || 'v1.1';
+const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR'];
 function patchCardV(c) { if (c && c.id === 'SD08-001') { c.v = Array.isArray(c.v) && c.v.length ? c.v : ['C']; ['PR', 'UBR'].forEach(x => { if (!c.v.includes(x)) c.v.push(x); }); } }
 CARDS.forEach(patchCardV);
@@ -31,6 +34,7 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];
+    if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
     if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync(path.join(__dirname, u0.slice(1)), 'utf8'));
       if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(patchCardV);
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
