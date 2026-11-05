@@ -98,35 +98,35 @@ const QNOMODE = ['op', 'cr', 'st'];   // ตัวนับที่ไม่แ
 const qText = (m, md, n) => QT[m].replace('N', n.toLocaleString('en-US')) + (QNOMODE.includes(m) ? '' : (QM[md] || ''));
 // รายวัน: [metric, mode, เป้า, Gem, ผง, การ์ดอาร์ท] — สุ่มมา 10 ข้อ/วัน
 const QD = [
-  ['g', 'any', 1, 30, 0], ['g', 'any', 3, 60, 0], ['g', 'bot', 2, 30, 0], ['g', 'pvp', 1, 50, 0], ['g', 'pvp', 2, 80, 0],
-  ['w', 'any', 1, 50, 0], ['w', 'any', 2, 90, 40], ['w', 'bot', 1, 40, 0], ['w', 'pvp', 1, 70, 0], ['w', 'hard', 1, 100, 40],
-  ['sm', 'any', 5, 30, 0], ['sm', 'any', 10, 50, 0], ['sm', 'any', 15, 70, 40], ['sm', 'bot', 8, 40, 0], ['sm', 'pvp', 8, 60, 0],
-  ['bd', 'any', 2, 30, 0], ['bd', 'any', 4, 60, 0],
-  ['mg', 'any', 3, 30, 0], ['mg', 'any', 6, 50, 0], ['mg', 'any', 10, 80, 40],
-  ['ak', 'any', 5, 30, 0], ['ak', 'any', 10, 50, 0], ['ak', 'any', 15, 80, 40],
-  ['us', 'any', 5, 40, 0], ['wf', 'any', 1, 90, 40], ['op', 'any', 1, 50, 0], ['op', 'any', 3, 100, 40], ['s5', 'any', 2, 50, 0]];
+  ['g', 'any', 1, 250, 0], ['g', 'any', 3, 450, 0], ['g', 'bot', 2, 250, 0], ['g', 'pvp', 1, 600, 0], ['g', 'pvp', 2, 900, 0],
+  ['w', 'any', 1, 400, 0], ['w', 'any', 2, 700, 40], ['w', 'bot', 1, 300, 0], ['w', 'pvp', 1, 800, 0], ['w', 'hard', 1, 750, 40],
+  ['sm', 'any', 5, 250, 0], ['sm', 'any', 10, 400, 0], ['sm', 'any', 15, 550, 40], ['sm', 'bot', 8, 300, 0], ['sm', 'pvp', 8, 700, 0],
+  ['bd', 'any', 2, 250, 0], ['bd', 'any', 4, 450, 0],
+  ['mg', 'any', 3, 250, 0], ['mg', 'any', 6, 400, 0], ['mg', 'any', 10, 600, 40],
+  ['ak', 'any', 5, 250, 0], ['ak', 'any', 10, 400, 0], ['ak', 'any', 15, 600, 40],
+  ['us', 'any', 5, 300, 0], ['wf', 'any', 1, 700, 40], ['op', 'any', 1, 400, 0], ['op', 'any', 3, 750, 40], ['s5', 'any', 2, 400, 0]];
 // รายสัปดาห์ (ยากกว่ารายวัน รางวัลมากกว่า) — สุ่มมา 30 ข้อ/สัปดาห์
 const QW = [
-  ['g', 'any', 10, 150, 50], ['g', 'any', 20, 250, 100], ['g', 'any', 30, 350, 150], ['g', 'pvp', 8, 250, 100], ['g', 'pvp', 15, 400, 150], ['g', 'bot', 12, 200, 50],
-  ['w', 'any', 5, 200, 100], ['w', 'any', 10, 350, 150], ['w', 'any', 15, 500, 200, 1], ['w', 'pvp', 5, 300, 100], ['w', 'pvp', 10, 500, 200], ['w', 'bot', 8, 200, 50],
-  ['w', 'hard', 3, 250, 100], ['w', 'hard', 6, 400, 150], ['w', 'hard', 10, 550, 250, 1],
-  ['sm', 'any', 40, 200, 50], ['sm', 'any', 80, 300, 100], ['sm', 'any', 120, 450, 150], ['sm', 'pvp', 40, 300, 100], ['sm', 'bot', 50, 200, 50],
-  ['bd', 'any', 10, 200, 50], ['bd', 'any', 20, 350, 100],
-  ['mg', 'any', 20, 200, 50], ['mg', 'any', 40, 350, 100], ['mg', 'any', 60, 500, 150],
-  ['ak', 'any', 30, 200, 50], ['ak', 'any', 60, 350, 100], ['ak', 'any', 100, 500, 150],
-  ['us', 'any', 30, 250, 100], ['us', 'any', 60, 400, 150],
-  ['wf', 'any', 2, 250, 100], ['wf', 'any', 4, 450, 200, 1],
-  ['op', 'any', 5, 300, 100], ['op', 'any', 10, 500, 200], ['op', 'any', 20, 800, 300, 1],
-  ['cr', 'any', 1, 300, 0], ['cr', 'any', 3, 600, 0],
-  ['s5', 'any', 10, 250, 50], ['s5', 'any', 20, 450, 100]];
+  ['g', 'any', 15, 1250, 50], ['g', 'any', 30, 1350, 100], ['g', 'any', 50, 1400, 150], ['g', 'pvp', 13, 2000, 100], ['g', 'pvp', 25, 2150, 150], ['g', 'bot', 20, 1300, 50],
+  ['w', 'any', 8, 1300, 100], ['w', 'any', 15, 1400, 150], ['w', 'any', 25, 1500, 200, 1], ['w', 'pvp', 8, 2050, 100], ['w', 'pvp', 15, 2300, 200], ['w', 'bot', 13, 1300, 50],
+  ['w', 'hard', 5, 1350, 100], ['w', 'hard', 10, 1450, 150], ['w', 'hard', 15, 1550, 250, 1],
+  ['sm', 'any', 65, 1300, 50], ['sm', 'any', 130, 1350, 100], ['sm', 'any', 190, 1500, 150], ['sm', 'pvp', 65, 2050, 100], ['sm', 'bot', 80, 1300, 50],
+  ['bd', 'any', 15, 1300, 50], ['bd', 'any', 30, 1400, 100],
+  ['mg', 'any', 30, 1300, 50], ['mg', 'any', 65, 1400, 100], ['mg', 'any', 95, 1500, 150],
+  ['ak', 'any', 50, 1300, 50], ['ak', 'any', 95, 1400, 100], ['ak', 'any', 160, 1500, 150],
+  ['us', 'any', 50, 1350, 100], ['us', 'any', 95, 1450, 150],
+  ['wf', 'any', 4, 1350, 100], ['wf', 'any', 7, 1500, 200, 1],
+  ['op', 'any', 8, 1350, 100], ['op', 'any', 15, 1500, 200], ['op', 'any', 30, 1750, 300, 1],
+  ['cr', 'any', 2, 1350, 0], ['cr', 'any', 5, 1600, 0],
+  ['s5', 'any', 15, 1350, 50], ['s5', 'any', 30, 1500, 100]];
 // ชาเลนจ์ตั้งต้น (แอดมินเพิ่ม/ลบเองได้ในเกม) — ครั้งเดียวต่อบัญชี ไม่รีเซ็ต นับตั้งแต่ชาเลนจ์ถูกเพิ่ม
 const QCH_DEF = [
-  { name: 'นักล่าบอทระดับยาก', m: 'w', md: 'hard', need: 30, gems: 3000, dust: 1000, art: 1 },
-  { name: 'ราชาแห่งสนาม', m: 'w', md: 'pvp', need: 50, gems: 5000, dust: 2000, art: 2 },
-  { name: 'สายฟ้าแลบ', m: 'wf', md: 'any', need: 20, gems: 4000, dust: 1500, art: 1 },
-  { name: 'จอมอัญเชิญ', m: 'sm', md: 'any', need: 500, gems: 3000, dust: 1000, art: 1 },
-  { name: 'จอมเวทย์ประจำสนาม', m: 'mg', md: 'any', need: 300, gems: 3000, dust: 1000, art: 1 },
-  { name: 'นักสะสมตัวยง', m: 'op', md: 'any', need: 100, gems: 6000, dust: 2500, art: 2 }];
+  { name: 'นักล่าบอทระดับยาก', m: 'w', md: 'hard', need: 30, gems: 6000, dust: 1000, art: 1 },
+  { name: 'ราชาแห่งสนาม', m: 'w', md: 'pvp', need: 50, gems: 15000, dust: 2000, art: 2 },
+  { name: 'สายฟ้าแลบ', m: 'wf', md: 'any', need: 20, gems: 8000, dust: 1500, art: 1 },
+  { name: 'จอมอัญเชิญ', m: 'sm', md: 'any', need: 500, gems: 6000, dust: 1000, art: 1 },
+  { name: 'จอมเวทย์ประจำสนาม', m: 'mg', md: 'any', need: 300, gems: 6000, dust: 1000, art: 1 },
+  { name: 'นักสะสมตัวยง', m: 'op', md: 'any', need: 100, gems: 12000, dust: 2500, art: 2 }];
 // ความสำเร็จ (ตลอดบัญชี): ขั้นแรกง่าย ขั้นต่อไปยากขึ้น รางวัลเพิ่มตามขั้น
 const QACH = [
   { id: 'a_w', ic: '🏆', name: 'ชนะสะสม', m: 'w', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 350, 500, 750, 1000] },
@@ -143,7 +143,7 @@ const QACH = [
   { id: 'a_s5', ic: '🦖', name: 'ยักษ์ใหญ่ (Avatar Cost 5+)', m: 's5', md: 'any', tiers: [5, 25, 100, 250, 500, 1000] },
   { id: 'a_op', ic: '📦', name: 'นักเปิดซอง', m: 'op', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 400, 700, 1000] },
   { id: 'a_cr', ic: '🔮', name: 'ช่างคราฟ', m: 'cr', md: 'any', tiers: [1, 3, 5, 10, 20, 40, 80] }];
-const qAchR = t => ({ gems: 100 + 125 * t, dust: t >= 1 ? 100 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // รางวัลต่อขั้น (t เริ่มที่ 0)
+const qAchR = (t, md) => ({ gems: Math.round((100 + 125 * t) * 2 * (md === 'pvp' ? 1.5 : 1)), dust: t >= 1 ? 200 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // ของรางวัล x2 (การ์ดเท่าเดิม) · ความสำเร็จโหมดเพื่อน (pvp) gem +50%   // รางวัลต่อขั้น (t เริ่มที่ 0)
 const Q_ART_W = [['SEC', 70], ['PR', 20], ['UBR', 10]];   // การ์ดอาร์ทสุ่ม SEC 70% / PR 20% / UBR 10%
 function qArt() {
   let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of Q_ART_W) { if ((x -= w) < 0) { r = t; break; } }
@@ -160,7 +160,7 @@ const codeLock = fn => { const p = CODELOCK.then(fn); CODELOCK = p.catch(() => {
 const codesMsg = T => JSON.stringify({ t: 'codes', list: Object.entries(T || {}).map(([c, x]) => ({ c, gems: x.gems | 0, dust: x.dust | 0, art: x.art | 0, max: x.max | 0, u: x.u | 0, exp: x.exp | 0, t: x.t | 0 })).sort((a, b) => b.t - a.t) });
 async function qCh() {   // รายการชาเลนจ์ (เก็บใน sys:challenges) — โหลดครั้งแรกแล้วแคช
   if (QCH) return QCH; const o = await dbGet('sys:challenges');
-  if (o && Array.isArray(o.list)) QCH = o.list; else { QCH = QCH_DEF.map((c, k) => ({ ...c, id: 'c' + (1000 + k), t: 0 })); await dbPut('sys:challenges', { list: QCH }); }
+  if (o && Array.isArray(o.list)) { QCH = o.list; if (!o.v2) { const DEFG = { c1000: 6000, c1001: 15000, c1002: 8000, c1003: 6000, c1004: 6000, c1005: 12000 }; QCH.forEach(c => { if (DEFG[c.id] && c.gems <= DEFG[c.id] / 2) c.gems = DEFG[c.id]; }); await dbPut('sys:challenges', { list: QCH, v2: 1 }); } } else { QCH = QCH_DEF.map((c, k) => ({ ...c, id: 'c' + (1000 + k), t: 0 })); await dbPut('sys:challenges', { list: QCH, v2: 1 }); }
   return QCH;
 }
 function qInit(d) {   // เตรียม/รีเซ็ตข้อมูลเควสของผู้เล่น (รีเซ็ตเมื่อข้ามวัน/สัปดาห์)
@@ -191,7 +191,7 @@ function qView(d, admin) {
   const al = QACH.map(a => {
     const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0), t = q.ac[a.id] | 0;
     if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0 };
-    const o = qAchR(t); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0 };
+    const o = qAchR(t, a.md); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0 };
   });
   const rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl), a: rd(al) };
   const v = { d: dl, w: wl, c: cl, a: al, rd: R, red: R.d + R.w + R.c + R.a, rs: { d: T.dEnd, w: T.wEnd } };
@@ -207,7 +207,7 @@ function qClaim(d, kind, id, all) {   // รับรางวัล: คืน 
     if (kind === 'a') {
       const a = QACH.find(z => z.id === x.id); if (!a) continue;
       const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0);
-      while ((q.ac[a.id] | 0) < a.tiers.length && cur >= a.tiers[q.ac[a.id] | 0]) { give(qAchR(q.ac[a.id] | 0)); q.ac[a.id] = (q.ac[a.id] | 0) + 1; }
+      while ((q.ac[a.id] | 0) < a.tiers.length && cur >= a.tiers[q.ac[a.id] | 0]) { give(qAchR(q.ac[a.id] | 0, a.md)); q.ac[a.id] = (q.ac[a.id] | 0) + 1; }
       continue;
     }
     if (x.cl || x.full || x.p < x.n) continue;
@@ -222,7 +222,7 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
   if (m.t === 'qget') { sendQ(); return true; }
   if (m.t === 'qclaim') {
     const k = ['d', 'w', 'c', 'a'].includes(m.k) ? m.k : E('ประเภทเควสผิด'), tot = qClaim(d, k, m.id, !!m.all); if (!tot.n) E('ยังรับรางวัลไม่ได้');
-    if (QCHDIRTY) { QCHDIRTY = 0; await dbPut('sys:challenges', { list: QCH }); }
+    if (QCHDIRTY) { QCHDIRTY = 0; await dbPut('sys:challenges', { list: QCH, v2: 1 }); }
     await dbPut(ws.user, d); const note = '🎁 รับรางวัลเควส' + (tot.gems ? ' 💎 ' + tot.gems.toLocaleString('en-US') : '') + (tot.dust ? ' ✨ ' + tot.dust.toLocaleString('en-US') : '') + (tot.cards.length ? ' 🃏 ' + tot.cards.length + ' ใบ' : '');
     sendQ(); if (tot.cards.length) { const ps = []; for (let i = 0; i < tot.cards.length; i += 5) ps.push(tot.cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note })); } else ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note }));
     return true;
@@ -271,7 +271,7 @@ async function pickDeck(m, user, ban) {
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
   await qCh().catch(() => { });
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 150 : 50); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
