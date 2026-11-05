@@ -6073,8 +6073,8 @@ function chBuild(col, oi, nz) {
   let big = (only.c || 0) >= 5 ? 1 : 0;
   const rankCopies = i => i < 10 ? 4 : i < 22 ? 3 : 2;
   ['Avatar', 'Magic', 'Construct'].forEach(t => { const L = pool.filter(x => x.c.t === t); L.forEach((x, i) => { const want = rankCopies(i); for (let k = 0; k < want; k++) { if (main.length >= 50 || got[t] >= Q[t]) break; add1(x.c); } }); });
-  function add1(c) { if (main.length >= 50 || !canAdd(c)) return; if (c.t === 'Avatar' && (c.c || 0) >= 5 && big >= 6) return; main.push(c.id); namesOf(c).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; }); got[c.t]++; if ((c.c || 0) >= 5) big++; }
-  for (const x of pool) { while (main.length < 50 && canAdd(x.c) && (cnt[nk(x.c.n)] || 0) < 4) add1(x.c); if (main.length >= 50) break; }   // เติมให้ครบ 50 ผ่อนโควตา
+  function add1(c) { if (main.length >= 50 || !canAdd(c)) return false; if (c.t === 'Avatar' && (c.c || 0) >= 5 && big >= 6) return false; main.push(c.id); namesOf(c).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; }); got[c.t]++; if ((c.c || 0) >= 5) big++; return true; }
+  for (const x of pool) { while (main.length < 50 && canAdd(x.c) && (cnt[nk(x.c.n)] || 0) < 4) { if (!add1(x.c)) break; } if (main.length >= 50) break; }   // แก้: add1 ปฏิเสธ (Avatar Cost>=5 เกินโควตา) แล้ววนซ้ำไม่จบ -> เซิร์ฟเวอร์ค้าง   // เติมให้ครบ 50 ผ่อนโควตา
   // LIFE 5 ใบ ชื่อไม่ซ้ำ
   const seen = new Set(), life = [], ls = CARDS.filter(c => c.t === 'Life' && !CANON[c.id] && !bn.has(nk(c.n))).map(c => ({ c, s: (chWr(CH.cs['L:' + c.id], 6) - .5) * 8 + (CH_STIDS.has(c.id) ? .6 : 0) + (Math.random() - .5) * (nz + 1) })).sort((a, b) => b.s - a.s);
   for (const x of ls) { if (life.length >= 5) break; if (seen.has(nk(x.c.n))) continue; seen.add(nk(x.c.n)); life.push(x.c.id); }
