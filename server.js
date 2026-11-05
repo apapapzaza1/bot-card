@@ -5379,10 +5379,10 @@ function botAct(r, k, m) {
   catch (e) { bt.fail++; if (typeof e !== 'string') console.error('bot', e); botSync(r); return false; }
 }
 // เลือกการ์ดบนมือจ่ายเป็น Cost: ชุดที่ Gem พอและ "เสียของน้อยที่สุด"
-function botPay(r, k, card) {
-  const c = B[card.id], me = r.p[k]; if (!c.c) return { us: [], keep: 0 };
+function botPay(r, k, card, hand) {
+  const c = B[card.id], me = r.p[k], HND = hand || me.hand; if (!c.c) return { us: [], keep: 0 };
   const av = c.t === 'Avatar';
-  const pool = me.hand.filter(h => h.u !== card.u && B[h.id].g && !(B[h.id].gc && c.col && B[h.id].gc !== c.col) && !(me.noCost || []).includes(B[h.id].n) && !(h.id === 'SD08-010' && !(av && isRat(card)))).slice(0, 10);
+  const pool = HND.filter(h => h.u !== card.u && B[h.id].g && !(B[h.id].gc && c.col && B[h.id].gc !== c.col) && !(me.noCost || []).includes(B[h.id].n) && !(h.id === 'SD08-010' && !(av && isRat(card)))).slice(0, 10);
   let best = null;
   for (let m = 1; m < (1 << pool.length); m++) {
     let sum = 0, keep = 0, n = 0;
@@ -5394,7 +5394,7 @@ function botPay(r, k, card) {
   return best;
 }
 function botMull(r, k) {
-  const me = r.p[k], us = r.bot.lv === 1 ? [] : me.hand.filter(h => B[h.id].t === 'Avatar' && B[h.id].c >= 5).slice(0, 2).map(h => h.u);
+  const me = r.p[k], us = r.bot.lv === 4 ? chMull(r, k) : r.bot.lv === 1 ? [] : me.hand.filter(h => B[h.id].t === 'Avatar' && B[h.id].c >= 5).slice(0, 2).map(h => h.u);
   return botAct(r, k, { t: 'mull', us });
 }
 function botMain(r, k) {
@@ -5408,11 +5408,12 @@ function botMain(r, k) {
     ops.push({ h, d, pay, gain: botCv(r, h) * W.dv - pay.keep * .45 + (d.t === 'Avatar' && me.av.length < 3 ? 2 : 0) - (d.t === 'Construct' ? 1.5 : 0) + chMainBonus(r, k, h) });
   });
   ops.sort((a, b) => b.gain - a.gain);
-  const o = lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 + W.th : -2.5));
+  bt.rsv = null;
+  const o = bt.lv === 4 ? chPlanPick(r, k, ops.filter(x => x.gain > -1.5 + W.th)) : lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 + W.th : -2.5));
   if (o) { T.add('s' + o.h.u); (bt.played = bt.played || []).push(o.h.id); return botAct(r, k, { t: o.d.t === 'Avatar' ? 'summon' : 'build', u: o.h.u, pay: o.pay.us }); }
   if (lv >= 2) {
     for (const h of me.hand) {   // ร่าย Magic (เฉพาะที่ระบบรองรับ ไม่ใช่ React)
-      const d = B[h.id]; if (!d || d.t !== 'Magic' || d.st === 'React' || d.id === 'BT02-041' || T.has('m' + h.u)) continue;   // BT02-041 หงาย LIFE ตัวเองทุกใบ บอทไม่ใช้
+      const d = B[h.id]; if (!d || d.t !== 'Magic' || d.st === 'React' || d.id === 'BT02-041' || T.has('m' + h.u) || (bt.rsv && bt.rsv.has(h.u))) continue;   // BT02-041 หงาย LIFE ตัวเองทุกใบ บอทไม่ใช้
       if (!(MG[d.id] || d.st === 'Modification') || g.used[k][d.st]) continue;
       T.add('m' + h.u); if (lv === 2 && Math.random() < .4) continue; (bt.played = bt.played || []).push(h.id);
       if (botAct(r, k, { t: 'cast', u: h.u })) return true;
@@ -5450,7 +5451,7 @@ function botBattle(r, k) {
     op.co.forEach(d => { const pd = (B[d.id].p || 0) + (d.pw || 0); if (pa > pd) opts.push({ a, tg: d.u, sc: 1.5 + pd * .3 }); });
   });
   if (!opts.length) { me.av.forEach(a => T.add('a' + a.u)); return false; }
-  if (bt.lv === 4) chTune(r, k, opts);
+  if (bt.lv === 4) { chTune(r, k, opts); try { chBPlan(r, k, opts); } catch (e) { console.error('chBPlan', e); } }
   opts.sort((x, y) => y.sc - x.sc);
   const o = lv === 1 ? pick(opts.slice(0, 3)) : opts[0];
   T.add('a' + o.a.u); (o.sup || []).forEach(u => T.add('a' + u)); botAct(r, k, { t: 'atk', u: o.a.u, tg: o.tg, sup: o.sup || [] }); return true;
@@ -5515,11 +5516,12 @@ function botReact(r, k) {
   const g = r.g, p = g.pend, me = r.p[k], T = r.bot.tried; if (g.used[k].React) return false;
   const atF = p.k === 'atk' ? find(r, p.u) : null, tgF = p.k === 'atk' && p.tk === 'av' ? find(r, p.tg) : null;
   for (const h of me.hand) {
-    const d = B[h.id]; if (!d || d.t !== 'Magic' || d.st !== 'React' || !BOT_REACT.has(h.id)) continue;
+    const d = B[h.id]; if (!d || d.t !== 'Magic' || d.st !== 'React' || (!BOT_REACT.has(h.id) && r.bot.lv !== 4)) continue;
     const key = 'r' + h.u + ':' + (p.u || (p.ev && p.ev.u)); if (T.has(key)) continue;
     const def = MG[h.id]; if (!def || !reactOK(r, k, d, def)) continue;
     let go = false;
-    if (h.id === 'SD01-017') { const f = p.ev && find(r, p.ev.u); go = !!f && botCv(r, f.c) >= 3; }
+    if (!BOT_REACT.has(h.id)) go = botReactGen(r, k, p, atF, tgF);
+    else if (h.id === 'SD01-017') { const f = p.ev && find(r, p.ev.u); go = !!f && botCv(r, f.c) >= 3; }
     else if (h.id === 'BT01-039') go = !!atF && botCv(r, atF.c) >= 2.5;
     else if (h.id === 'BT02-049') go = me.hand.length <= 5;
     else if (h.id === 'SD06-014' || h.id === 'BT02-054') { const red = 2 * (me.av.length + me.mg.length + me.co.length + me.hand.length - 1); go = !!atF && !!tgF && P(r, atF.c) >= P(r, tgF.c) && P(r, atF.c) - red < P(r, tgF.c); }
@@ -6160,7 +6162,7 @@ function chBuild(col, oi, nz) {
   const os = CARDS.filter(c => c.o === 'Only #1' && c.t === 'Avatar' && okBase(c) && !skipOnly.has(nk(c.n))).map(c => ({ c, s: sc(c) + (chWr(CH.only[c.id], 6) - .5) * 6 })).sort((a, b) => b.s - a.s);
   if (!os.length) return null;
   const only = os[0].c, main = [only.id], cnt = {}; namesOf(only).forEach(n => { cnt[n] = 1; });
-  const pool = CARDS.filter(c => !c.o && okBase(c) && (c.t === 'Avatar' || c.t === 'Construct' || (c.t === 'Magic' && c.id !== 'BT02-041' && (c.st === 'React' ? BOT_REACT.has(c.id) : (MG[c.id] || c.st === 'Modification'))))).map(c => ({ c, s: sc(c) })).sort((a, b) => b.s - a.s);
+  const pool = CARDS.filter(c => !c.o && okBase(c) && (c.t === 'Avatar' || c.t === 'Construct' || (c.t === 'Magic' && c.id !== 'BT02-041' && (c.st === 'React' ? (BOT_REACT.has(c.id) || (MG[c.id] && chGood(c.id))) : (MG[c.id] || c.st === 'Modification'))))).map(c => ({ c, s: sc(c) })).sort((a, b) => b.s - a.s);
   const canAdd = c => namesOf(c).every((n, j) => { const l = j ? (LIMNAME[n] || 4) : limOf(c), x = (cnt[n] || 0) + 1; return x <= l && (!lim[n] || x <= lim[n]) && !(pairs[n] || []).some(p => cnt[p]); });
   const Q = { Avatar: 32, Magic: 12, Construct: 4 }, got = { Avatar: 1, Magic: 0, Construct: 0 };   // Only#1 นับเป็น Avatar 1 ใบ
   let big = (only.c || 0) >= 5 ? 1 : 0;
@@ -6299,6 +6301,54 @@ settle = async function (r) {
   if (first && !g.chl) { g.chl = 1; try { await chLearn(r); } catch (e) { console.error('chLearn', e); } }
 };
 function chInfo() { const b = CH.arms.length ? chBest() : null; return { t: 'chinfo', ta: Object.values(CH.tk.at).reduce((a, x) => a + x.g, 0), n: CH.n, bn: CH.bn, bw: CH.bw, pl: Object.keys(CH.pl).length, arms: CH.arms.length, best: b && b.g ? Math.round(100 * b.k / b.g) : null, gen: CH.gen }; }
+/* ----- อัปเกรดบอทท้าทาย: วางแผนทั้งเทิร์น / Mulligan / ตีเป็นแผน / React ครอบคลุมขึ้น ----- */
+const chGood = id => { const x = CH.cs[id]; return !!x && x.g >= 12 && chWr(x, 8) >= .56; };
+// เลือกชุดการ์ดที่ควรลงเทิร์นนี้ (ทั้งชุด จ่าย Cost ไม่ทับกัน) แล้วคืนใบแรกของแผน
+function chPlanPick(r, k, ops) {
+  const me = r.p[k], bt = r.bot, W = bt.w || CHW0; bt.rsv = null;
+  if (!ops.length) return null;
+  const c0 = ops.slice(0, 6), early = (bt.ot | 0) <= 3, capLeft = Math.max(1, 4 - me.av.filter(x => !x.tk).length);
+  let best = null;
+  for (let m = 1; m < (1 << c0.length); m++) {
+    const sel = c0.filter((_, j) => m >> j & 1); if (sel.filter(x => x.d.t === 'Avatar').length > capLeft) continue;
+    let vh = me.hand.filter(h => !sel.some(x => x.h.u === h.u)), tot = 0, ok = true; const used = [], line = [];
+    for (const x of sel) {   // เรียงตามค่าสูงไปต่ำ (ops เรียงแล้ว)
+      const pay = line.length ? botPay(r, k, x.h, vh) : x.pay; if (!pay) { ok = false; break; }
+      vh = vh.filter(h => !pay.us.includes(h.u)); used.push(...pay.us); line.push({ x, pay });
+      tot += x.gain + (line.length > 1 ? (botCv(r, x.h) * W.dv - pay.keep * .45) - (botCv(r, x.h) * W.dv - x.pay.keep * .45) : 0) + (early ? (B[x.h.id].c || 0) * .25 : 0);
+    }
+    if (!ok) continue;
+    if (!best || tot > best.tot) best = { tot, line, used };
+  }
+  if (!best || best.tot <= 0) return null;
+  bt.rsv = new Set(best.used);   // ใบที่แผนจะใช้จ่าย Cost -> ไม่เอาไปร่าย Magic
+  const f = best.line[0]; return { ...f.x, pay: f.pay };
+}
+// ตีเป็นแผน: จับคู่ตัวตีที่พอดีกับเป้าหมาย ถ้ากวาดสนามแล้วเหลือตัวตี LIFE พอ = ปิดเกม
+function chBPlan(r, k, opts) {
+  const me = r.p[k], op = r.p[1 - k], T = r.bot.tried;
+  const ready = me.av.filter(a => !a.tired && !T.has('a' + a.u)), tg = op.av.slice().sort((x, y) => botCv(r, y) - botCv(r, x)), used = new Set(), asg = [];
+  tg.forEach(d => { const pd = P(r, d), c = ready.filter(a => !used.has(a.u) && P(r, a) > pd).sort((x, y) => P(r, x) - P(r, y))[0]; if (c) { used.add(c.u); asg.push(c.u + '>' + d.u); } });
+  const left = ready.filter(a => !used.has(a.u) && P(r, a) > 0).length, open = op.life.filter(l => !l.up).length;
+  const lethal = tg.length > 0 && asg.length === tg.length && open > 0 && left >= open;
+  opts.forEach(o => { if (o.sc >= 900 || o.tg === 'life' || (o.sup && o.sup.length)) return; if (asg.includes(o.a.u + '>' + o.tg)) o.sc += lethal ? 60 : 1.5; });
+}
+// Mulligan: คืนใบที่เล่นยาก (Avatar แพง / Magic ที่บอทใช้ไม่ได้) เก็บใบถูกไว้ลงเทิร์นต้นๆ
+function chMull(r, k) {
+  const me = r.p[k], hd = me.hand, cheap = hd.filter(h => B[h.id].t === 'Avatar' && (B[h.id].c || 0) <= 3).length, gems = hd.reduce((a, h) => a + (B[h.id].g || 0), 0), out = [];
+  hd.forEach(h => { const d = B[h.id]; if (!d) return;
+    if (d.t === 'Avatar' && (d.c || 0) >= 5) out.push(h.u);
+    else if (d.t === 'Avatar' && (d.c || 0) === 4 && (cheap < 2 || gems < 4)) out.push(h.u);
+    else if (d.t === 'Magic' && d.st !== 'Modification' && !MG[d.id] && !(d.st === 'React' && BOT_REACT.has(d.id))) out.push(h.u); });
+  return out.slice(0, 4);
+}
+// React ทั่วไป (ใบนอกลิสต์เดิม): ใช้เมื่อกำลังจะเสียตัวแพงตอนถูกตี / LIFE เหลือน้อยโดนตี / ศัตรูลงตัวแพง
+function botReactGen(r, k, p, atF, tgF) {
+  const me = r.p[k];
+  if (p.k === 'atk') { if (p.tk === 'life') return me.life.filter(l => !l.up).length <= 2; return !!atF && !!tgF && P(r, atF.c) >= P(r, tgF.c) && botCv(r, tgF.c) >= 2.5; }
+  if (p.ev && p.ev.k === 'summon') { const f = find(r, p.ev.u); return !!f && f.i !== k && botCv(r, f.c) >= 3.5; }
+  return false;
+}
 /* ===== จบโหมดท้าทาย ===== */
 
-if (process.env.BOT_TEST) module.exports = { begin, botStep, botIdx, botCv, chTech, chMainBonus, chTune, chPre, chPost, chalDeck, chInfo, chLearn, chArmPick, chMut, CH: () => CH, kdMulti, kdProto, kdRich, rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig, pushFst, friendStat, userWs, kill, resolveAtk, passTurn, startTurn, putAv, kdNarai, kdAfter, exileAv, kdLife, fxSummon, summonFree, ask, hit, setBt, open };
+if (process.env.BOT_TEST) module.exports = { begin, botStep, botIdx, botCv, chTech, chMainBonus, chTune, chPre, chPost, chalDeck, chInfo, chPlanPick, chBPlan, chMull, chLearn, chArmPick, chMut, CH: () => CH, kdMulti, kdProto, kdRich, rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig, pushFst, friendStat, userWs, kill, resolveAtk, passTurn, startTurn, putAv, kdNarai, kdAfter, exileAv, kdLife, fxSummon, summonFree, ask, hit, setBt, open };
