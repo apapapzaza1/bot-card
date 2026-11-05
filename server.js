@@ -2,6 +2,10 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
+// ไพรมอล รัททาทุย (SD08-001): เพิ่มการ์ดอาร์ท PR และ CBR (ในระบบ CBR = UBR) — ไฟล์รูป SD08-001-PR.webp / SD08-001-UBR.webp
+const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR'];
+function patchCardV(c) { if (c && c.id === 'SD08-001') { c.v = Array.isArray(c.v) && c.v.length ? c.v : ['C']; ['PR', 'UBR'].forEach(x => { if (!c.v.includes(x)) c.v.push(x); }); } }
+CARDS.forEach(patchCardV);
 
 const MT={'.json':'application/json','.html':'text/html;charset=utf-8','.mp4':'video/mp4','.webm':'video/webm','.webp':'image/webp','.jpg':'image/jpeg','.png':'image/png','.mp3':'audio/mpeg'};
 const IMG = path.join(require('os').tmpdir(), 'bot-img');
@@ -26,6 +30,10 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
 })();
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
+  { const u0 = q.url.split('?')[0];
+    if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync(path.join(__dirname, u0.slice(1)), 'utf8'));
+      if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(patchCardV);
+      r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
   if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
@@ -56,7 +64,7 @@ const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'bas
 // ===== ระบบโปรไฟล์ / เลเวล / ประวัติ / สถิติ =====
 const PF_NEED = L => 200 + 50 * L;   // EXP ที่ต้องใช้จากเลเวล L ไป L+1
 const pfLv = xp => { let L = 1, x = Math.max(0, xp | 0); while (x >= PF_NEED(L)) { x -= PF_NEED(L); L++; } return { lv: L, cur: x, need: PF_NEED(L) }; };
-const pfView = d => { const p = d.pf || {}, st = p.st || {}, l = pfLv(p.xp); return { xp: p.xp | 0, lv: l.lv, cur: l.cur, need: l.need, hist: p.hist || [], st: { g: st.g | 0, w: st.w | 0, l: st.l | 0, s: st.s | 0, b: st.b | 0 } }; };
+const pfView = d => { const p = d.pf || {}, st = p.st || {}, l = pfLv(p.xp); return { pend: p.pend || [], xp: p.xp | 0, lv: l.lv, cur: l.cur, need: l.need, hist: p.hist || [], st: { g: st.g | 0, w: st.w | 0, l: st.l | 0, s: st.s | 0, b: st.b | 0 } }; };
 // รางวัลทุก 5 เลเวล: Gem 500 (+250 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150) ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / UBR 10%
 const pfReward = L => { if (L % 5) return null; const k = L / 5; return { lv: L, gems: 500 + 250 * (k - 1), dust: 300 + 150 * (k - 1), n: L % 10 ? 0 : L / 10 }; };
 const PF_ART_W = [['SEC', 65], ['UR', 25], ['UBR', 10]];
@@ -67,7 +75,7 @@ const pfArt = () => { let x = Math.random() * 100, r = 'SEC'; for (const [t, w] 
 function pfGain(d, win, bot, opName) {
   const p = d.pf = d.pf || { xp: 0, hist: [], st: {} }, st = p.st = p.st || {};
   const xp = bot ? (win ? 40 : 20) : (win ? 100 : 50), l0 = pfLv(p.xp).lv; p.xp = (p.xp | 0) + xp; const l1 = pfLv(p.xp).lv, rw = [];
-  for (let L = l0 + 1; L <= l1; L++) { const o = pfReward(L); if (!o) continue; d.gems += o.gems; d.dust = (d.dust || 0) + o.dust; o.cards = []; for (let k = 0; k < o.n; k++) { const c = pfArt(); if (c) { add(d, c); o.cards.push(c); } } rw.push(o); }
+  for (let L = l0 + 1; L <= l1; L++) { const o = pfReward(L); if (!o) continue; (p.pend = p.pend || []).push({ ...o }); rw.push({ ...o }); }   // รางวัลเลเวล: เก็บไว้ให้ผู้เล่นกดรับเอง (pfclaim)
   st.g = (st.g | 0) + 1; if (win) { st.w = (st.w | 0) + 1; st.s = (st.s | 0) + 1; st.b = Math.max(st.b | 0, st.s); } else { st.l = (st.l | 0) + 1; st.s = 0; }
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
@@ -1701,6 +1709,17 @@ wss.on('connection', ws => {
         const k = q.p.findIndex(p => p.name === ws.user), g = q.g;
         g.ask = null; g.pend = null; g.q = []; g.over = ws.user + ' ยอมแพ้'; g.win = 1 - k; log(q, '🏳 ' + ws.user + ' ยอมแพ้');
         bc(q); settle(q).catch(() => { }); ws.send(JSON.stringify({ t: 'lost', op: q.p[1 - k].name, self: 1 })); return;
+      }
+      if (m.t === 'pfclaim') {   // รับรางวัลเลเวลที่ค้างอยู่ทั้งหมด
+        if (ws.pfBusy) return; ws.pfBusy = 1;
+        try {
+          const d = await dbGet(ws.user), p = d.pf || {}, L = p.pend || []; if (!L.length) E('ไม่มีรางวัลให้รับ');
+          let gems = 0, dust = 0; const cards = [];
+          for (const o of L) { gems += o.gems | 0; dust += o.dust | 0; for (let k = 0; k < (o.n | 0); k++) { const c = pfArt(); if (c) { add(d, c); cards.push(c); } } }
+          d.gems += gems; d.dust = (d.dust || 0) + dust; p.pend = []; d.pf = p; await dbPut(ws.user, d);
+          ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), claim: { gems, dust, cards, n: L.length } }));
+        } finally { ws.pfBusy = 0; }
+        return;
       }
       if (m.t === 'setpic') {   // เปลี่ยนรูปโปรไฟล์ (ต้องมีการ์ดใบนั้นจริง) ; k = 'id|rarity' หรือ '' = ไม่ใช้รูป
         const d = await dbGet(ws.user), k = String(m.k || ''); if (k) { const id = k.split('|')[0]; if (!B[id] || !((d.cards || {})[k] > 0)) E('คุณไม่มีการ์ดใบนี้'); }
