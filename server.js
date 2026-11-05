@@ -31,6 +31,7 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
     }
   } catch (err) { console.log('unzip error', err.message); }
 })();
+console.log('extra art:', EXTRA_ART.map(n => n + (fs.existsSync(path.join(IMG, n + '.webp')) || fs.existsSync(path.join(__dirname, n + '.webp')) ? ' ✔' : ' ✘ ไม่พบไฟล์ (ต้องมี imgs_cards_part3.zip หรือไฟล์ .webp ข้าง server.js)')).join(' | '));
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];

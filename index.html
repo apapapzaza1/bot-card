@@ -620,9 +620,9 @@ let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
 const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};let b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};if(x.nmo)b={...b,n:x.nmo,s:x.sy||b.s};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
-let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json').then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
+let ST={};fetch('/starters.json').then(r=>r.json()).then(a=>ST=a);fetch('/cards.json?'+Date.now()).then(r=>r.json()).then(a=>a.forEach(c=>C[c.id]=c));
 fetch('/version.json').then(r=>r.json()).then(a=>{const d=new Date(a.t),o={timeZone:'Asia/Bangkok'},dt=d.toLocaleDateString('th-TH',{...o,day:'numeric',month:'short',year:'numeric'}),tm=d.toLocaleTimeString('th-TH',{...o,hour:'2-digit',minute:'2-digit',hour12:false});$('ver').textContent=a.v+' (อัปเดตล่าสุดวันที่ '+dt+' เวลา '+tm+' น.)'}).catch(e=>{});
-let AM=null;fetch('/artmap.json').then(r=>r.json()).then(a=>{AM=new Set(a);try{pfChip()}catch(e){}if(S&&!$('game').hidden)render()}).catch(e=>{});
+let AM=null;fetch('/artmap.json?'+Date.now()).then(r=>r.json()).then(a=>{AM=new Set(a);try{pfChip()}catch(e){}if(S&&!$('game').hidden)render()}).catch(e=>{});
 const LEG={SCR:'SEC',CBR:'UBR'};
 const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';return`background-image:url(/${k}.webp);background-size:100% 100%;background-position:center`};
 const ZL={av:'Avatar Zone',co:'Construct Zone',mg:'Magic Zone'},ZS={av:'มี Avatar บนสนามได้สูงสุด 4 ใบ',co:'มี Construct ได้สูงสุด 3 ใบ',mg:'เล่น Magic ได้ประเภทละครั้ง'};
