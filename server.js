@@ -4,10 +4,16 @@ const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'ut
 const B = {}; CARDS.forEach(c => B[c.id] = c);
 // ไพรมอล รัททาทุย (SD08-001): เพิ่มการ์ดอาร์ท PR และ CBR (ในระบบ CBR = UBR) — ไฟล์รูป SD08-001-PR.webp / SD08-001-UBR.webp
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.5';
+const VERSION = process.env.APP_VERSION || 'v1.6';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.6', d: '2026-11-06', items: [
+    'อย่าให้มีครั้งที่ 2 / ชายจากอนาคต: ยกเลิกการ์ด React ได้ทุกใบ (รวม หมอมาแล้ว, ถวาย, รัททาท่วม, ริกกี้ นักปลอมแปลง)',
+    'ชายจากอนาคต: เมื่อฝ่ายตรงข้ามใช้ React Magic มีหน้าต่างเลือกการ์ดที่จะใช้ยกเลิก',
+    'หน้าเรทสุ่ม: การ์ดที่ยังไม่มีขึ้นป้าย "ไม่มี"',
+    'ปุ่มข้าม ▶ ย้ายไปมุมขวาล่างจอ'
+  ] },
   { v: 'v1.5', d: '2026-11-06', items: [
     'เปลี่ยน GEM เป็นไร้สี เพิ่มอีกหลายใบ (นายนิรยบาลทุกใบ, ตำรวจสัมภเวสี, Tank Ranger, เสามงคล, อาณาจักรของแพง, แบงค์, ลิลิธ, เมฟิสโตเฟเลส, กวนอู, เตียวหุย ฯลฯ รวมทุกใบที่พิมพ์ซ้ำ)'
   ] },
@@ -897,7 +903,7 @@ function deathFx0(r, f, nf) {
     if (k && k.ou !== r.g.n) { k.ou = r.g.n; draw(r, p, 1); log(r, '✨ บ่อหมัก: ' + p.name + ' จั่ว 1 ใบ'); }
     const rr = p.hand.find(h => h.id === 'SD08-015');
     if (rr && !r.g.used[f.i].React) r.g.q.unshift(() => ask(r, f.i, { yn: true, text: 'ใช้ รัททาท่วม (React): อัญเชิญรัททาทุย (Cost1/Gem1/Power1) สูงสุด 2 ใบ จาก Deck?', cb: y => { if (!y) return; take(r, rr.u); p.hell.push(rr); r.g.used[f.i].React = 1; ev(r, rr.kd || rr.id); log(r, p.name + ' ใช้ React: รัททาท่วม');
-      const L = p.deck.filter(isRat1).map(x => x.u); ask(r, f.i, { text: 'เลือกรัททาทุย 1-2 ใบ จาก Deck อัญเชิญลงสนาม', opts: L, n: 2, min: 1, cb: us => { us.forEach(u => summonAny(r, f.i, u, 'deck')); shuf(p.deck); } }); } }));
+      kdReactGate(r, f.i, B[rr.id], canc => { if (canc) return; const L = p.deck.filter(isRat1).map(x => x.u); ask(r, f.i, { text: 'เลือกรัททาทุย 1-2 ใบ จาก Deck อัญเชิญลงสนาม', opts: L, n: 2, min: 1, cb: us => { us.forEach(u => summonAny(r, f.i, u, 'deck')); shuf(p.deck); } }); }); } }));
   }
 }
 function onConDie(r, i, c) { if (c.id === 'SD06-018') { r.p[i].av.slice().forEach(a => sendHell(r, a.u)); log(r, '🏕 ค่ายบางระจัน ถูกทำลาย: ส่ง Avatar ทุกใบลงนรก'); } }
@@ -1318,11 +1324,13 @@ const kill = (r, i, u, ns) => {
   if (f0 && f0.z === 'av' && !ns && DRNO !== u && !r.g.ask && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) {   // หมอมาแล้วววว (React: Avatar จะถูกทำลาย → ไม่ถูกทำลาย)
     const dc = r.p[f0.i].hand.find(isDoc);
     ask(r, f0.i, { yn: true, text: 'หมอมาแล้วววว: ใช้ React ให้ ' + nmOf(f0.c) + ' ไม่ถูกทำลายไหม?', cb: y => { if (!y) { DRNO = u; try { return kill(r, i, u, ns); } finally { DRNO = 0; } }
-      const h = fromZone(r, f0.i, 'hand', dc.u); if (!h) return kill(r, i, u, 1); r.p[f0.i].hell.push(h); r.g.used[f0.i].React = 1; ev(r, h.kd || h.id, h.ar); vfx(f0.c.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); log(r, '🩺 หมอมาแล้วววว: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); } });
+      const h = fromZone(r, f0.i, 'hand', dc.u); if (!h) return kill(r, i, u, 1); r.p[f0.i].hell.push(h); r.g.used[f0.i].React = 1; ev(r, h.kd || h.id, h.ar);
+      kdReactGate(r, f0.i, B[h.id], canc => { if (canc) { DRNO = u; try { return kill(r, i, u, ns); } finally { DRNO = 0; } } vfx(f0.c.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); log(r, '🩺 หมอมาแล้วววว: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); }); } });
     return;
   }
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && r.p[f0.i].hand.some(c => c.id === 'BT02-051')) {
-    ask(r, f0.i, { yn: true, text: 'ถวาย: ทิ้งการ์ดทั้งหมดบนมือ เพื่อให้ ' + nmOf(f0.c) + ' ไม่ถูกทำลาย?', cb: y => { if (!y) return kill(r, i, u, 1); r.g.used[f0.i].React = 1; fx({ k: 'say', id: 'BT02-051', t: 'ไม่ถูกทำลาย' }); r.p[f0.i].hand.slice().forEach(c => sendHell(r, c.u)); log(r, '🙏 ถวาย: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); } });
+    ask(r, f0.i, { yn: true, text: 'ถวาย: ทิ้งการ์ดทั้งหมดบนมือ เพื่อให้ ' + nmOf(f0.c) + ' ไม่ถูกทำลาย?', cb: y => { if (!y) return kill(r, i, u, 1); r.g.used[f0.i].React = 1; r.p[f0.i].hand.slice().forEach(c => sendHell(r, c.u));
+      kdReactGate(r, f0.i, B['BT02-051'], canc => { if (canc) return kill(r, i, u, 1); fx({ k: 'say', id: 'BT02-051', t: 'ไม่ถูกทำลาย' }); log(r, '🙏 ถวาย: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); }); } });
     return;
   }
   if (f0 && f0.z === 'av' && !ns && !r.g.inB && !r.g.ask && isKP(f0.c) && isCol(f0.c, 'แดง') && bt8Kill(r, i, u, f0)) return;
@@ -2018,9 +2026,10 @@ function rickyFx(r, f) {   // BT01-042 ริกกี้ นักปลอม�
   r.g.q.unshift(() => { if (!p.hand.includes(h) || r.g.used[i].React || !T().length) return;
     ask(r, i, { yn: true, text: 'ริกกี้ นักปลอมแปลง: ' + nmOf(c) + ' ถูกทำลายจากการต่อสู้ — ใช้ React ยึด Avatar สภาพนอนของฝ่ายตรงข้ามมาถาวรไหม?', cb: y => { if (!y) return;
       ask(r, i, { text: 'เลือก Avatar สภาพนอนของฝ่ายตรงข้ามที่จะยึดมา', opts: T(), cancel: true, cb: us => { const t = find(r, us[0]); if (!t || !p.hand.includes(h)) return;
-        if (!stealCard(r, i, t.c.u)) return;
-        const hc = fromZone(r, i, 'hand', h.u); if (!hc) return; hc.at = t.c.u; p.mg.push(hc); r.g.used[i].React = 1; ev(r, hc.kd || hc.id, hc.ar);
-        vfx(t.c.u, 'aura', '🎭 ยึดมาถาวร', '#38bdf8'); log(r, '🎭 ริกกี้ นักปลอมแปลง: ยึด ' + nmOf(t.c) + ' มาฝั่ง ' + p.name + ' (ถ้าริกกี้ถูกทำลาย Avatar กลับขึ้นมือเจ้าของ)'); } }); } }); });
+        if (!p.hand.includes(h)) return;
+        const hc = fromZone(r, i, 'hand', h.u); if (!hc) return; r.g.used[i].React = 1; ev(r, hc.kd || hc.id, hc.ar);
+        kdReactGate(r, i, B[hc.id], canc => { if (canc) { p.hell.push(hc); return; } if (!stealCard(r, i, t.c.u)) { p.hell.push(hc); return; } hc.at = t.c.u; p.mg.push(hc);
+          vfx(t.c.u, 'aura', '🎭 ยึดมาถาวร', '#38bdf8'); log(r, '🎭 ริกกี้ นักปลอมแปลง: ยึด ' + nmOf(t.c) + ' มาฝั่ง ' + p.name + ' (ถ้าริกกี้ถูกทำลาย Avatar กลับขึ้นมือเจ้าของ)'); }); } }); } }); });
 }
 function deathFx03(r, f) {
   const c = f.c, g = r.g, p = r.p[f.i];
@@ -2382,6 +2391,7 @@ function kdMill(r, i, cs, src) {
    • ชายจากอนาคต (SD05-020 / BT01-041 และฉบับพิมพ์ซ้ำทุกใบ): ยกเลิก React Magic (รวมชายใบอื่น) / สกิลสั่งใช้ของ Magic บนสนาม / ผลอัตโนมัติตอนประกาศโจมตี — กัน 100%
    • อย่าให้มีครั้งที่ 2 (KD02-017 และฉบับพิมพ์ซ้ำ): ยกเลิกผลของ React Magic ทุกใบของอีกฝ่าย รวมถึงอย่าให้มีครั้งที่ 2 ของเขา (ใบละ 1 ต่อเทิร์นต่อคน ใช้ได้แม้ใช้ React แล้วในเทิร์นนี้)
    • ถ้ามีทั้งสองใบ: ถามชายก่อน ถ้ากดไม่ใช้ ค่อยถามครั้งที่ 2 ต่อ — และสองฝ่ายตอบโต้กันต่อเนื่องได้จนกว่าจะไม่มีใครใช้ */
+const FUTQ = 'ตอบโต้ด้วยการ์ดยกเลิก:';
 const isFut = c => !c.tk && (c.id === 'SD05-020' || c.id === 'BT01-041');
 const futCard = (r, w) => { const g = r.g; if (!g || g.over || g.used[w].React || (g.noReact && g.noReact.who === w) || cc2ODLock(r, w)) return null; return r.p[w].hand.find(isFut) || null; };
 const kd17Card = (r, w) => { const g = r.g; if (!g || g.over || g.used[w].kd17 || (g.noReact && g.noReact.who === w) || cc2ODLock(r, w)) return null; return r.p[w].hand.find(h => !h.tk && h.id === 'KD02-017') || null; };
@@ -2399,14 +2409,12 @@ function futChain(r, actor, what, done) {
     return true;
   };
   const counter = (card, key) => futChain(r, w, { text: 'ใช้ React Magic "' + B[card.id].n + '"', name: B[card.id].n, react: true }, c => done(!c));   // ฝ่าย actor ตอบโต้กลับได้
-  const step2 = () => {
-    const k = what.react ? kd17Card(r, w) : null; if (!k) return done(false);
-    ask(r, w, { yn: true, text: 'อย่าให้มีครั้งที่ 2: ฝ่ายตรงข้าม' + what.text + ' — ใช้ อย่าให้มีครั้งที่ 2 ยกเลิกผลของ React ใบนั้นไหม? (ใช้ได้แม้ใช้ React ไปแล้วในเทิร์นนี้ · ใบละ 1 ต่อเทิร์น)', cb: y => {
-      if (!y || !spend(k, 'kd17')) return done(false); counter(k, 'kd17'); } });
-  };
-  const f = futCard(r, w); if (!f) return step2();
-  ask(r, w, { yn: true, text: 'ชายจากอนาคต: ฝ่ายตรงข้าม' + what.text + ' — ใช้ ชายจากอนาคต ยกเลิกไหม?' + (what.react && kd17Card(r, w) ? ' (ถ้าไม่ใช้ จะถามต่อว่าจะใช้ อย่าให้มีครั้งที่ 2 ไหม)' : ''), cb: y => {
-    if (!y || !spend(f, 'fut')) return step2(); counter(f, 'fut'); } });
+  const f = futCard(r, w), k = what.react ? kd17Card(r, w) : null;
+  if (!f && !k) return done(false);
+  const opts = [f, k].filter(Boolean).map(c => c.u);   // หน้าต่างเลือกการ์ด: ชายจากอนาคต / อย่าให้มีครั้งที่ 2 (ถ้ามีในมือ)
+  ask(r, w, { text: FUTQ + ' ฝ่ายตรงข้าม' + what.text + ' — เลือกการ์ดที่จะใช้ยกเลิก (' + (f ? 'ชายจากอนาคต' : '') + (f && k ? ' / ' : '') + (k ? 'อย่าให้มีครั้งที่ 2 ยกเลิกผล React ได้ แม้ใช้ React ไปแล้วในเทิร์นนี้ · ใบละ 1 ต่อเทิร์น' : '') + ') หรือกด ยกเลิก เพื่อไม่ใช้', opts, n: 1, min: 1, cancel: true,
+    onCancel: () => done(false),
+    cb: us => { const c = me.hand.find(h => h.u === us[0]); if (!c) return done(false); const key = isFut(c) ? 'fut' : 'kd17'; if (!spend(c, key)) return done(false); counter(c, key); } });
 }
 // ทางเข้าเดิม: React Magic ที่ร่ายแล้ว — go(cancelled)
 function kdReactGate(r, i, c, go) {
@@ -5538,6 +5546,7 @@ function botAsk(r, k) {
     if (/^(ชายจากอนาคต|อย่าให้มีครั้งที่ 2):/.test(tx)) y = +(lv >= 2);
     m = { t: 'pick', yes: y };
   }
+  else if ((a.text || '').startsWith(FUTQ)) m = lv >= 2 ? { t: 'pick', us: [a.opts[0]] } : { t: 'pick', cancel: 1 };   // บอทระดับ 2+ ใช้การ์ดยกเลิก
   else m = { t: 'pick', us: botSel(r, k, a) };
   if (botAct(r, k, m)) return;
   if (a.cancel) return botAct(r, k, { t: 'pick', cancel: 1 });           // ตอบไม่ได้ -> ยกเลิก ไม่ให้เกมค้าง
