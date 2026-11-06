@@ -2,12 +2,17 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
-// ไพรมอล รัททาทุย (SD08-001): เพิ่มการ์ดอาร์ท PR และ CBR (ในระบบ CBR = UBR) — ไฟล์รูป SD08-001-PR.webp / SD08-001-UBR.webp
+// ระดับการ์ด (C/R/SR/UR/SEC/SCR/PR/UBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.6';
+const VERSION = process.env.APP_VERSION || 'v1.7';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.7', d: '2026-11-06', items: [
+    'ระดับการ์ดทุกใบ (หน้าจัดเด็ค / ร้านค้า เปิดซอง / คราฟ-ย่อย / เรทการ์ด) ตรงกับชื่อไฟล์รูปอัตโนมัติ เช่น KD01-001-SCR.png = ระดับ SCR เพิ่มรูปใหม่แล้วไม่ต้องมาแก้รายการทีละใบอีก',
+    'เพิ่มระดับ SCR (อยู่ระหว่าง SEC กับ PR) · ย่อยได้ 250 ผง · คราฟไม่ได้ · รองรับไฟล์รูป .png ด้วย',
+    'การ์ด SEC เดิมของ 16 ใบที่เป็นอาร์ท SCR ถูกย้ายเป็น SCR ให้ผู้เล่นอัตโนมัติ (รวมเด็คและรูปโปรไฟล์)'
+  ] },
   { v: 'v1.6', d: '2026-11-06', items: [
     'อย่าให้มีครั้งที่ 2 / ชายจากอนาคต: ยกเลิกการ์ด React ได้ทุกใบ (รวม หมอมาแล้ว, ถวาย, รัททาท่วม, ริกกี้ นักปลอมแปลง)',
     'ชายจากอนาคต: เมื่อฝ่ายตรงข้ามใช้ React Magic มีหน้าต่างเลือกการ์ดที่จะใช้ยกเลิก',
@@ -33,9 +38,30 @@ const CHANGELOG = [
     'แถบเวอร์ชันหน้าล็อบบี้: กดเพื่อดูรายการอัปเดตได้'
   ] }
 ];
-const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR', 'KD03-001-UBR', 'KD03-001-PR', 'KD03-001-SEC', 'KD03-003-SEC', 'KD04-012-UBR', 'KD04-012-PR', 'KD04-012-SEC', 'SD01-005-UBR', 'SD01-005-PR', 'SD04-005-UBR', 'SD04-005-PR'];
-function patchCardV(c) { if (c && c.id === 'SD08-001') { c.v = Array.isArray(c.v) && c.v.length ? c.v : ['C']; ['PR', 'UBR'].forEach(x => { if (!c.v.includes(x)) c.v.push(x); }); } }
-CARDS.forEach(patchCardV);
+// ===== ระดับการ์ด = ตามชื่อไฟล์รูป (สแกนอัตโนมัติ) =====
+const ART_R = ['C', 'R', 'SR', 'UR', 'SEC', 'SCR', 'PR', 'UBR', 'USEC'];   // ลำดับระดับ ต่ำ→สูง
+const ART_RE = new RegExp('^(.+?)(?:-(' + ART_R.filter(r => r !== 'C').join('|') + '))?\\.(webp|png)$', 'i');   // ID-ระดับ.webp / .png (ไม่มีคำต่อท้าย = C)
+let ART_FILES = {};   // { ชื่อไฟล์ไม่มีนามสกุล : ชื่อไฟล์จริง }
+const ART_BYID = {};  // { รหัสการ์ด : Set ของระดับที่มีไฟล์รูป }
+function scanArt() {
+  ART_FILES = {}; for (const k in ART_BYID) delete ART_BYID[k];
+  for (const dir of [IMG, __dirname]) {
+    let fl = []; try { fl = fs.readdirSync(dir); } catch (e) { continue; }
+    for (const f of fl) {
+      const m = ART_RE.exec(f); if (!m) continue;
+      const nm = f.replace(/\.(webp|png)$/i, ''), have = ART_FILES[nm];
+      if (have && /\.webp$/i.test(have)) continue;   // มีทั้ง webp และ png → ใช้ webp
+      ART_FILES[nm] = f;
+      const r = (m[2] || 'C').toUpperCase(); (ART_BYID[m[1]] = ART_BYID[m[1]] || new Set()).add(r);
+    }
+  }
+}
+// ระดับของการ์ดใบหนึ่ง = ระดับที่มีไฟล์รูปจริง (ลำดับเดิมใน cards.json ไว้ก่อน เพื่อให้ระดับตั้งต้นไม่เปลี่ยน แล้วต่อด้วยระดับใหม่จากชื่อไฟล์)
+function applyArtV(c) {
+  const s = c && ART_BYID[c.id]; if (!s || !s.size) return;
+  const old = Array.isArray(c.v) ? c.v.filter(r => s.has(r)) : [];
+  c.v = [...old, ...ART_R.filter(r => s.has(r) && !old.includes(r))];
+}
 // การ์ดที่ GEM จริงเป็นสีไร้สี แต่ข้อมูลเดิมระบุเป็นสีอื่น — ใส่รหัสการ์ดในลิสต์นี้ แล้วระบบจะเปลี่ยนเป็น GEM ไร้สีให้ (ทุกสีจ่ายได้)
 const COLORLESS_GEM = [
   'BT05-003', 'BT05-004', 'BT05-014', 'BT05-015', 'BT06-006', 'BT06-007', 'BT08-008', 'BT08-017',
@@ -82,35 +108,42 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
     }
   } catch (err) { console.log('unzip error', err.message); }
 })();
-console.log('extra art:', EXTRA_ART.map(n => n + (fs.existsSync(path.join(IMG, n + '.webp')) || fs.existsSync(path.join(__dirname, n + '.webp')) ? ' ✔' : ' ✘ ไม่พบไฟล์ (ต้องมี imgs_cards_part3.zip หรือไฟล์ .webp ข้าง server.js)')).join(' | '));
+scanArt(); CARDS.forEach(applyArtV);
+console.log('art files:', Object.keys(ART_FILES).length, '| ระดับ SCR:', CARDS.filter(c => (c.v || []).includes('SCR')).length, 'ใบ');
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];
     if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, log: CHANGELOG })); }
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
-    if (u0 === '/artmap.json' || u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, u0.slice(1))).find(f => fs.existsSync(f)), 'utf8'));   // artmap.json อาจอยู่ในโฟลเดอร์รูป (แตกมาจาก imgs*.zip)
-      if (u0 === '/artmap.json') EXTRA_ART.forEach(n => { if (!a.includes(n) && (fs.existsSync(path.join(__dirname, n + '.webp')) || fs.existsSync(path.join(IMG, n + '.webp')))) a.push(n); }); else a.forEach(c => { patchCardV(c); patchGem(c); });
+    if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
+    if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
+      a.forEach(c => { applyArtV(c); patchGem(c); });
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
   if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
-  r.writeHead(200, path.extname(f) === '.webp' ? { 'Content-Type': MT['.webp'], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
+  r.writeHead(200, (path.extname(f) === '.webp' || path.extname(f) === '.png') ? { 'Content-Type': MT[path.extname(f)], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
   fs.createReadStream(path.join(dir, f)).pipe(r);
 });
 const crypto = require('crypto');
 const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY, SEC = process.env.SECRET || crypto.createHash('sha256').update('bot:' + (process.env.SUPABASE_KEY || 'dev')).digest('hex'), ADMIN = (process.env.ADMIN_USER || '').toLowerCase();
 const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, mem = {};
-const RMAP = { SCR: 'SEC', CBR: 'UBR' };
+const RMAP = { CBR: 'UBR' };
+// ย้ายการ์ด SEC เดิม → SCR สำหรับใบที่รูป SEC จริงๆ คืออาร์ท SCR (ไม่มีไฟล์ SEC แต่มีไฟล์ SCR)
+const fixR = (id, r) => { r = RMAP[r] || r; const v = B[id] && B[id].v; return (r === 'SEC' && v && v.length && !v.includes('SEC') && v.includes('SCR')) ? 'SCR' : r; };
 function mig(d) {
   if (!d || typeof CARDS === 'undefined') return d;
   const CI = new Set(CARDS.map(c => c.id));
-  if (d.cards) { const o = {}; for (const [k, n] of Object.entries(d.cards)) { let [id, r] = k.split('|'); if (!CI.has(id)) continue; r = RMAP[r] || r; const nk = id + '|' + r; o[nk] = (o[nk] || 0) + n; } d.cards = o; }
+  if (d.cards) { const o = {}; for (const [k, n] of Object.entries(d.cards)) { let [id, r] = k.split('|'); if (!CI.has(id)) continue; r = fixR(id, r); const nk = id + '|' + r; o[nk] = (o[nk] || 0) + n; } d.cards = o; }
   if (d.cards) { d.stg = d.stg || [];
     [...new Set(['SD01','SD02','SD03', ...(d.bought || [])])].filter(s => ST[s] && !d.stg.includes(s)).forEach(s => {
       const own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
       ST[s].main.concat(ST[s].life).forEach(([id, n, r]) => { if (!B[id]) return; const miss = n - (own[id] || 0); for (let j = 0; j < miss; j++) add(d, { id, r: (B[id].v || []).includes(r) ? r : (B[id].v || ['C'])[0] }); });
       d.stg.push(s); }); }
-  if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i)); }
+  if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i));
+    if (x && x.art) for (const i of Object.keys(x.art)) x.art[i] = fixR(i, x.art[i]);
+    if (x && x.vr) { const o = {}; for (const [kk, n] of Object.entries(x.vr)) { const [i, r] = kk.split('|'), nk = i + '|' + fixR(i, r); o[nk] = (o[nk] || 0) + n; } x.vr = o; } }
+  if (typeof d.pic === 'string' && d.pic.includes('|')) { const [i, r] = d.pic.split('|'); d.pic = i + '|' + fixR(i, r); }
   return d;
 }
 const dbGet = async n => { if (!SB) return mig(mem[n]); const a = await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=d`, { headers: H })).json(); return mig(a[0] && a[0].d); };
@@ -146,9 +179,9 @@ const isCC = set => /^CC/.test(set), CC_PITY = 20;
 const CCW = { SR: 90, UR: 7, SEC: 2.5, PR: .5 }, CCG = { UR: 90, SEC: 9, PR: 1 };
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
-const RT = ['C','R','SR','UR','SEC','PR','UBR','USEC'];
+const RT = ART_R;   // ลำดับระดับ ต่ำ→สูง (ใช้ชุดเดียวกับการสแกนชื่อไฟล์)
 // ระบบคราฟ/ย่อย: ผงวิเศษ
-const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, UBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
+const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, SCR: 250, PR: 250, UBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
 const CRAFT_R = ['C', 'R', 'SR', 'UR'];   // คราฟได้เฉพาะระดับนี้ (SEC ขึ้นไปคราฟไม่ได้)
 const CRAFT_OWN = 1000, CRAFT_NEW_DUST = 1500, CRAFT_NEW_GEM = 2500, DUST_KEEP = 4;   // ย่อยได้เฉพาะใบที่เกิน 4
 /* ===================== ระบบเควส (รายวัน / รายสัปดาห์ / ชาเลนจ์ / ความสำเร็จ) =====================
@@ -312,9 +345,9 @@ function qCount(r, i, m, pre) {   // นับการลงการ์ด/โ
 }
 /* ===================== จบระบบเควส ===================== */
 
-const RW = { R: 92, SR: 7, UR: .8, SEC: .15, PR: .03, UBR: .015, USEC: .005 };
-const CW = { R: 70, SR: 24, UR: 4.5, SEC: 1, PR: .3, UBR: .15, USEC: .05 };
-const GW = { UR: 90, SEC: 8.5, PR: 1, UBR: .4, USEC: .1 };
+const RW = { R: 92, SR: 7, UR: .8, SEC: .1, SCR: .05, PR: .03, UBR: .015, USEC: .005 };
+const CW = { R: 70, SR: 24, UR: 4.5, SEC: .7, SCR: .3, PR: .3, UBR: .15, USEC: .05 };
+const GW = { UR: 90, SEC: 8, SCR: .5, PR: 1, UBR: .4, USEC: .1 };
 function eff(av, W) { const o = {}; for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : 'C'; o[tt] = (o[tt] || 0) + w; } return o; }
 function pack(set, gar) {
   const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
@@ -1905,7 +1938,7 @@ wss.on('connection', ws => {
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim); if (p.some(x => ['UR','SEC','PR','UBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = []; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim); if (p.some(x => ['UR','SEC','SCR','PR','UBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
