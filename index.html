@@ -1128,7 +1128,7 @@ toast('ปล่อยบน Avatar / Construct / LIFE ของศัตรู'
 function alignMg(){document.querySelectorAll('#mid .sd').forEach(sd=>{const mr=sd.querySelector('.z-mg'),ar=sd.querySelector('.z-av');if(!mr||!ar)return;const ks=[...mr.children].filter(x=>x.classList.contains('c'));if(!ks.length)return;
 const M=mr.getBoundingClientRect(),W=mr.clientWidth,w=ks[0].offsetWidth,h=ks[0].offsetHeight,top=Math.max(0,(mr.clientHeight-h)/2),g=new Map(),free=[];
 ks.forEach(k=>{k.style.position='absolute';k.style.margin='0';k.style.top=top+'px';const at=k.dataset.at,a=at&&ar.querySelector(':scope>.c[data-u="'+at+'"]');if(a){if(!g.has(a))g.set(a,[]);g.get(a).push(k)}else free.push(k)});
-g.forEach((L,a)=>{let base=a.getBoundingClientRect().left-M.left-mr.clientLeft,n=L.length,st=w*.38;if(n>1){st=Math.min(st,(W-base-w)/(n-1));if(st<w*.12){st=w*.12;base=Math.max(0,W-w-(n-1)*st)}}else base=Math.max(0,Math.min(base,W-w));L.forEach((k,j)=>{k.style.left=(base+j*st)+'px';k.style.zIndex=j+1})});
+g.forEach((L,a)=>{let base=(ar.offsetLeft+ar.clientLeft+a.offsetLeft)-(mr.offsetLeft+mr.clientLeft),n=L.length,st=w*.38;if(n>1){st=Math.min(st,(W-base-w)/(n-1));if(st<w*.12){st=w*.12;base=Math.max(0,W-w-(n-1)*st)}}else base=Math.max(0,Math.min(base,W-w));L.forEach((k,j)=>{k.style.left=(base+j*st)+'px';k.style.zIndex=j+1})});
 free.forEach((k,j)=>{k.style.left=Math.max(0,W-w-j*w*.6)+'px';k.style.zIndex=j+1})})}
 const sgP=x=>x.cp!=null?x.cp:((info(x)||{}).p||0)+(x.pw||0);
 function sgClose(){const e=$('sgw');if(e){e.hidden=true;e.innerHTML=''}}
@@ -1150,6 +1150,8 @@ function playmat(){$('zm').innerHTML='<img src="/playmat.webp" style="max-width:
 function fitBoard(){const m=$('mid');if(!m||!m.clientWidth||!m.clientHeight)return;const cs=getComputedStyle(m),px=k=>parseFloat(cs[k])||0,ch=[...m.children].filter(e=>getComputedStyle(e).position!='absolute');let u=px('paddingTop')+px('paddingBottom')+px('rowGap')*Math.max(0,ch.length-1);ch.forEach(e=>{if(!e.classList.contains('sd'))u+=e.offsetHeight});const w=m.clientWidth-px('paddingLeft')-px('paddingRight'),h=(m.clientHeight-u)/2;m.style.setProperty('--bw',Math.floor(Math.max(150,Math.min(w,h*1.8,1100)))+'px')}
 function fitZones(){fitBoard();fitZ0();alignMg()}
 function fitZ0(){document.querySelectorAll('#mid .sd .z-av').forEach(z=>{const k=[...z.children].filter(x=>x.classList.contains('c'));k.forEach(c=>c.style.marginLeft='');if(k.length<2)return;const w=k[0].offsetWidth,gap=parseFloat(getComputedStyle(z).columnGap)||0,need=k.length*w+(k.length-1)*gap,av=z.clientWidth-2;if(need>av){const ov=(need-av)/(k.length-1);k.slice(1).forEach(c=>c.style.marginLeft=(-ov)+'px')}})}
+let amT=0;const amQ=()=>{cancelAnimationFrame(amT);amT=requestAnimationFrame(()=>{try{alignMg()}catch(e){}})};
+document.addEventListener('animationend',amQ,true);document.addEventListener('transitionend',amQ,true);setInterval(amQ,400);   // อาวุธตามผู้ใส่เสมอ แม้ Avatar ขยับทีหลัง
 addEventListener('resize',()=>{handFit();fitZones()});try{window.ResizeObserver&&new ResizeObserver(()=>fitZones()).observe($('mid'));window.visualViewport&&visualViewport.addEventListener('resize',()=>fitZones())}catch(e){}addEventListener('orientationchange',()=>setTimeout(()=>{handFit();fitZones()},200));document.addEventListener('gesturestart',e=>e.preventDefault());
 function handFit(){const h=$('hand'),n=h.children.length;if(n>1){const w=h.firstElementChild.getBoundingClientRect().width,av=h.clientWidth-16,st=Math.min(w*.6,(av-w)/(n-1));h.style.setProperty('--ml',(st-w)+'px')}}
 let lastFx=-1,POS={};
