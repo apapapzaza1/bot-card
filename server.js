@@ -2,16 +2,15 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
-// ระดับการ์ด (C/R/SR/UR/SEC/SCR/PR/UBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
+// ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
 const VERSION = process.env.APP_VERSION || 'v1.7';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
   { v: 'v1.7', d: '2026-11-06', items: [
-    'ระดับการ์ดทุกใบ (หน้าจัดเด็ค / ร้านค้า เปิดซอง / คราฟ-ย่อย / เรทการ์ด) ตรงกับชื่อไฟล์รูปอัตโนมัติ เช่น KD01-001-SCR.png = ระดับ SCR เพิ่มรูปใหม่แล้วไม่ต้องมาแก้รายการทีละใบอีก',
-    'เพิ่มระดับ SCR (อยู่ระหว่าง SEC กับ PR) · ย่อยได้ 250 ผง · คราฟไม่ได้ · รองรับไฟล์รูป .png ด้วย',
-    'การ์ด SEC เดิมของ 16 ใบที่เป็นอาร์ท SCR ถูกย้ายเป็น SCR ให้ผู้เล่นอัตโนมัติ (รวมเด็คและรูปโปรไฟล์)'
+    'ระดับการ์ดทุกใบ (หน้าจัดเด็ค / ร้านค้า เปิดซอง / คราฟ-ย่อย / เรทการ์ด) ตรงกับชื่อไฟล์รูปอัตโนมัติ เช่น KD01-001-CBR.webp = ระดับ CBR เพิ่มรูปใหม่แล้วไม่ต้องมาแก้รายการทีละใบอีก',
+    'เปลี่ยนชื่อระดับ CBR เป็น CBR ทั้งเกม (การ์ดและข้อมูลผู้เล่นเดิมย้ายให้อัตโนมัติ) · ระดับในเกม: C / R / SR / UR / SEC / PR / CBR / USEC'
   ] },
   { v: 'v1.6', d: '2026-11-06', items: [
     'อย่าให้มีครั้งที่ 2 / ชายจากอนาคต: ยกเลิกการ์ด React ได้ทุกใบ (รวม หมอมาแล้ว, ถวาย, รัททาท่วม, ริกกี้ นักปลอมแปลง)',
@@ -39,7 +38,7 @@ const CHANGELOG = [
   ] }
 ];
 // ===== ระดับการ์ด = ตามชื่อไฟล์รูป (สแกนอัตโนมัติ) =====
-const ART_R = ['C', 'R', 'SR', 'UR', 'SEC', 'SCR', 'PR', 'UBR', 'USEC'];   // ลำดับระดับ ต่ำ→สูง
+const ART_R = ['C', 'R', 'SR', 'UR', 'SEC', 'PR', 'CBR', 'USEC'];   // ลำดับระดับ ต่ำ→สูง
 const ART_RE = new RegExp('^(.+?)(?:-(' + ART_R.filter(r => r !== 'C').join('|') + '))?\\.(webp|png)$', 'i');   // ID-ระดับ.webp / .png (ไม่มีคำต่อท้าย = C)
 let ART_FILES = {};   // { ชื่อไฟล์ไม่มีนามสกุล : ชื่อไฟล์จริง }
 const ART_BYID = {};  // { รหัสการ์ด : Set ของระดับที่มีไฟล์รูป }
@@ -109,7 +108,7 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
   } catch (err) { console.log('unzip error', err.message); }
 })();
 scanArt(); CARDS.forEach(applyArtV);
-console.log('art files:', Object.keys(ART_FILES).length, '| ระดับ SCR:', CARDS.filter(c => (c.v || []).includes('SCR')).length, 'ใบ');
+console.log('art files:', Object.keys(ART_FILES).length, '| ระดับ CBR:', CARDS.filter(c => (c.v || []).includes('CBR')).length, 'ใบ');
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];
@@ -128,9 +127,9 @@ const srv = http.createServer((q, r) => {
 const crypto = require('crypto');
 const SB = process.env.SUPABASE_URL, KEY = process.env.SUPABASE_KEY, SEC = process.env.SECRET || crypto.createHash('sha256').update('bot:' + (process.env.SUPABASE_KEY || 'dev')).digest('hex'), ADMIN = (process.env.ADMIN_USER || '').toLowerCase();
 const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, mem = {};
-const RMAP = { CBR: 'UBR' };
-// ย้ายการ์ด SEC เดิม → SCR สำหรับใบที่รูป SEC จริงๆ คืออาร์ท SCR (ไม่มีไฟล์ SEC แต่มีไฟล์ SCR)
-const fixR = (id, r) => { r = RMAP[r] || r; const v = B[id] && B[id].v; return (r === 'SEC' && v && v.length && !v.includes('SEC') && v.includes('SCR')) ? 'SCR' : r; };
+const RMAP = { UBR: 'CBR', SCR: 'SEC' };
+// แปลงชื่อระดับเก่าในข้อมูลผู้เล่น: CBR → CBR (และ SCR → SEC กรณีมีข้อมูลที่เคยย้ายไว้)
+const fixR = (id, r) => RMAP[r] || r;
 function mig(d) {
   if (!d || typeof CARDS === 'undefined') return d;
   const CI = new Set(CARDS.map(c => c.id));
@@ -155,9 +154,9 @@ const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'bas
 const PF_NEED = L => 200 + 50 * L;   // EXP ที่ต้องใช้จากเลเวล L ไป L+1
 const pfLv = xp => { let L = 1, x = Math.max(0, xp | 0); while (x >= PF_NEED(L)) { x -= PF_NEED(L); L++; } return { lv: L, cur: x, need: PF_NEED(L) }; };
 const pfView = d => { const p = d.pf || {}, st = p.st || {}, l = pfLv(p.xp); return { pend: p.pend || [], xp: p.xp | 0, lv: l.lv, cur: l.cur, need: l.need, hist: p.hist || [], st: { g: st.g | 0, w: st.w | 0, l: st.l | 0, s: st.s | 0, b: st.b | 0 } }; };
-// รางวัลทุก 5 เลเวล: Gem 500 (+250 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150) ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / UBR 10%
+// รางวัลทุก 5 เลเวล: Gem 500 (+250 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150) ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / CBR 10%
 const pfReward = L => { if (L % 5) return null; const k = L / 5; return { lv: L, gems: 500 + 250 * (k - 1), dust: 300 + 150 * (k - 1), n: L % 10 ? 0 : L / 10 }; };
-const PF_ART_W = [['SEC', 65], ['UR', 25], ['UBR', 10]];
+const PF_ART_W = [['SEC', 65], ['UR', 25], ['CBR', 10]];
 const pfArt = () => { let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of PF_ART_W) { if ((x -= w) < 0) { r = t; break; } }
   const pool = rr => { const A = []; CARDS.forEach(c => (c.v || []).includes(rr) && A.push({ id: c.id, r: rr })); return A; };
   let A = pool(r); if (!A.length) A = pool('SEC'); if (!A.length) A = pool('UR'); return A.length ? pick(A) : null; };
@@ -181,7 +180,7 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
 const RT = ART_R;   // ลำดับระดับ ต่ำ→สูง (ใช้ชุดเดียวกับการสแกนชื่อไฟล์)
 // ระบบคราฟ/ย่อย: ผงวิเศษ
-const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, SCR: 250, PR: 250, UBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
+const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, CBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
 const CRAFT_R = ['C', 'R', 'SR', 'UR'];   // คราฟได้เฉพาะระดับนี้ (SEC ขึ้นไปคราฟไม่ได้)
 const CRAFT_OWN = 1000, CRAFT_NEW_DUST = 1500, CRAFT_NEW_GEM = 2500, DUST_KEEP = 4;   // ย่อยได้เฉพาะใบที่เกิน 4
 /* ===================== ระบบเควส (รายวัน / รายสัปดาห์ / ชาเลนจ์ / ความสำเร็จ) =====================
@@ -243,11 +242,11 @@ const QACH = [
   { id: 'a_op', ic: '📦', name: 'นักเปิดซอง', m: 'op', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 400, 700, 1000] },
   { id: 'a_cr', ic: '🔮', name: 'ช่างคราฟ', m: 'cr', md: 'any', tiers: [1, 3, 5, 10, 20, 40, 80] }];
 const qAchR = (t, md) => ({ gems: Math.round((100 + 125 * t) * 2 * (md === 'pvp' ? 1.5 : 1)), dust: t >= 1 ? 200 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // ของรางวัล x2 (การ์ดเท่าเดิม) · ความสำเร็จโหมดเพื่อน (pvp) gem +50%   // รางวัลต่อขั้น (t เริ่มที่ 0)
-const Q_ART_W = [['SEC', 70], ['PR', 20], ['UBR', 10]];   // การ์ดอาร์ทสุ่ม SEC 70% / PR 20% / UBR 10%
+const Q_ART_W = [['SEC', 70], ['PR', 20], ['CBR', 10]];   // การ์ดอาร์ทสุ่ม SEC 70% / PR 20% / CBR 10%
 function qArt() {
   let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of Q_ART_W) { if ((x -= w) < 0) { r = t; break; } }
   const pool = rr => { const A = []; CARDS.forEach(c => (c.v || []).includes(rr) && A.push({ id: c.id, r: rr })); return A; };
-  let A = pool(r); for (const t of ['SEC', 'PR', 'UBR']) if (!A.length) A = pool(t);
+  let A = pool(r); for (const t of ['SEC', 'PR', 'CBR']) if (!A.length) A = pool(t);
   return A.length ? pick(A) : null;
 }
 const qTH = () => { const t = Date.now() + 7 * 36e5, day = Math.floor(t / 864e5), wk = Math.floor((day + 3) / 7); return { day, wk, dEnd: (day + 1) * 864e5 - 7 * 36e5 - Date.now(), wEnd: (wk * 7 - 3 + 7) * 864e5 - 7 * 36e5 - Date.now() }; };
@@ -345,9 +344,9 @@ function qCount(r, i, m, pre) {   // นับการลงการ์ด/โ
 }
 /* ===================== จบระบบเควส ===================== */
 
-const RW = { R: 92, SR: 7, UR: .8, SEC: .1, SCR: .05, PR: .03, UBR: .015, USEC: .005 };
-const CW = { R: 70, SR: 24, UR: 4.5, SEC: .7, SCR: .3, PR: .3, UBR: .15, USEC: .05 };
-const GW = { UR: 90, SEC: 8, SCR: .5, PR: 1, UBR: .4, USEC: .1 };
+const RW = { R: 92, SR: 7, UR: .8, SEC: .15, PR: .03, CBR: .015, USEC: .005 };
+const CW = { R: 70, SR: 24, UR: 4.5, SEC: 1, PR: .3, CBR: .15, USEC: .05 };
+const GW = { UR: 90, SEC: 8.5, PR: 1, CBR: .4, USEC: .1 };
 function eff(av, W) { const o = {}; for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : 'C'; o[tt] = (o[tt] || 0) + w; } return o; }
 function pack(set, gar) {
   const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
@@ -1938,7 +1937,7 @@ wss.on('connection', ws => {
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim); if (p.some(x => ['UR','SEC','SCR','PR','UBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = []; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
@@ -1946,7 +1945,7 @@ wss.on('connection', ws => {
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, WUPDATE: { gems: 1000 }, DUST: { dust: 555 }, QUEST: { gems: 500, dust: 150 }, PROFILE: { art: 1 }, ...(SC = (await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); if (SC[c]) { if (X.exp && Date.now() > X.exp) E('โค้ดนี้หมดอายุแล้ว'); if (X.max > 0 && (X.u | 0) >= X.max) E('โค้ดนี้มีผู้รับครบจำนวนแล้ว'); X.u = (X.u | 0) + 1; await dbPut('sys:codes', SC); } d.codes.push(c);
         let ps = []; d.gems += X.gems || 0; d.dust = (d.dust || 0) + (X.dust || 0);
-        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','UBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
+        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','CBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: [X.gems ? 'ได้ ' + X.gems + ' Gem' : '', X.dust ? 'ได้ ' + X.dust + ' ผง' : ''].filter(Boolean).join(' · ') })); return;
       }); return;
       }
