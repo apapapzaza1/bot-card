@@ -33,7 +33,7 @@ const CHANGELOG = [
     'แถบเวอร์ชันหน้าล็อบบี้: กดเพื่อดูรายการอัปเดตได้'
   ] }
 ];
-const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR'];
+const EXTRA_ART = ['SD08-001-PR', 'SD08-001-UBR', 'KD03-001-UBR', 'KD03-001-PR', 'KD03-001-SEC', 'KD03-003-SEC', 'KD04-012-UBR', 'KD04-012-PR', 'KD04-012-SEC', 'SD01-005-UBR', 'SD01-005-PR', 'SD04-005-UBR', 'SD04-005-PR'];
 function patchCardV(c) { if (c && c.id === 'SD08-001') { c.v = Array.isArray(c.v) && c.v.length ? c.v : ['C']; ['PR', 'UBR'].forEach(x => { if (!c.v.includes(x)) c.v.push(x); }); } }
 CARDS.forEach(patchCardV);
 // การ์ดที่ GEM จริงเป็นสีไร้สี แต่ข้อมูลเดิมระบุเป็นสีอื่น — ใส่รหัสการ์ดในลิสต์นี้ แล้วระบบจะเปลี่ยนเป็น GEM ไร้สีให้ (ทุกสีจ่ายได้)
