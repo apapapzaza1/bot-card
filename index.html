@@ -1155,11 +1155,12 @@ document.addEventListener('animationend',amQ,true);document.addEventListener('tr
 addEventListener('resize',()=>{handFit();fitZones()});try{window.ResizeObserver&&new ResizeObserver(()=>fitZones()).observe($('mid'));window.visualViewport&&visualViewport.addEventListener('resize',()=>fitZones())}catch(e){}addEventListener('orientationchange',()=>setTimeout(()=>{handFit();fitZones()},200));document.addEventListener('gesturestart',e=>e.preventDefault());
 function handFit(){const h=$('hand'),n=h.children.length;if(n>1){const w=h.firstElementChild.getBoundingClientRect().width,av=h.clientWidth-16,st=Math.min(w*.6,(av-w)/(n-1));h.style.setProperty('--ml',(st-w)+'px')}}
 let lastFx=-1,POS={};
-const rc=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width}};
+const rc=el=>{if(!el)return null;const r=el.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:el.offsetWidth||r.width}};
 const fxEl=(h,x,y,ms)=>{const d=document.createElement('div');d.className='fxl';d.style.left=x+'px';d.style.top=y+'px';d.innerHTML=h;document.body.append(d);setTimeout(()=>d.remove(),ms||1300);return d};
 const cel=u=>document.querySelector('#mid [data-u="'+u+'"]'),pos=u=>rc(cel(u))||POS[u]||null;
 const updPos=()=>{if(Object.keys(POS).length>300)POS={};document.querySelectorAll('#mid .c[data-u]').forEach(e=>POS[e.dataset.u]=rc(e))};
-function playFx(){const L=S.fx||[];if(lastFx==-1){lastFx=L.length?L[L.length-1].n:0;return}if(['rx','akp','bt2','zm','pkr'].some(k=>{const e=$(k);return e&&!e.hidden})){clearTimeout(playFx.t);playFx.t=setTimeout(()=>{if(S)playFx()},200);return}L.filter(f=>f.n>lastFx).forEach(f=>{lastFx=f.n;try{fx1(f)}catch(e){}})}
+function playFx(){const L=S.fx||[];if(lastFx==-1){lastFx=L.length?L[L.length-1].n:0;return}if(['rx','akp','bt2','zm','pkr'].some(k=>{const e=$(k);return e&&!e.hidden})){clearTimeout(playFx.t);playFx.t=setTimeout(()=>{if(S)playFx()},200);return}const nw=L.filter(f=>f.n>lastFx);nw.forEach(f=>{lastFx=Math.max(lastFx,f.n)});const net={},seen=new Set();let bk=0;nw.forEach(f=>{if(f.k=='buff')net[f.u]=(net[f.u]||0)+f.v});
+ nw.forEach(f=>{try{if(f.k=='buff'){if(seen.has(f.u))return;seen.add(f.u);if(!net[f.u])return;const g={...f,v:net[f.u]};setTimeout(()=>{try{fx1(g)}catch(e){}},(bk++)*140)}else fx1(f)}catch(e){}})}
 function fx1(f){if(f.k=='atkp')return;
 if(f.k=='buff'){const p=pos(f.u);if(!p)return;const e=cel(f.u);e&&e.classList.add(f.v>0?'fxu':'fxd');fxEl(`<div class="fxb ${f.v>0?'up':'dn'}">${f.v>0?'▲ +':'▼ '}${f.v}</div>`,p.x,p.y);sfx(f.v>0?'play':'hit')}
 else if(f.k=='die'){const p=pos(f.u);if(!p)return;const a=f.id?art(f.id):'';fxEl('<div class="fxboom"></div>',p.x,p.y,800);fxEl(`<div class="c im fxgd" style="--w:${Math.round(p.w)}px;${a}">${a?'':esc(f.nm||(C[f.id]||{}).n||'')}</div>`,p.x,p.y,900);sfx('hit')}
