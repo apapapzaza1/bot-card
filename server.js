@@ -1944,6 +1944,26 @@ wss.on('connection', ws => {
         else { if (pr > 0 && !d.skins.includes(key)) E('ยังไม่ได้ซื้อ'); d.eq[m.k] = m.id; }
         await dbPut(ws.user, d); me_(d); return;
       }
+      if (m.t === 'pdlist' || m.t === 'pdshare' || m.t === 'pddel') {   // เด็คสาธารณะ (เก็บรวมที่ sys:pubdecks)
+        const PD_MAX_USER = 10, PD_MAX = 300, pdMsg = (T, note) => JSON.stringify({ t: 'pdlist', list: (T.list || []).slice(0, PD_MAX), note });
+        if (m.t === 'pdlist') { ws.send(pdMsg((await dbGet('sys:pubdecks')) || {})); return; }
+        await codeLock(async () => {
+          const T = (await dbGet('sys:pubdecks')) || {}; T.list = T.list || []; let note;
+          if (m.t === 'pddel') {
+            const id = String(m.id || ''), x = T.list.find(q => q.id === id); if (!x) E('ไม่พบเด็คนี้');
+            if (x.owner !== ws.user && ws.user !== ADMIN) E('ลบได้เฉพาะเด็คของตัวเอง');
+            T.list = T.list.filter(q => q.id !== id); note = '🗑 ลบเด็คออกจากสาธารณะแล้ว';
+          } else {
+            const d = await dbGet(ws.user), nm = String(m.name || '').slice(0, 20), k = d.decks && d.decks[nm]; if (!k) E('ไม่พบเด็คของคุณ');
+            const id = ws.user + ':' + nm, old = T.list.findIndex(q => q.id === id);
+            if (old < 0 && T.list.filter(q => q.owner === ws.user).length >= PD_MAX_USER) E('ลงสาธารณะได้สูงสุด ' + PD_MAX_USER + ' เด็คต่อคน (ลบอันเก่าก่อน)');
+            const e = { id, owner: ws.user, name: nm, main: k.main.slice(), life: k.life.slice(), vr: { ...(k.vr || {}) }, at: Date.now() };
+            if (old >= 0) { T.list.splice(old, 1); note = '🌐 อัปเดตเด็ค "' + nm + '" ในสาธารณะแล้ว'; } else note = '🌐 แชร์เด็ค "' + nm + '" ลงสาธารณะแล้ว';
+            T.list.unshift(e);
+          }
+          await dbPut('sys:pubdecks', T); ws.send(pdMsg(T, note));
+        }); return;
+      }
       if (m.t === 'savedeck') {
         const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
         const main = (m.main || []).map(String), life = (m.life || []).map(String), cnt = {};
