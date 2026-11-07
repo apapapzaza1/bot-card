@@ -168,7 +168,7 @@ const PF_NEED = L => 200 + 50 * L;   // EXP ที่ต้องใช้จา
 const pfLv = xp => { let L = 1, x = Math.max(0, xp | 0); while (x >= PF_NEED(L)) { x -= PF_NEED(L); L++; } return { lv: L, cur: x, need: PF_NEED(L) }; };
 const pfView = d => { const p = d.pf || {}, st = p.st || {}, l = pfLv(p.xp); return { pend: p.pend || [], xp: p.xp | 0, lv: l.lv, cur: l.cur, need: l.need, hist: p.hist || [], st: { g: st.g | 0, w: st.w | 0, l: st.l | 0, s: st.s | 0, b: st.b | 0 } }; };
 // รางวัลทุก 5 เลเวล: Gem 500 (+250 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150) ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / CBR 10%
-const pfReward = L => { if (L % 5) return null; const k = L / 5; return { lv: L, gems: 500 + 250 * (k - 1), dust: 300 + 150 * (k - 1), n: L % 10 ? 0 : L / 10 }; };
+const pfReward = L => { if (L % 5) return null; const k = L / 5; return { lv: L, gems: 15000 + 5000 * (k - 1), dust: 300 + 150 * (k - 1), n: L % 10 ? 0 : L / 10 }; };
 const PF_ART_W = [['SEC', 65], ['UR', 25], ['CBR', 10]];
 const pfArt = () => { let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of PF_ART_W) { if ((x -= w) < 0) { r = t; break; } }
   const pool = rr => { const A = []; CARDS.forEach(c => (c.v || []).includes(rr) && A.push({ id: c.id, r: rr })); return A; };
@@ -230,6 +230,10 @@ const QW = [
   ['op', 'any', 8, 1350, 100], ['op', 'any', 15, 1500, 200], ['op', 'any', 30, 1750, 300, 1],
   ['cr', 'any', 2, 1350, 0], ['cr', 'any', 5, 1600, 0],
   ['s5', 'any', 15, 1350, 50], ['s5', 'any', 30, 1500, 100]];
+// ===== ปรับสมดุลเจม: รายได้เจมจากเควสต์ (รายวัน + รายสัปดาห์เฉลี่ย) ≈ 5,000/วัน (ไม่นับปฏิทิน, เล่นกับบอท/เพื่อน) =====
+// ปรับตัวเลขเดียวนี้ตัวเดียวถ้าอยากเพิ่ม/ลดรายได้ทั้งหมด (0.445 ≈ 5,000 เจม/วัน เมื่อทำเควสต์ครบ)
+const GEM_K = 0.445, gK = g => Math.max(50, Math.round(g * GEM_K / 50) * 50);
+QD.forEach(t => { t[3] = gK(t[3]); }); QW.forEach(t => { t[3] = gK(t[3]); });
 // ชาเลนจ์ตั้งต้น (แอดมินเพิ่ม/ลบเองได้ในเกม) — ครั้งเดียวต่อบัญชี ไม่รีเซ็ต นับตั้งแต่ชาเลนจ์ถูกเพิ่ม
 const QCH_DEF = [
   { name: 'นักล่าบอทระดับยาก', m: 'w', md: 'hard', need: 30, gems: 6000, dust: 1000, art: 1 },
@@ -254,7 +258,7 @@ const QACH = [
   { id: 'a_s5', ic: '🦖', name: 'ยักษ์ใหญ่ (Avatar Cost 5+)', m: 's5', md: 'any', tiers: [5, 25, 100, 250, 500, 1000] },
   { id: 'a_op', ic: '📦', name: 'นักเปิดซอง', m: 'op', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 400, 700, 1000] },
   { id: 'a_cr', ic: '🔮', name: 'ช่างคราฟ', m: 'cr', md: 'any', tiers: [1, 3, 5, 10, 20, 40, 80] }];
-const qAchR = (t, md) => ({ gems: Math.round((100 + 125 * t) * 2 * (md === 'pvp' ? 1.5 : 1)), dust: t >= 1 ? 200 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // ของรางวัล x2 (การ์ดเท่าเดิม) · ความสำเร็จโหมดเพื่อน (pvp) gem +50%   // รางวัลต่อขั้น (t เริ่มที่ 0)
+const qAchR = (t, md) => ({ gems: gK((100 + 125 * t) * 2 * (md === 'pvp' ? 1.5 : 1)), dust: t >= 1 ? 200 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // ของรางวัล x2 (การ์ดเท่าเดิม) · ความสำเร็จโหมดเพื่อน (pvp) gem +50%   // รางวัลต่อขั้น (t เริ่มที่ 0)
 const Q_ART_W = [['SEC', 70], ['PR', 20], ['CBR', 10]];   // การ์ดอาร์ทสุ่ม SEC 70% / PR 20% / CBR 10%
 function qArt() {
   let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of Q_ART_W) { if ((x -= w) < 0) { r = t; break; } }
@@ -326,6 +330,31 @@ function qClaim(d, kind, id, all) {   // รับรางวัล: คืน 
     give(x);
   }
   return tot;
+}
+// ===== Login รายวัน (ปฏิทิน): ทุก 5 วัน 15,000 / ทุก 10 วัน 15,000 + การ์ดอาร์ท 2 ใบ / วันอื่น 5,000 · ขาดวันแล้วเริ่มวันที่ 1 ใหม่ =====
+const DL_BUSY = new Set();
+const dlRew = n => n % 10 === 0 ? { gems: 15000, dust: 0, art: 2 } : n % 5 === 0 ? { gems: 15000, dust: 0, art: 0 } : { gems: 5000, dust: 0, art: 0 };
+function dlView(d) {
+  const T = qTH(), x = d.dl || {}, s = x.s | 0, l = x.l, got = l === T.day;
+  const next = got ? s : (l === T.day - 1 ? s + 1 : 1), base = Math.floor((next - 1) / 10) * 10;
+  const days = Array.from({ length: 10 }, (_, i) => { const n = base + i + 1, o = dlRew(n); return { n, gems: o.gems, art: o.art, st: (got ? n <= s : n < next) ? 'done' : (!got && n === next ? 'today' : 'next') }; });
+  return { can: got ? 0 : 1, streak: got ? s : (l === T.day - 1 ? s : 0), next, days, rs: T.dEnd };
+}
+async function dlHandle(ws, m) {
+  if (m.t !== 'dlget' && m.t !== 'dlclaim') return false;
+  const u = ws.user;
+  if (m.t === 'dlget') { const d = await dbGet(u); ws.send(JSON.stringify({ t: 'dl', v: dlView(d), auto: m.auto ? 1 : 0 })); return true; }
+  if (DL_BUSY.has(u)) return true; DL_BUSY.add(u);
+  try {
+    const d = await dbGet(u), v = dlView(d); if (!v.can) E('วันนี้รับรางวัลไปแล้ว');
+    const o = dlRew(v.next), cards = []; qGive(d, o, cards);
+    d.dl = { s: v.next, l: qTH().day }; await dbPut(u, d);
+    const note = '📅 Login วันที่ ' + v.next + ' · 💎 ' + o.gems.toLocaleString('en-US') + (cards.length ? ' + การ์ดอาร์ท ' + cards.length + ' ใบ' : '');
+    ws.send(JSON.stringify({ t: 'dl', v: dlView(d) }));
+    if (cards.length) { const ps = []; for (let i = 0; i < cards.length; i += 5) ps.push(cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(u, d), note })); }
+    else ws.send(JSON.stringify({ t: 'me', me: prof(u, d), note }));
+  } finally { DL_BUSY.delete(u); }
+  return true;
 }
 async function qHandle(ws, m) {   // ข้อความ WebSocket ของระบบเควส (คืน true ถ้าจัดการแล้ว)
   if (m.t !== 'qget' && m.t !== 'qclaim' && m.t !== 'qchadd' && m.t !== 'qchdel') return false;
@@ -1870,6 +1899,7 @@ wss.on('connection', ws => {
         q.spec = q.spec || []; if (q.spec.length >= 10 && !q.spec.includes(ws)) E('ผู้ชมเต็ม');
         if (!q.spec.includes(ws)) q.spec.push(ws); ws.sp = q; ws.send(JSON.stringify({ t: 's', s: sview(q) })); return;
       }
+      if (await dlHandle(ws, m)) return;
       if (await qHandle(ws, m)) return;
       if (m.t === 'banset' || m.t === 'banreset') {   // แอดมินแก้ไข/รีเซ็ตแบนลิสต์ (เก็บถาวร + ประกาศให้ผู้เล่นออนไลน์ทันที)
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
