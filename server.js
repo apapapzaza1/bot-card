@@ -69,8 +69,10 @@ function scanArt() {
 // ระดับของการ์ดใบหนึ่ง = ระดับที่มีไฟล์รูปจริง (ลำดับเดิมใน cards.json ไว้ก่อน เพื่อให้ระดับตั้งต้นไม่เปลี่ยน แล้วต่อด้วยระดับใหม่จากชื่อไฟล์)
 function applyArtV(c) {
   const s = c && ART_BYID[c.id]; if (!s || !s.size) return;
-  const old = Array.isArray(c.v) ? c.v.filter(r => s.has(r)) : [];
-  c.v = [...old, ...ART_R.filter(r => s.has(r) && !old.includes(r))];
+  // ถ้าระดับตั้งต้นใน cards.json ไม่ใช่ C แต่มีแค่รูปไม่มีคำต่อท้าย (เช่น SD09-004.png = UR) → ใช้รูปนั้นเป็นระดับตั้งต้นต่อ ไม่ปัดเป็น C
+  const base = Array.isArray(c.v) ? c.v[0] : null, promo = !!base && base !== 'C' && !s.has(base) && s.has('C');
+  const old = Array.isArray(c.v) ? c.v.filter(r => s.has(r) || (promo && r === base)) : [];
+  c.v = [...old, ...ART_R.filter(r => s.has(r) && !old.includes(r) && !(promo && r === 'C'))];
 }
 // การ์ดที่ GEM จริงเป็นสีไร้สี แต่ข้อมูลเดิมระบุเป็นสีอื่น — ใส่รหัสการ์ดในลิสต์นี้ แล้วระบบจะเปลี่ยนเป็น GEM ไร้สีให้ (ทุกสีจ่ายได้)
 const COLORLESS_GEM = [
@@ -1939,7 +1941,7 @@ wss.on('connection', ws => {
         if (!again) { d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set); await dbPut(ws.user, d); me_(d); return; }
         // ซื้อซ้ำ: ได้การ์ดครบกล่องอีกชุด · การ์ดระดับ UR ในกล่องสุ่มเป็น UR ขึ้นไป เรท 90 / 7 / 2.5 / 0.5 ตามความยาก (เรียงตามระดับที่การ์ดใบนั้นมีจริง)
         const LEGR = { UBR: 'CBR', SCR: 'SEC' }, W4 = [90, 7, 2.5, 0.5], got = [];
-        const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)), tiers = RT.filter(t => RT.indexOf(t) >= RT.indexOf('UR') && have.has(t)).slice(0, 4); if (!tiers.length) return 'UR';
+        const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)); have.add('UR'); const tiers = RT.filter(t => RT.indexOf(t) >= RT.indexOf('UR') && have.has(t)).slice(0, 4); if (!tiers.length) return 'UR';
           const w = tiers.map((t, k) => W4[k]), tot = w.reduce((p, q) => p + q, 0); let x = Math.random() * tot; for (let k = 0; k < tiers.length; k++) if ((x -= w[k]) < 0) return tiers[k]; return tiers[0]; };
         const all = [];   // การ์ดทุกใบในกล่อง (แสดงครบทุกใบ ไม่ใช่แค่ UR+)
         ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : (r || ((B[id] && B[id].v) || ['C'])[0]); if (r === 'UR') got.push({ id, r: rr }); all.push({ id, r: rr }); add(d, { id, r: rr }); } });
