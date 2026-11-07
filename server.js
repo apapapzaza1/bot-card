@@ -357,9 +357,9 @@ const RW = { R: 92, SR: 7, UR: .8, SEC: .15, PR: .03, CBR: .015, USEC: .005 };
 const CW = { R: 70, SR: 24, UR: 4.5, SEC: 1, PR: .3, CBR: .15, USEC: .05 };
 const GW = { UR: 90, SEC: 8.5, PR: 1, CBR: .4, USEC: .1 };
 function eff(av, W) { const o = {}; for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : 'C'; o[tt] = (o[tt] || 0) + w; } return o; }
-function pack(set, gar) {
-  const R = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => R.push({ id: c.id, r })));
-  const av = new Set(R.map(x => x.r)), by = r => R.filter(x => x.r === r);
+function pack(set, gar, K) {
+  K = K || {}; const R = K.R || (K.R = (() => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => o.push({ id: c.id, r }))); return o; })());
+  const av = K.av || (K.av = new Set(R.map(x => x.r))), by = r => (K.by = K.by || {})[r] || (K.by[r] = R.filter(x => x.r === r));
   if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(W).filter(([t]) => av.has(t)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
   const roll = W => { const e = eff(av, W), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return 'R'; };
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
@@ -1931,8 +1931,10 @@ wss.on('connection', ws => {
         const LEGR = { UBR: 'CBR', SCR: 'SEC' }, W4 = [90, 7, 2.5, 0.5], got = [];
         const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)), tiers = RT.filter(t => RT.indexOf(t) >= RT.indexOf('UR') && have.has(t)).slice(0, 4); if (!tiers.length) return 'UR';
           const w = tiers.map((t, k) => W4[k]), tot = w.reduce((p, q) => p + q, 0); let x = Math.random() * tot; for (let k = 0; k < tiers.length; k++) if ((x -= w[k]) < 0) return tiers[k]; return tiers[0]; };
-        ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : r; if (r === 'UR') got.push({ id, r: rr }); add(d, { id, r: rr }); } });
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: [got.length ? got : [{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') })); return; }
+        const all = [];   // การ์ดทุกใบในกล่อง (แสดงครบทุกใบ ไม่ใช่แค่ UR+)
+        ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : (r || ((B[id] && B[id].v) || ['C'])[0]); if (r === 'UR') got.push({ id, r: rr }); all.push({ id, r: rr }); add(d, { id, r: rr }); } });
+        const rows = []; for (let k = 0; k < all.length; k += 5) rows.push(all.slice(k, k + 5));
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: rows.length ? rows : [[{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง ' + all.length + ' ใบ' + (got.length ? ' · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') : '') })); return; }
       if (m.t === 'buyskin' || m.t === 'eqskin') {
         const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400, bot1: 2500, dark: 3750, chalk: 3750, adv: 3750, constr: 5000, shrinesky: 5000, ratinv: 5000, hellneon: 6250, space: 6250, warb: 6250, hellgate: 7500, montb: 7500, bankb: 7500, idolb: 7500 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300, blue: 2500, purple: 2500, green: 2500, red: 2500, sun: 2500, violet: 3750, line: 3750, shrine: 3750, soi: 3750, ghost: 5000, galaxy: 5000, holo: 5000, rat: 5000, flame: 6250, dino: 6250, war: 6250, montho: 7500, sweeney: 7500, idol: 7500, bank: 7500 } };
         const pr = SK[m.k] && SK[m.k][m.id]; if (pr == null) E('ไม่มีสินค้า');
@@ -1989,7 +1991,7 @@ wss.on('connection', ws => {
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = []; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = [], PKC = {}; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim, PKC); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
