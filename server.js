@@ -1248,7 +1248,7 @@ let BAN = normBan(JSON.parse(fs.readFileSync(BAN_FILE, 'utf8')));
 const pushBan = () => wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ t: 'ban', ban: BAN })); });
 // กฎประจำตัว "#การ์ดใบนี้นับเป็นชื่อ X" (X ไม่มีเครื่องหมาย "…") = ชื่อหลักที่ 2 ต้องนับรวมกันในโควตา 4 ใบ ; ถ้ามี "…" = ชื่อเสริม ไม่นับ
 const extraName = c => { const e = c.e || '', k = e.indexOf('#'); if (k < 0) return ''; const m = /นับเป็นชื่อ\s*([^"“”#\n]+?)\s*(?:#|$)/.exec(e.slice(k)); return m ? nk(m[1]) : ''; };
-const limOf = c => c.lim || (/ได้มากสุด 50 ใบ/.test(c.e || '') ? 50 : (c.o === 'Only #1' ? 1 : 4));
+const limOf = c => (c.o === 'Only #1' && !/ได้มากสุด 50 ใบ/.test(c.e || '')) ? 1 : (c.lim || (/ได้มากสุด 50 ใบ/.test(c.e || '') ? 50 : 4));
 const namesOf = c => { const x = extraName(c), a = [nk(c.n)]; if (x && x !== a[0]) a.push(x); return a; };
 const LIMNAME = {}; CARDS.forEach(c => { const n = nk(c.n); LIMNAME[n] = Math.min(LIMNAME[n] || 99, limOf(c)); });
 const countNames = main => { const cnt = {}; main.forEach(i => namesOf(B[i]).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; })); return cnt; };

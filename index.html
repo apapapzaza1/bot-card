@@ -766,7 +766,7 @@ function decks(){bd=bd||{n:'',m:{},l:{},q:'',t:''};md.className='dkb';$('md').da
 const lifeDup=()=>{const n=Object.keys(bd.l).flatMap(i=>Array(bd.l[i]).fill(C[i]?C[i].n:i));return n.length!=new Set(n).size};
 function saveDeck(){const n=(bd.n||'').trim();if(!n)return alert('ตั้งชื่อเด็คก่อน');const ids=new Set([...Object.keys(bd.m),...Object.keys(bd.l)]),ar={};bnorm();Object.keys(bd.vr).forEach(k=>{const[i,r]=k.split('|');ids.has(i)&&!ar[i]&&(ar[i]=r)});send({t:'savedeck',name:n,main:exp(bd.m),life:exp(bd.l),art:ar,vr:bd.vr});toast('กำลังบันทึก…');setTimeout(bdr,500)}
 function delDeck(){const n=(bd.n||'').trim();if(!ME.decks[n])return;if(!confirm('ลบเด็ค "'+n+'" ?'))return;send({t:'deldeck',name:n});bd.n='';bd.m={};bd.l={};bd.vr={};toast('ลบเด็คแล้ว');setTimeout(bdr,500)}
-function bdc(i,d){const o=C[i].t=='Life'?bd.l:bd.m,n=(o[i]||0)+d;if(n<0||n>oc(i)||n>(C[i].lim||4))return;n?o[i]=n:delete o[i];bdr()}
+function bdc(i,d){const o=C[i].t=='Life'?bd.l:bd.m,n=(o[i]||0)+d;if(n<0||n>oc(i)||n>LIMN(C[i]))return;n?o[i]=n:delete o[i];bdr()}
 function ldst(s){const x=ST[s];if(!x)return;if(!confirm('โหลด '+x.name+' ลงตัวจัดเด็ค? (แทนที่ลิสต์ปัจจุบัน)'))return;bd={n:bd.n||x.name.slice(0,20),m:{},l:{},q:'',t:'',art:{},vr:{}};x.main.forEach(([i,n,r])=>{bd.m[i]=(bd.m[i]||0)+n;if(r)bd.vr[i+'|'+r]=(bd.vr[i+'|'+r]||0)+n});x.life.forEach(([i,n,r])=>{bd.l[i]=(bd.l[i]||0)+n;if(r)bd.vr[i+'|'+r]=(bd.vr[i+'|'+r]||0)+n});bdr()}
 function ldd(n){const k=ME.decks[n];if(!k)return;bd={n,m:{},l:{},q:'',t:'',art:{...(k.art||{})},vr:{...(k.vr||{})}};k.main.forEach(i=>bd.m[i]=(bd.m[i]||0)+1);k.life.forEach(i=>bd.l[i]=(bd.l[i]||0)+1);bdr()}
 /* ===== คราฟ / ย่อยการ์ด (ผงวิเศษ) ===== */
@@ -807,7 +807,7 @@ Object.keys(bd.vr).forEach(k=>{if(!ids.has(k.split('|')[0])||!(bd.vr[k]>0))delet
 ids.forEach(i=>{const o=C[i]&&C[i].t=='Life'?bd.l:bd.m,n=o[i]||0,ks=Object.keys(bd.vr).filter(k=>k.split('|')[0]==i);let hv=ks.reduce((a,k)=>a+bd.vr[k],0);
 if(hv<n){const k=i+'|'+erar(i);bd.vr[k]=(bd.vr[k]||0)+n-hv}else if(hv>n)for(const k of ks.reverse()){while(hv>n&&bd.vr[k]>0){bd.vr[k]--;hv--}if(!bd.vr[k])delete bd.vr[k]}})}
 /* ===== ตรวจกฎเด็ค + เตือนเมื่อใส่การ์ดที่แหกกฎ ===== */
-const LIMN=c=>c.lim||(/ได้มากสุด 50 ใบ/.test(c.e||'')?50:(c.o=='Only #1'?1:4));
+const LIMN=c=>c.o=='Only #1'&&!/ได้มากสุด 50 ใบ/.test(c.e||'')?1:(c.lim||(/ได้มากสุด 50 ใบ/.test(c.e||'')?50:4));
 const bnk=s=>String(s==null?'':s).replace(/\s+/g,' ').trim();
 const bNames=()=>{if(!bNames.m){bNames.m={};Object.values(C).forEach(c=>{bNames.m[bnk(c.n)]=c.n})}return bNames.m},braw=n=>bNames()[n]||n;
 const bExtra=c=>{const e=c.e||'',k=e.indexOf('#');if(k<0)return'';const m=/นับเป็นชื่อ\s*([^"“”#\n]+?)\s*(?:#|$)/.exec(e.slice(k));return m?bnk(m[1]):''};
@@ -819,8 +819,8 @@ main.forEach(i=>{bNamesOf(C[i]).forEach(n=>{cnt[n]=(cnt[n]||0)+1})});const mn=ma
 if(mn>50)V.push({k:'hard',t:'m',names:[],msg:'Main เกิน 50 ใบ (ตอนนี้ '+mn+' ใบ)'});
 if(ln>5)V.push({k:'hard',t:'l',names:[],msg:'LIFE เกิน 5 ใบ (ตอนนี้ '+ln+' ใบ)'});
 {const c2={};Object.keys(bd.l).filter(i=>C[i]).forEach(i=>{c2[C[i].n]=(c2[C[i].n]||0)+bd.l[i]});const d=Object.keys(c2).filter(n=>c2[n]>1);if(d.length)V.push({k:'hard',t:'l',names:d,msg:'LIFE ห้ามชื่อซ้ำ: '+d.join(', ')})}
-const ol=[...new Set(main.filter(i=>C[i].o=='Only #1').map(i=>C[i].n))];
-if(ol.length>1)V.push({k:'hard',t:'m',names:ol,msg:'ใส่ Only #1 ได้แค่ 1 ใบต่อเด็ค (ตอนนี้ '+ol.length+' ใบ: '+ol.join(', ')+')'});
+const ol=[...new Set(main.filter(i=>C[i].o=='Only #1').map(i=>C[i].n))],o1n=main.filter(i=>C[i].o=='Only #1').length;
+if(o1n>1)V.push({k:'hard',t:'m',names:ol,msg:'ใส่ Only #1 ได้แค่ 1 ใบต่อเด็ค (ตอนนี้ '+o1n+' ใบ: '+ol.join(', ')+')'});
 {const seen={};main.forEach(i=>{bNamesOf(C[i]).forEach((n,k)=>{if(seen[n])return;const l=k?bLimAny(n):LIMN(C[i]);if(cnt[n]>l){seen[n]=1;V.push({k:'hard',t:'m',names:[braw(n)],msg:n+' ใส่ได้สูงสุด '+l+' ใบ (นับรวมชื่อหลักที่ 2 ตอนนี้ '+cnt[n]+' ใบ)'})}})})}
 {const o1=main.filter(i=>C[i].o=='Only #1').length,f=main[0],all50=mn==50&&main.every(i=>bnk(C[i].n)==bnk(C[f].n))&&LIMN(C[f])==50;if(mn==50&&!all50&&o1==0)V.push({k:'hard',t:'m',names:[],msg:'ต้องมี Only #1 1 ใบ (การ์ดที่ใส่ได้ 50 ใบ ใส่ครบ 50 ใบแทนได้)'})}
 {const nb=new Set((BL.ban||[]).map(bnk)),lm={};Object.entries(BL.lim||{}).forEach(([a,b])=>{lm[bnk(a)]=b});
@@ -909,7 +909,7 @@ function pubDel(id){if(!confirm('ลบเด็คนี้ออกจาก�
 function pubUse(id){const d=(PD||[]).find(x=>x.id==id);if(!d)return;let nm=prompt('ตั้งชื่อเด็คใหม่ (ไม่เกิน 20 ตัวอักษร)',d.name.slice(0,20));if(nm==null)return;nm=nm.trim().slice(0,20);if(!nm)return alert('ต้องตั้งชื่อเด็คก่อน');
 if(ME.decks[nm]&&!confirm('มีเด็คชื่อ "'+nm+'" อยู่แล้ว — โหลดแล้วกดบันทึกจะทับเด็คเดิม ต้องการต่อไหม?'))return;
 bd={n:nm,m:{},l:{},q:'',t:'',art:{},vr:{}};let miss=0;const used={};
-const put=(i,isL)=>{if(!C[i])return;const o=isL?bd.l:bd.m,have=oc(i);if((o[i]||0)<Math.min(have,C[i].lim||4)){o[i]=(o[i]||0)+1}else miss++};
+const put=(i,isL)=>{if(!C[i])return;const o=isL?bd.l:bd.m,have=oc(i);if((o[i]||0)<Math.min(have,LIMN(C[i]))){o[i]=(o[i]||0)+1}else miss++};
 d.main.forEach(i=>put(i,0));d.life.forEach(i=>put(i,1));
 Object.entries(d.vr||{}).forEach(([k,n])=>{const[i,r]=k.split('|'),h=Math.min(n,ME.cards[k]||0,(bd.m[i]||0)+(bd.l[i]||0)-(used[i]||0));if(h>0){bd.vr[k]=h;used[i]=(used[i]||0)+h}});
 decks();toast(miss?'โหลดแล้ว แต่ขาดการ์ดที่คุณไม่มี '+miss+' ใบ — เติมเองแล้วกด 💾 บันทึก':'โหลดเด็คแล้ว — ตรวจดูแล้วกด 💾 บันทึกเมื่อพร้อม')}
