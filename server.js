@@ -350,7 +350,7 @@ async function dlHandle(ws, m) {
     const o = dlRew(v.next), cards = []; qGive(d, o, cards);
     d.dl = { s: v.next, l: qTH().day }; await dbPut(u, d);
     const note = '📅 Login วันที่ ' + v.next + ' · 💎 ' + o.gems.toLocaleString('en-US') + (cards.length ? ' + การ์ดอาร์ท ' + cards.length + ' ใบ' : '');
-    ws.send(JSON.stringify({ t: 'dl', v: dlView(d) }));
+    ws.send(JSON.stringify({ t: 'dl', v: dlView(d), got: { n: v.next, gems: o.gems, art: cards.length } }));
     if (cards.length) { const ps = []; for (let i = 0; i < cards.length; i += 5) ps.push(cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(u, d), note })); }
     else ws.send(JSON.stringify({ t: 'me', me: prof(u, d), note }));
   } finally { DL_BUSY.delete(u); }

@@ -631,17 +631,34 @@ body.ing #bg::before{animation:none}
 #mid>.pi .pav{width:2.3em;height:2.3em}
 }
 
-#dlp{position:fixed;inset:0;z-index:11;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto}
-#dlp .bx{background:var(--pn);color:var(--fg);border:2px solid #ffd24a;border-radius:16px;padding:14px;max-width:460px;width:100%;text-align:center;animation:apop2 .4s ease both}
-#dlp h2{margin:0 0 4px}
-.dlg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
-.dlc{position:relative;background:#8882;border:2px solid #8884;border-radius:10px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:.8em;min-height:78px;justify-content:center}
-.dlc small{font-size:.72em;opacity:.8}.dlc .dli{font-size:1.5em;line-height:1.1}
-.dlc.big{border-color:#3b9eff}.dlc.done{opacity:.5}
-.dlc.today{border-color:#ffd24a;background:#ffd24a33;box-shadow:0 0 12px #ffd24a;animation:dlpl 1.2s ease-in-out infinite alternate}
-@keyframes dlpl{to{transform:scale(1.06)}}
-.dlk{position:absolute;top:1px;right:4px;color:#4c4;font-style:normal;font-weight:700}
-#dlb{position:relative}#dlb.dld::after{content:'';position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#f33;border:1px solid #fff}
+#dlp{position:fixed;inset:0;z-index:11;background:#000c;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch}
+#dlp .dlbx{position:relative;background:var(--pn);color:var(--fg);border:2px solid #ffd24a;border-radius:18px;padding:16px 12px 14px;width:100%;max-width:440px;max-height:100%;overflow:auto;box-sizing:border-box;text-align:center;box-shadow:0 10px 40px #000a}
+#dlp.dlin .dlbx{animation:dlpop .35s ease both}@keyframes dlpop{from{transform:scale(.88);opacity:0}}
+#dlp .dlx{position:absolute;top:8px;right:8px;width:34px;height:34px;min-height:0;padding:0;margin:0;border-radius:50%;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center}
+#dlp .dlh{font-size:1.25em;font-weight:800;margin:0 30px 8px}
+#dlp .dls{display:flex;gap:8px;margin:0 0 8px}
+#dlp .dls div{flex:1;background:#8882;border-radius:10px;padding:6px 4px;font-size:.8em;line-height:1.25}
+#dlp .dls b{display:block;font-size:1.35em;color:#ffd24a}
+#dlp .dlgot{background:#2e7d3233;border:2px solid #4c4;border-radius:10px;padding:8px;margin:0 0 8px;font-weight:700;animation:dlpop .35s ease both}
+#dlp .dlg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:8px 0}
+#dlp .dlc{position:relative;background:#8882;border:2px solid #8884;border-radius:10px;padding:4px 2px;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-sizing:border-box;min-width:0;overflow:hidden}
+#dlp .dlday{font-size:.68em;opacity:.75;font-style:normal;white-space:nowrap}
+#dlp .dli{font-size:1.45em;line-height:1.15}
+#dlp .dlc b{font-size:.95em;line-height:1.1}
+#dlp .dlc em{font-size:.66em;font-style:normal;color:#ffb74d;white-space:nowrap}
+#dlp .dlc.big{border-color:#3b9eff;background:#3b9eff22}
+#dlp .dlc.art{border-color:#b36bff;background:linear-gradient(160deg,#b36bff33,#3b9eff22)}
+#dlp .dlc.done{opacity:.55}
+#dlp .dlc.done::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;font-weight:900;color:#4c4;background:#0008;border-radius:8px}
+#dlp .dlc.today{border-color:#ffd24a;background:#ffd24a33;animation:dlglow 1.2s ease-in-out infinite alternate}
+@keyframes dlglow{from{box-shadow:0 0 4px #ffd24a88}to{box-shadow:0 0 14px #ffd24a}}
+#dlp .dlcd{font-size:.82em;opacity:.85;margin:2px 0}
+#dlp .dlhint{font-size:.82em;color:#ffb74d;margin:4px 0 10px}
+#dlp .dlcl{display:block;width:100%;min-height:50px;margin:0 0 8px;font-size:1.05em;font-weight:800;border:0;border-radius:12px;color:#111;background:linear-gradient(135deg,#ffd24a,#ff9f1a);box-shadow:0 3px 0 #b36b00}
+#dlp .dlcl:disabled{background:#8886;color:inherit;box-shadow:none;opacity:.7;filter:none}
+#dlb{position:relative;font-size:1.15em;line-height:1;padding:4px 10px;border:2px solid #ffd24a;border-radius:10px}
+#dlb.dld{animation:dlglow 1.2s ease-in-out infinite alternate}
+#dlb.dld::after{content:'';position:absolute;top:-4px;right:-4px;width:11px;height:11px;border-radius:50%;background:#f33;border:2px solid #fff}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -777,7 +794,7 @@ function pfClaim(b){if(b)b.disabled=true;send({t:'pfclaim'})}
 function pfClaimUI(c){const o=$('lvu');o&&o.remove();const nm=k=>(C[k.id]?C[k.id].n:k.id)+' ['+k.r+']';const e=document.createElement('div');e.id='lvu';e.innerHTML=`<div class="bx"><div style="font-size:42px">🎁</div><h1>รับรางวัลแล้ว!</h1><div class="rw">💎 Gem +${c.gems}<br>✨ ผงวิเศษ +${c.dust}${c.cards.length?'<br>🃏 '+c.cards.map(k=>esc(nm(k))).join('<br>🃏 '):''}</div><button class="pri" onclick="this.closest('#lvu').remove()">ตกลง</button></div>`;document.body.appendChild(e)}
 function pfPendHtml(L){const g=L.reduce((a,o)=>a+(o.gems|0),0),d=L.reduce((a,o)=>a+(o.dust|0),0),n=L.reduce((a,o)=>a+(o.n|0),0);return`<div class="rw" style="border:2px solid #ffd24a;border-radius:10px;padding:8px;margin:8px 0"><b>🎁 มีรางวัลเลเวลรอให้รับ (${L.map(o=>'Lv.'+o.lv).join(', ')})</b><br>💎 ${g} · ✨ ผง ${d}${n?' · 🃏 การ์ดอาร์ท '+n+' ใบ':''}<br><button class="pri" onclick="pfClaim(this)">🎁 รับรางวัล</button></div>`}
 function atkPop(f){if(!S)return;const mk=(who,el)=>{if(!el)return;const p=who==S.i?S.me:S.op,r=el.getBoundingClientRect(),d=document.createElement('div');d.className='abdg';d.innerHTML=pav(p.pic,/^บอท/.test(p.name),'md')+'<small>'+esc(p.name)+'</small>';d.style.left=Math.max(30,Math.min(innerWidth-30,r.left+r.width/2))+'px';d.style.top=Math.max(44,r.top-2)+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),1700)};const ai=f.i,di=1-f.i;mk(ai,f.a?cel(f.a):null);let t=null;if(f.tg&&f.tg!='life'&&f.tk!='life')t=cel(f.tg);if(!t){const sds=document.querySelectorAll('#mid .sd'),sd=sds[di==S.i?1:0];t=sd&&(sd.querySelector('.lc')||sd)}mk(di,t)}
-function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · <span class="dstb"><i class="dst"></i> <b>${m.dust||0}</b></span> · ${esc(m.name)} ${m.admin?'<button onclick="admP()">🛠 แอดมิน</button><button onclick="mk()">+โค้ด</button><button onclick="banAdm()">🚫 แบนลิสต์</button>':''}<button id="dlb" onclick="dlOpen()" title="Login รายวัน">📅</button><button onclick="cfg.tok='';ap();location.reload()">ออกจากระบบ</button>`;$('bf').textContent=m.rq.length?'('+m.rq.length+')':'';pfChip();qdot();dlDot();if(!$('md').hidden&&$('md').dataset.pg=='profile')pfPage();if(!$('md').hidden&&$('md').dataset.pg=='room')roomPg();if(!$('md').hidden&&$('md').dataset.pg=='shop')shop();if(!$('md').hidden&&$('md').dataset.pg=='craft')craftPg();fillSv();if(RM&&!$('room').hidden)roomUI();return;$('sv').innerHTML=['SD01','SD02','SD03',...m.bought].map(k=>`<button onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(m.decks).map(n=>`<button data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">${esc(n)}</button>`).join('')}
+function me(m){ME=m;skinAp();$('top').innerHTML=`💎 <b>${m.gems}</b> · <span class="dstb"><i class="dst"></i> <b>${m.dust||0}</b></span> · ${esc(m.name)} ${m.admin?'<button onclick="admP()">🛠 แอดมิน</button><button onclick="mk()">+โค้ด</button><button onclick="banAdm()">🚫 แบนลิสต์</button>':''}<button onclick="cfg.tok='';ap();location.reload()">ออกจากระบบ</button><button id="dlb" onclick="dlOpen()" title="Login รายวัน" aria-label="Login รายวัน">📅</button>`;$('bf').textContent=m.rq.length?'('+m.rq.length+')':'';pfChip();qdot();dlDot();if(!$('md').hidden&&$('md').dataset.pg=='profile')pfPage();if(!$('md').hidden&&$('md').dataset.pg=='room')roomPg();if(!$('md').hidden&&$('md').dataset.pg=='shop')shop();if(!$('md').hidden&&$('md').dataset.pg=='craft')craftPg();fillSv();if(RM&&!$('room').hidden)roomUI();return;$('sv').innerHTML=['SD01','SD02','SD03',...m.bought].map(k=>`<button onclick="send({t:'deck',pre:'${k}'})"><img class="bs" src="/${k}.webp" onerror="this.remove()">${k} ${esc((ST[k]||{}).name||'')}</button>`).join('')+Object.keys(m.decks).map(n=>`<button data-d="${esc(n)}" onclick="send({t:'deck',mine:this.dataset.d})">${esc(n)}</button>`).join('')}
 let bd;const oc=i=>Object.entries(ME.cards).reduce((a,[k,v])=>k.split('|')[0]==i?a+v:a,0),exp=o=>Object.entries(o).flatMap(([i,n])=>Array(n).fill(i)),sm=o=>Object.values(o).reduce((a,b)=>a+b,0);
 function decks(){bd=bd||{n:'',m:{},l:{},q:'',t:''};md.className='dkb';$('md').dataset.pg='';bdr();md.hidden=false}
 const lifeDup=()=>{const n=Object.keys(bd.l).flatMap(i=>Array(bd.l[i]).fill(C[i]?C[i].n:i));return n.length!=new Set(n).size};
@@ -1320,12 +1337,23 @@ addEventListener('online',()=>{if(!ws||ws.readyState>1)conn()});
 $('lg').innerHTML=$('lgs').innerHTML=feedSkel();
 conn();
 
-var DL=null,DLAUTO=0,DLWANT=0;
+var DL=null,DLAUTO=0,DLWANT=0,DLPEND=0,DLGOT=null,DLBUSY=0,DLREF=0;
+function dlK(n){return n>=1000?(n/1000)+'K':String(n)}
 function dlDot(){const b=document.getElementById('dlb');if(b)b.classList.toggle('dld',!!(DL&&DL.can))}
-function dlOpen(){DLWANT=1;send({t:'dlget'})}
-function dlClaim(){send({t:'dlclaim'})}
-function dlMsg(m){DL=m.v;if(m.auto&&!DLAUTO){DLAUTO=1;if(DL.can)DLWANT=1}dlDot();if(DLWANT){DLWANT=0;dlShow()}else if(document.getElementById('dlp'))dlShow()}
-function dlShow(){const v=DL;if(!v)return;let o=document.getElementById('dlp');if(!o){o=document.createElement('div');o.id='dlp';o.onclick=e=>{if(e.target===o)o.remove()};document.body.appendChild(o)}
-const cell=d=>`<div class="dlc ${d.st}${d.n%5==0?' big':''}"><small>วันที่ ${d.n}</small><div class="dli">${d.art?'🎨':'💎'}</div><b>${d.gems.toLocaleString('en-US')}</b>${d.art?`<small>+การ์ดอาร์ท ×${d.art}</small>`:''}${d.st=='done'?'<i class="dlk">✓</i>':''}</div>`;
-o.innerHTML=`<div class="bx"><h2>📅 Login รายวัน</h2><div>ล็อกอินต่อเนื่อง <b>${v.streak}</b> วัน</div><div class="dlg">${v.days.map(cell).join('')}</div><button class="pri" ${v.can?'':'disabled'} onclick="dlClaim()">${v.can?'รับรางวัลวันที่ '+v.next:'รับของวันนี้แล้ว ✓'}</button><div style="margin:8px 0"><small>ขาดวัน = เริ่มนับวันที่ 1 ใหม่ · รีเซ็ตเที่ยงคืนเวลาไทย</small></div><button onclick="this.closest('#dlp').remove()">ปิด</button></div>`}
+function dlOpen(){DLWANT=1;DLGOT=null;send({t:'dlget'})}
+function dlClose(){const o=document.getElementById('dlp');if(o)o.remove();DLGOT=null}
+function dlClaim(b){if(DLBUSY||!DL||!DL.can)return;DLBUSY=1;if(b){b.disabled=true;b.textContent='กำลังรับ…'}send({t:'dlclaim'});setTimeout(()=>{if(DLBUSY){DLBUSY=0;if(document.getElementById('dlp'))dlShow()}},4000)}
+function dlMsg(m){DL=m.v;DL.at=Date.now();DLBUSY=0;DLREF=0;if(m.got)DLGOT=m.got;if(m.auto&&!DLAUTO){DLAUTO=1;if(DL.can)DLPEND=1}dlDot();if(DLWANT){DLWANT=0;DLPEND=0;dlShow()}else if(m.got||document.getElementById('dlp'))dlShow()}
+function dlCd(){const e=document.getElementById('dlcd');if(!e||!DL)return;const r=Math.max(0,DL.rs-(Date.now()-DL.at)),s=Math.floor(r/1e3),p=x=>String(x).padStart(2,'0');e.textContent=(DL.can?'⏳ รับได้อีก ':'🕛 รับครั้งต่อไปใน ')+p(Math.floor(s/3600))+':'+p(Math.floor(s/60)%60)+':'+p(s%60)}
+function dlTick(){if(!DL)return;dlCd();if(!DLREF&&Date.now()-DL.at>DL.rs+1000){DLREF=1;send({t:'dlget'})}
+if(DLPEND){const L=document.getElementById('lobby'),G=document.getElementById('game');if(L&&!L.hidden&&(!G||G.hidden)&&!document.getElementById('dlp')){DLPEND=0;dlShow()}}}
+setInterval(dlTick,1000);
+addEventListener('keydown',e=>{if(e.key=='Escape')dlClose()});
+function dlShow(){const v=DL;if(!v)return;let o=document.getElementById('dlp');
+if(!o){o=document.createElement('div');o.id='dlp';o.className='dlin';o.onclick=e=>{if(e.target===o)dlClose()};document.body.appendChild(o);setTimeout(()=>o.classList.remove('dlin'),500)}
+const cell=d=>`<div class="dlc ${d.st}${d.art?' art':d.n%5==0?' big':''}"><i class="dlday">วันที่ ${d.n}</i><span class="dli">${d.art?'🎨':'💎'}</span><b>${dlK(d.gems)}</b>${d.art?`<em>+การ์ด ×${d.art}</em>`:''}</div>`;
+const n=v.can?v.next:v.next+1,d10=Math.ceil(n/10)*10-n;
+const hint=d10==0?(v.can?'วันนี้ได้การ์ดอาร์ท 2 ใบ! 🎨':'พรุ่งนี้ได้การ์ดอาร์ท 2 ใบ! 🎨'):'อีก '+d10+' วัน ถึงรางวัลการ์ดอาร์ท 🎨';
+const g=DLGOT,got=g?`<div class="dlgot">🎉 รับวันที่ ${g.n} แล้ว! 💎 ${g.gems.toLocaleString('en-US')}${g.art?' + 🎨 การ์ดอาร์ท '+g.art+' ใบ':''}</div>`:'';
+o.innerHTML=`<div class="dlbx"><button class="dlx" aria-label="ปิด" onclick="dlClose()">✕</button><div class="dlh">📅 Login รายวัน</div>${got}<div class="dls"><div>ล็อกอินต่อเนื่อง<b>${v.streak} วัน</b></div><div>รอบนี้<b>${v.days[0].n}–${v.days[9].n}</b></div></div><div class="dlg">${v.days.map(cell).join('')}</div><button class="dlcl" ${v.can&&!DLBUSY?'':'disabled'} onclick="dlClaim(this)">${v.can?'🎁 รับรางวัลวันที่ '+v.next:'รับของวันนี้แล้ว ✓'}</button><div class="dlcd" id="dlcd"></div><div class="dlhint">${hint}</div><small style="opacity:.7">ขาดวัน = เริ่มนับวันที่ 1 ใหม่ · รีเซ็ตเที่ยงคืนเวลาไทย</small></div>`;dlCd()}
 </script>
