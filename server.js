@@ -1924,14 +1924,15 @@ wss.on('connection', ws => {
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
-        if (!ST[m.set] || /^SD0[1-3]$/.test(m.set)) E('ไม่มีสินค้า'); const again = d.bought.includes(m.set); if (d.gems < 1500) E('Gem ไม่พอ');
+        if (!ST[m.set]) E('ไม่มีสินค้า'); const again = /^SD0[1-3]$/.test(m.set) || d.bought.includes(m.set);   // SD01-03 แจกฟรี → ซื้อได้เฉพาะแบบซื้อซ้ำ if (d.gems < 1500) E('Gem ไม่พอ');
         d.gems -= 1500;
         if (!again) { d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set); await dbPut(ws.user, d); me_(d); return; }
-        // ซื้อซ้ำ: ได้การ์ดครบเด็คอีกชุด และการ์ด UR ของเด็คจะถูกสุ่มเป็น UR+ (UR / SEC / PR / CBR / USEC ตามเรทที่มีรูปจริง)
-        const got = []; ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { let rr = r; if (r === 'UR') { const cd = CARDS.find(x => x.id === id), W = eff(new Set(cd ? cd.v : ['UR']), GW), tot = Object.values(W).reduce((p, q) => p + q, 0); let x = Math.random() * tot; rr = 'UR'; for (const [t, w] of Object.entries(W)) if ((x -= w) < 0) { rr = t; break; } got.push({ id, r: rr }); } add(d, { id, r: rr }); } });
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: [got.length ? got : [{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · สุ่มการ์ด UR+ ได้ ' + got.map(x => x.r).join(', ') })); return;
-      }
-      if (m.t === 'deldeck') { const d = await dbGet(ws.user); if (!d.decks || !d.decks[m.name]) E('ไม่พบเด็ค'); delete d.decks[m.name]; await dbPut(ws.user, d); me_(d); return; }
+        // ซื้อซ้ำ: ได้การ์ดครบกล่องอีกชุด · การ์ดระดับ UR ในกล่องสุ่มเป็น UR ขึ้นไป เรท 90 / 7 / 2.5 / 0.5 ตามความยาก (เรียงตามระดับที่การ์ดใบนั้นมีจริง)
+        const LEGR = { UBR: 'CBR', SCR: 'SEC' }, W4 = [90, 7, 2.5, 0.5], got = [];
+        const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)), tiers = RT.filter(t => RT.indexOf(t) >= RT.indexOf('UR') && have.has(t)).slice(0, 4); if (!tiers.length) return 'UR';
+          const w = tiers.map((t, k) => W4[k]), tot = w.reduce((p, q) => p + q, 0); let x = Math.random() * tot; for (let k = 0; k < tiers.length; k++) if ((x -= w[k]) < 0) return tiers[k]; return tiers[0]; };
+        ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : r; if (r === 'UR') got.push({ id, r: rr }); add(d, { id, r: rr }); } });
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: [got.length ? got : [{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') })); return; }
       if (m.t === 'buyskin' || m.t === 'eqskin') {
         const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400, bot1: 2500, dark: 3750, chalk: 3750, adv: 3750, constr: 5000, shrinesky: 5000, ratinv: 5000, hellneon: 6250, space: 6250, warb: 6250, hellgate: 7500, montb: 7500, bankb: 7500, idolb: 7500 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300, blue: 2500, purple: 2500, green: 2500, red: 2500, sun: 2500, violet: 3750, line: 3750, shrine: 3750, soi: 3750, ghost: 5000, galaxy: 5000, holo: 5000, rat: 5000, flame: 6250, dino: 6250, war: 6250, montho: 7500, sweeney: 7500, idol: 7500, bank: 7500 } };
         const pr = SK[m.k] && SK[m.k][m.id]; if (pr == null) E('ไม่มีสินค้า');
