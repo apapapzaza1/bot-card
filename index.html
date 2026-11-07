@@ -631,8 +631,8 @@ body.ing #bg::before{animation:none}
 #mid>.pi .pav{width:2.3em;height:2.3em}
 }
 
-#dlp{position:fixed;inset:0;z-index:11;background:#000c;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));box-sizing:border-box;overflow:auto;-webkit-overflow-scrolling:touch}
-#dlp .dlbx{position:relative;background:var(--pn);color:var(--fg);border:2px solid #ffd24a;border-radius:18px;padding:16px 12px 14px;width:100%;max-width:440px;max-height:100%;overflow:auto;box-sizing:border-box;text-align:center;box-shadow:0 10px 40px #000a}
+#dlp{position:fixed;inset:0;z-index:11;background:#000c;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));box-sizing:border-box;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#dlp .dlbx{position:relative;background:var(--pn);color:var(--fg);border:2px solid #ffd24a;border-radius:18px;padding:16px 12px 14px;width:100%;max-width:440px;max-height:100%;overflow-x:hidden;overflow-y:auto;box-sizing:border-box;text-align:center;box-shadow:0 10px 40px #000a}
 #dlp.dlin .dlbx{animation:dlpop .35s ease both}@keyframes dlpop{from{transform:scale(.88);opacity:0}}
 #dlp .dlx{position:absolute;top:8px;right:8px;width:34px;height:34px;min-height:0;padding:0;margin:0;border-radius:50%;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center}
 #dlp .dlh{font-size:1.25em;font-weight:800;margin:0 30px 8px}
@@ -646,11 +646,11 @@ body.ing #bg::before{animation:none}
 #dlp .dli{font-size:1.45em;line-height:1;height:1.2em;display:flex;align-items:center}
 #dlp .dlc b{font-size:.95em;line-height:1.2;height:1.2em}
 #dlp .dlc em{font-size:.66em;line-height:1.2;height:1.2em;font-style:normal;color:#ffb74d;white-space:nowrap}
-#dlp .dlc.big{border-color:#3b9eff;background:#3b9eff22}
-#dlp .dlc.art{border-color:#b36bff;background:linear-gradient(160deg,#b36bff33,#3b9eff22)}
-#dlp .dlc.done{opacity:.55}
-#dlp .dlc.done::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;font-weight:900;color:#4c4;background:#0008;border-radius:8px}
-#dlp .dlc.today{border-color:#ffd24a;background:#ffd24a33;animation:dlglow 1.2s ease-in-out infinite alternate}
+#dlp .dlc.dl5{border-color:#3b9eff;background:#3b9eff22}
+#dlp .dlc.dla{border-color:#b36bff;background:linear-gradient(160deg,#b36bff33,#3b9eff22)}
+#dlp .dlc.dl-done{opacity:.55}
+#dlp .dlc.dl-done::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2em;font-weight:900;color:#4c4;background:#0008;border-radius:8px}
+#dlp .dlc.dl-today{border-color:#ffd24a;background:#ffd24a33;animation:dlglow 1.2s ease-in-out infinite alternate}
 @keyframes dlglow{from{box-shadow:0 0 4px #ffd24a88}to{box-shadow:0 0 14px #ffd24a}}
 #dlp .dlcd{font-size:.82em;opacity:.85;margin:2px 0}
 #dlp .dlhint{font-size:.82em;color:#ffb74d;margin:4px 0 10px}
@@ -1351,7 +1351,7 @@ setInterval(dlTick,1000);
 addEventListener('keydown',e=>{if(e.key=='Escape')dlClose()});
 function dlShow(){const v=DL;if(!v)return;let o=document.getElementById('dlp');
 if(!o){o=document.createElement('div');o.id='dlp';o.className='dlin';o.onclick=e=>{if(e.target===o)dlClose()};document.body.appendChild(o);setTimeout(()=>o.classList.remove('dlin'),500)}
-const cell=d=>`<div class="dlc ${d.st}${d.art?' art':d.n%5==0?' big':''}"><i class="dlday">วันที่ ${d.n}</i><span class="dli">${d.art?'🎨':'💎'}</span><b>${dlK(d.gems)}</b><em>${d.art?'+การ์ด ×'+d.art:'&nbsp;'}</em></div>`;
+const cell=d=>`<div class="dlc dl-${d.st}${d.art?' dla':d.n%5==0?' dl5':''}"><i class="dlday">วันที่ ${d.n}</i><span class="dli">${d.art?'🎨':'💎'}</span><b>${dlK(d.gems)}</b><em>${d.art?'+การ์ด ×'+d.art:'&nbsp;'}</em></div>`;
 const n=v.can?v.next:v.next+1,d10=Math.ceil(n/10)*10-n;
 const hint=d10==0?(v.can?'วันนี้ได้การ์ดอาร์ท 2 ใบ! 🎨':'พรุ่งนี้ได้การ์ดอาร์ท 2 ใบ! 🎨'):'อีก '+d10+' วัน ถึงรางวัลการ์ดอาร์ท 🎨';
 const g=DLGOT,got=g?`<div class="dlgot">🎉 รับวันที่ ${g.n} แล้ว! 💎 ${g.gems.toLocaleString('en-US')}${g.art?' + 🎨 การ์ดอาร์ท '+g.art+' ใบ':''}</div>`:'';
