@@ -5616,7 +5616,7 @@ function botPlanAtk(r, k, opts, W) {
         else return null;
       }
       if (!first) first = ch;
-      if (ch.o) val += .25 * ch.o.sc;   // คงความชอบเดิม (รวมค่าที่ระบบเรียนรู้ปรับไว้)
+      if (ch.o) val += ch.o.sc0 != null ? ch.o.sc - ch.o.sc0 : .25 * ch.o.sc;   // ท้าทาย: ใช้ส่วนที่ระบบเรียนรู้ปรับ (chTune/chBPlan) เต็มน้ำหนัก · ระดับอื่น: คงความชอบเดิมบางส่วน
     }
     if (hits >= oU && hits > 0) val += 1000;   // ปิดเกม
     const oppLeft = oav.filter(x => x.a && !dead.has(x.u)).length;
@@ -5663,7 +5663,7 @@ function botMain(r, k) {
     const pay = botPay(r, k, h); if (!pay) return;
     ops.push({ h, d, pay, gain: botCv(r, h) * W.dv - pay.keep * .45 + (d.t === 'Avatar' && me.av.length < 3 ? 2 : 0) - (d.t === 'Construct' ? 1.5 : 0) + chMainBonus(r, k, h) });
   });
-  if (bt.lv >= 3) botLook(r, k, ops, W);   // มองล่วงหน้า 2 ใบ
+  if (bt.lv === 3) botLook(r, k, ops, W);   // ยาก: มองล่วงหน้า 2 ใบ (ท้าทายใช้ chPlanPick วางทั้งชุดอยู่แล้ว)
   if (botBait(r, k, false)) { const n0 = ops.length; for (let j = ops.length - 1; j >= 0; j--) if (ops[j].d.t === 'Avatar') ops.splice(j, 1); if (ops.length < n0 || me.hand.some(h => B[h.id] && B[h.id].t === 'Avatar')) bt.baitN = g.n; }   // ล่อให้ตี LIFE
   ops.sort((a, b) => b.gain - a.gain);
   bt.rsv = null;
@@ -5709,7 +5709,7 @@ function botBattle(r, k) {
     op.co.forEach(d => { const pd = (B[d.id].p || 0) + (d.pw || 0); if (pa > pd) opts.push({ a, tg: d.u, sc: 1.5 + pd * .3 }); });
   });
   if (!opts.length) { me.av.forEach(a => T.add('a' + a.u)); return false; }
-  if (bt.lv === 4) { chTune(r, k, opts); try { chBPlan(r, k, opts); } catch (e) { console.error('chBPlan', e); } }
+  if (bt.lv === 4) { opts.forEach(x => { x.sc0 = x.sc; }); chTune(r, k, opts); try { chBPlan(r, k, opts); } catch (e) { console.error('chBPlan', e); } }
   opts.sort((x, y) => y.sc - x.sc);
   let o = lv === 1 ? pick(opts.slice(0, 3)) : opts[0];
   if (bt.lv >= 3) { let pl = null; try { pl = botPlanAtk(r, k, opts, W); } catch (e) { console.error('botPlanAtk', e); }
