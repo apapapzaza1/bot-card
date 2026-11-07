@@ -2,7 +2,8 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
-if (B['SD09-004']) B['SD09-004'].o = 'Only #1';   // พาลี (SD09) เป็น Only #1
+const FORCE_ONLY1 = ['SD09-004'];   // การ์ดที่บังคับให้เป็น Only #1: พาลี (SD09-004)
+FORCE_ONLY1.forEach(id => { if (B[id]) B[id].o = 'Only #1'; });
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
@@ -126,7 +127,7 @@ const srv = http.createServer((q, r) => {
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: CHOV ? CHOV.v : VERSION, t: Math.round(Math.max(BUILD_AT(), CHOV ? CHOV.t : 0)) })); }
     if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
     if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
-      a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); });
+      a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); if (FORCE_ONLY1.includes(c.id)) c.o = 'Only #1'; });
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
