@@ -5603,7 +5603,7 @@ function botPlanAtk(r, k, opts, W) {
     return [null, ...byTg.values()];
   });
   const evalSeq = (order, pick) => {
-    const dead = new Set(), deadCo = new Set(); let val = 0, hits = 0, mine = me.av.length, first = null;
+    const dead = new Set(), deadCo = new Set(), deadMine = new Set(); let val = 0, hits = 0, mine = me.av.length, first = null;
     for (let n = 0; n < order.length; n++) {
       const ch = pick[n]; if (!ch) continue; const a = order[n], pa = P(r, a), my = botCv(r, a);
       if (ch.tg === 'life') {
@@ -5611,7 +5611,7 @@ function botPlanAtk(r, k, opts, W) {
         hits++; val += 8 * W.life + pa;
       } else {
         const d = oav.find(x => x.u === ch.tg), c = !d && oco.find(x => x.u === ch.tg);
-        if (d) { if (dead.has(d.u)) return null; if (pa > d.p) { dead.add(d.u); val += 2 + d.dv * W.dv; } else if (pa === d.p && pa > 0) { dead.add(d.u); mine--; val += 1 + d.dv * W.dv - my * .5 * W.keep; } else return null; }
+        if (d) { if (dead.has(d.u)) return null; if (pa > d.p) { dead.add(d.u); val += 2 + d.dv * W.dv; } else if (pa === d.p && pa > 0) { dead.add(d.u); mine--; deadMine.add(a.u); val += 1 + d.dv * W.dv - my * .5 * W.keep; } else return null; }
         else if (c) { if (deadCo.has(c.u) || pa <= c.p) return null; deadCo.add(c.u); val += 1.5 + c.p * .3; }
         else return null;
       }
@@ -5620,7 +5620,8 @@ function botPlanAtk(r, k, opts, W) {
     }
     if (hits >= oU && hits > 0) val += 1000;   // ปิดเกม
     const oppLeft = oav.filter(x => x.a && !dead.has(x.u)).length;
-    if (mine <= 0 && oppLeft > 0) { const safe = U - oppLeft; if (safe < 2) val -= 25 * (2 - safe); }   // ตีจนสนามเราโล่ง แล้วโดนตีกลับจน LIFE ใกล้หมด
+    if (r.bot && r.bot.lv === 4) { if (!(hits >= oU && hits > 0)) val += chLookVal(me.av.filter(x => !deadMine.has(x.u)).map(x => P(r, x)), oav.filter(x => !dead.has(x.u)).map(x => x.p), U, Math.max(0, oU - hits), W); }   // ท้าทาย: คำนวณล่วงหน้า 3 ช่วง
+    else if (mine <= 0 && oppLeft > 0) { const safe = U - oppLeft; if (safe < 2) val -= 25 * (2 - safe); }   // ตีจนสนามเราโล่ง แล้วโดนตีกลับจน LIFE ใกล้หมด
     if (first && !first.o) return null;          // การโจมตีแรกต้องทำได้จริงตอนนี้
     return { val, first };
   };
@@ -6531,7 +6532,7 @@ function chPickColor(oppCol) {
     const wr = (chWr(mu, 6) * 2 + chWr(base, 6)) / 3, s = wr + .25 / Math.sqrt(g + 1) + Math.random() * .08; if (s > bs) { bs = s; best = c; } });
   return best;
 }
-function chBuild(col, oi, nz) {
+function chBuild(col, oi, nz, seed) {
   const bn = new Set(BAN.ban.map(nk)), lim = {}, pairs = {}, skipIf = new Set(), skipOnly = new Set();
   Object.entries(BAN.lim).forEach(([n, v]) => { lim[nk(n)] = v; });
   BAN.pairs.forEach(([a, b]) => { (pairs[nk(a)] = pairs[nk(a)] || []).push(nk(b)); (pairs[nk(b)] = pairs[nk(b)] || []).push(nk(a)); });
@@ -6542,7 +6543,7 @@ function chBuild(col, oi, nz) {
     const v = (c.t === 'Avatar' ? (c.p || 0) * .9 - (c.c || 0) * .35 + ((c.p || 0) >= oi.avgP ? .5 : 0) : c.t === 'Magic' ? 1.1 : .3) + (CH_STIDS.has(c.id) ? .8 : 0) + (wr - .5) * 9 * Math.min(1, g / 15) + Math.max(-1, Math.min(1.5, pb[c.id] || 0));
     return v + (Math.random() - .5) * nz; };
   // Only #1
-  const os = CARDS.filter(c => c.o === 'Only #1' && c.t === 'Avatar' && okBase(c) && !skipOnly.has(nk(c.n))).map(c => ({ c, s: sc(c) + (chWr(CH.only[c.id], 6) - .5) * 6 })).sort((a, b) => b.s - a.s);
+  const os = CARDS.filter(c => c.o === 'Only #1' && c.t === 'Avatar' && okBase(c) && !skipOnly.has(nk(c.n))).map(c => ({ c, s: sc(c) + (chWr(CH.only[c.id], 6) - .5) * 6 + (seed && seed.main.includes(c.id) ? 30 : 0) })).sort((a, b) => b.s - a.s);
   if (!os.length) return null;
   const only = os[0].c, main = [only.id], cnt = {}; namesOf(only).forEach(n => { cnt[n] = 1; });
   const pool = CARDS.filter(c => !c.o && okBase(c) && (c.t === 'Avatar' || c.t === 'Construct' || (c.t === 'Magic' && c.id !== 'BT02-041' && (c.st === 'React' ? (BOT_REACT.has(c.id) || (MG[c.id] && chGood(c.id))) : (MG[c.id] || c.st === 'Modification'))))).map(c => ({ c, s: sc(c) })).sort((a, b) => b.s - a.s);
@@ -6551,6 +6552,15 @@ function chBuild(col, oi, nz) {
   let big = (only.c || 0) >= 5 ? 1 : 0;
   const bk = c => (c.c || 0) <= 2 ? 0 : c.c === 3 ? 1 : c.c === 4 ? 2 : 3, CAPB = [12, 9, 7, 6], MINB = [8, 7, 5, 0], bc = [0, 0, 0, 0], cp = {}; bc[bk(only)]++; cp[only.id] = 1;
   const gp = [...pool.filter(x => x.c.t === 'Avatar').slice(0, 110), ...pool.filter(x => x.c.t === 'Magic').slice(0, 45), ...pool.filter(x => x.c.t === 'Construct').slice(0, 20)];
+  if (seed) {   // ต่อยอดจากเด็คที่จำได้: เก็บใบที่ยังใช้ได้/ไม่แพ้บ่อย แล้วเว้นช่องไว้ให้ระบบเติมใบที่ดีกว่า
+    const sm = seed.main.filter(id => id !== only.id).sort(() => Math.random() - .5);
+    for (const id of sm) { const c = B[id]; if (!c) continue; if (main.length >= 50 - (seed.free | 0)) break;
+      const st = CH.cs[id]; if (st && st.g >= 15 && chWr(st, 8) < .4) continue;   // ใบที่แพ้บ่อย -> ตัดทิ้งแล้วหาใบใหม่แทน
+      if (!okBase(c) || c.o || !(c.t === 'Avatar' || c.t === 'Construct' || (c.t === 'Magic' && pool.some(x => x.c.id === id)))) continue;
+      if (got[c.t] >= Q[c.t] || (cp[c.id] | 0) >= 4 || !canAdd(c)) continue;
+      if (c.t === 'Avatar') { const b = bk(c); if (bc[b] >= CAPB[b]) continue; }
+      if (!add1(c)) continue; cp[c.id] = (cp[c.id] | 0) + 1; if (c.t === 'Avatar') bc[bk(c)]++; }
+  }
   while (main.length < 50) {   // เลือกทีละใบ: คะแนนพื้นฐาน + เส้นโค้ง Cost + คู่คอมโบที่ชนะบ่อย - ค่าสำเนาซ้ำ
     let best = null, bs = -1e9; const have = [...new Set(main)];
     for (const x of gp) { const c = x.c; if (got[c.t] >= Q[c.t] || (cp[c.id] | 0) >= 4 || !canAdd(c)) continue;
@@ -6562,31 +6572,87 @@ function chBuild(col, oi, nz) {
   function add1(c) { if (main.length >= 50 || !canAdd(c)) return false; if (c.t === 'Avatar' && (c.c || 0) >= 5 && big >= 6) return false; main.push(c.id); namesOf(c).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; }); got[c.t]++; if ((c.c || 0) >= 5) big++; return true; }
   for (const x of pool) { while (main.length < 50 && canAdd(x.c) && (cnt[nk(x.c.n)] || 0) < 4) { if (!add1(x.c)) break; } if (main.length >= 50) break; }   // แก้: add1 ปฏิเสธ (Avatar Cost>=5 เกินโควตา) แล้ววนซ้ำไม่จบ -> เซิร์ฟเวอร์ค้าง   // เติมให้ครบ 50 ผ่อนโควตา
   // LIFE 5 ใบ ชื่อไม่ซ้ำ
-  const seen = new Set(), life = [], ls = CARDS.filter(c => c.t === 'Life' && !CANON[c.id] && !bn.has(nk(c.n))).map(c => ({ c, s: (chWr(CH.cs['L:' + c.id], 6) - .5) * 8 + (CH_STIDS.has(c.id) ? .6 : 0) + (Math.random() - .5) * (nz + 1) })).sort((a, b) => b.s - a.s);
+  const seen = new Set(), life = [], ls = CARDS.filter(c => c.t === 'Life' && !CANON[c.id] && !bn.has(nk(c.n))).map(c => ({ c, s: (chWr(CH.cs['L:' + c.id], 6) - .5) * 8 + (CH_STIDS.has(c.id) ? .6 : 0) + (seed && seed.life.includes(c.id) ? 4 : 0) + (Math.random() - .5) * (nz + 1) })).sort((a, b) => b.s - a.s);
   for (const x of ls) { if (life.length >= 5) break; if (seen.has(nk(x.c.n))) continue; seen.add(nk(x.c.n)); life.push(x.c.id); }
   return { main, life };
 }
-function chalDeck(oi) {
-  const col = chPickColor(oi.col);
-  for (let t = 0; t < 14; t++) {
-    try { const d = chBuild(t < 8 ? col : chPickColor(oi.col), oi, .6 + t * .35); if (d && d.main.length === 50 && d.life.length === 5 && !deckViol(d.main, d.life).length && !banViol(d.main).length) { d.col = col; return d; } } catch (e) { console.error('chBuild', e); }
-  }
-  console.log('chalDeck: ประกอบเองไม่ผ่านกฎ -> ใช้เด็คสำเร็จรูปแทน'); const p = botDeck(); p.col = ''; return p;
+/* ----- รอบ 11: จำเด็คผู้เล่น + เลือก/ต่อยอดเด็คที่คาดว่าชนะผู้เล่นคนนั้นได้ดีที่สุด -----
+   เล่นแฟร์: ไม่แอบดูเด็ค/LIFE คว่ำของผู้เล่นในเกมนี้ ใช้เฉพาะเด็คที่เคยเห็นจากเกมที่จบไปแล้วเท่านั้น
+   ข้อมูลเก็บใน CH.dm (เด็คของผู้เล่นแต่ละคน ≤3 เด็ค) · CH.dw (คลังเด็คผู้ชนะ ≤30) · CH.bd (ผลของเด็คที่บอทเคยใช้ ≤24) */
+const chCnt = ids => { const o = {}; ids.forEach(id => { o[id] = (o[id] | 0) + 1; }); return o; };
+const chIds = o => Object.entries(o || {}).flatMap(([id, n]) => Array(n | 0).fill(id));
+const chHash = s => { const a = s.main.slice().sort().join(',') + '|' + s.life.slice().sort().join(','); let h = 5381; for (let i = 0; i < a.length; i++) h = ((h << 5) + h + a.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+const chMem = () => { if (!CH.dm) CH.dm = {}; if (!CH.dw) CH.dw = []; if (!CH.bd) CH.bd = {}; return CH; };
+const chRate = x => ((x.w | 0) + 1) / ((x.g | 0) + 2);
+const CH_SRC = { bd: 'ใช้เด็คที่เคยชนะมาก่อน', mirror: 'ต่อยอดจากเด็คที่จำได้ของผู้เล่น', win: 'ต่อยอดจากเด็คผู้ชนะที่จำไว้', new: 'ประกอบใหม่จากสถิติ', pre: 'เด็คสำเร็จรูป' };
+function chDeckLearn(r, w) {
+  chMem(); const now = Date.now(), vsBot = !!(r.bot && r.bot.lv === 4);
+  r.p.forEach((p, k) => {
+    const s = r.snap && r.snap[k]; if (!s || !s.main || s.main.length < 30) return; const win = k === w, h = chHash(s);
+    if (!p.bot) {
+      const L = CH.dm[p.name] = CH.dm[p.name] || [];
+      let e = L.find(x => x.h === h); if (!e) { e = { h, main: chCnt(s.main), life: s.life.slice(), g: 0, w: 0, t: 0 }; L.push(e); }
+      e.g++; if (win) e.w++; e.t = now; L.sort((a, b) => b.t - a.t); if (L.length > 3) L.length = 3;
+      let d = CH.dw.find(x => x.h === h);
+      if (!d && win) { d = { h, main: chCnt(s.main), life: s.life.slice(), by: p.name, g: 0, w: 0, bg: 0, bw: 0, t: now }; CH.dw.push(d); }
+      if (d) { d.g++; if (win) d.w++; if (vsBot) { d.bg++; if (win) d.bw++; } d.t = now; }
+    } else if (vsBot) {
+      const o = CH.bd[h] || (CH.bd[h] = { main: chCnt(s.main), life: s.life.slice(), g: 0, w: 0, vs: {}, t: 0, src: r.bot.dsrc || '' });
+      o.g++; if (win) o.w++; o.t = now; const hn = r.p[1 - k].name, v = o.vs[hn] || (o.vs[hn] = { g: 0, w: 0 }); v.g++; if (win) v.w++;
+      const vk = Object.keys(o.vs); if (vk.length > 12) vk.sort((a, b) => o.vs[a].g - o.vs[b].g).slice(0, vk.length - 12).forEach(x => delete o.vs[x]);
+    }
+  });
+  const pk = Object.keys(CH.dm); if (pk.length > 120) pk.sort((a, b) => ((CH.dm[b][0] || {}).t | 0) - ((CH.dm[a][0] || {}).t | 0)).slice(120).forEach(x => delete CH.dm[x]);
+  if (CH.dw.length > 30) { CH.dw.sort((a, b) => (chRate(b) + (b.t || 0) / 1e14) - (chRate(a) + (a.t || 0) / 1e14)); CH.dw.length = 30; }
+  const bk = Object.keys(CH.bd); if (bk.length > 24) bk.sort((a, b) => chRate(CH.bd[b]) - chRate(CH.bd[a])).slice(24).forEach(x => delete CH.bd[x]);
+}
+function chPredict(name) {   // เด็คที่ผู้เล่นคนนี้มักใช้ (จากความจำ ไม่ใช่เด็คจริงในเกมนี้)
+  chMem(); const L = (CH.dm[name] || []).filter(x => x && x.main && Object.keys(x.main).length); if (!L.length) return null;
+  const ds = L.map((x, i) => ({ x, inf: chDeckInfo({ main: chIds(x.main), life: x.life || [] }), w: x.g + (i === 0 ? 2 : 0) }));
+  const tot = ds.reduce((a, d) => a + d.w, 0) || 1; ds.forEach(d => { d.w /= tot; });
+  return { ds, oi: ds.slice().sort((a, b) => b.w - a.w)[0].inf };
+}
+function chScoreDeck(d, name, pred) {   // คะแนนคาดการณ์ว่าเด็คนี้ชนะ "ผู้เล่นคนนี้" ได้ดีแค่ไหน
+  const inf = chDeckInfo(d), bd = CH.bd[chHash(d)]; let s = 0;
+  const v = bd && bd.vs && bd.vs[name]; if (v) s += (chWr(v, 3) - .5) * 16;      // เคยเจอผู้เล่นคนนี้ด้วยเด็คนี้
+  if (bd) s += (chWr(bd, 4) - .5) * 6;                                           // ผลรวมของเด็คนี้ทุกคู่แข่ง
+  if (pred) pred.ds.forEach(o => { const mu = inf.col && o.inf.col ? CH.mu[inf.col + '>' + o.inf.col] : null; s += (chWr(mu, 8) - .5) * 8 * o.w + Math.max(-1.5, Math.min(1.5, (inf.avgP - o.inf.avgP) * .5)) * o.w; });
+  let cs = 0, cn = 0; new Set(d.main).forEach(id => { const x = CH.cs[id]; if (x && x.g >= 8) { cs += chWr(x, 8) - .5; cn++; } }); if (cn) s += cs / cn * 10;
+  if (d.src === 'new' && !bd) s += .4;      // ลองเด็คใหม่บ้าง (ยังไม่มีสถิติ)
+  if (d.src === 'win') s += .5;             // เด็คผู้ชนะที่จำไว้
+  return s;
+}
+function chalDeck(name) {
+  chMem(); const pred = chPredict(name), oi = pred ? pred.oi : { col: '', only: '', avgP: 2.5 };
+  const ok = d => d && d.main.length === 50 && d.life.length === 5 && !deckViol(d.main, d.life).length && !banViol(d.main).length;
+  const cands = [], seen = new Set(), push = (d, src) => { if (!ok(d)) return; const h = chHash(d); if (seen.has(h)) return; seen.add(h); d.src = src; cands.push(d); };
+  // 1) เด็คเดิมของบอทที่เคยใช้ (เรียงตามผลต่อผู้เล่นคนนี้ก่อน แล้วค่อยผลรวม)
+  Object.values(CH.bd).filter(o => o.g >= 2).sort((a, b) => chWr(b.vs && b.vs[name], 3) * 2 + chRate(b) - chWr(a.vs && a.vs[name], 3) * 2 - chRate(a)).slice(0, 3).forEach(o => { const d = { main: chIds(o.main), life: o.life.slice() }; d.col = chDeckInfo(d).col; push(d, 'bd'); });
+  // 2) ต่อยอด: เด็คที่จำได้ของผู้เล่นคนนี้ + เด็คผู้ชนะ (โดยเฉพาะที่เคยชนะบอท)
+  const seeds = []; if (pred) pred.ds.slice(0, 2).forEach(d => seeds.push({ x: d.x, src: 'mirror' }));
+  CH.dw.slice().sort((a, b) => ((b.bw + 1) / (b.bg + 2) + chRate(b) * .5) - ((a.bw + 1) / (a.bg + 2) + chRate(a) * .5)).slice(0, 3).forEach(x => { if (!seeds.some(s => s.x.h === x.h)) seeds.push({ x, src: 'win' }); });
+  for (const sd of seeds) for (let t = 0; t < 2; t++) {
+    try { const sm = { main: chIds(sd.x.main), life: (sd.x.life || []).slice(), free: 8 + Math.floor(Math.random() * 7) }, inf = chDeckInfo({ main: sm.main, life: sm.life }), col = inf.col || chPickColor(oi.col);
+      const d = chBuild(col, oi, .3 + t * .3, sm); if (d) { d.col = col; push(d, sd.src); } } catch (e) { console.error('chBuild seed', e); } }
+  // 3) ประกอบใหม่จากสถิติ
+  for (let t = 0; t < 4; t++) { try { const col = chPickColor(oi.col), d = chBuild(col, oi, .6 + t * .35); if (d) { d.col = col; push(d, 'new'); } } catch (e) { console.error('chBuild', e); } }
+  if (!cands.length) { console.log('chalDeck: ประกอบเองไม่ผ่านกฎ -> ใช้เด็คสำเร็จรูปแทน'); const p = botDeck(); p.col = ''; p.src = 'pre'; return p; }
+  cands.forEach(d => { d.sc = chScoreDeck(d, name, pred) + Math.random() * .4; });
+  cands.sort((a, b) => b.sc - a.sc); return cands[0];
 }
 function chalPrep(r) {
   const k = botIdx(r), hu = r.p[1 - k], bt = r.bot, bp = r.p[k];
-  const oi = chDeckInfo({ main: hu.deck.map(c => c.id), life: hu.life.map(c => c.id) }), d = chalDeck(oi);
+  const d = chalDeck(hu.name);   // เล่นแฟร์: ไม่แตะ hu.deck / hu.life ของเกมนี้
   bp.deck = shuf(d.main.map(inst)); bp.life = shuf(d.life.map(id => ({ ...inst(id), up: 0 })));
-  const arm = chArmPick(); bt.arm = arm.id; bt.w = chAdapt(arm.w, hu.name); bt.dcol = d.col || ''; bt.ot = 0; bt.otn = -1; bt.played = []; bt.cmb = chCombos(hu.name);
+  const arm = chArmPick(); bt.arm = arm.id; bt.w = chAdapt(arm.w, hu.name); bt.dcol = d.col || ''; bt.dsrc = d.src || ''; bt.ot = 0; bt.otn = -1; bt.played = []; bt.cmb = chCombos(hu.name);
 }
-
 // ---------- hook: เริ่มเกม (สแนปช็อตเด็ค) / นับพฤติกรรม / จบเกม (เรียนรู้) ----------
 const _beginCH = begin;
 begin = function (r) {
   try { if (r.bot && r.bot.lv === 4) chalPrep(r); } catch (e) { console.error('chalPrep', e); }
   try { r.snap = r.p.map(p => ({ main: p.deck.map(c => c.id), life: p.life.map(c => c.id) })); } catch (e) { r.snap = null; }
   const out = _beginCH(r);
-  try { if (r.bot && r.bot.lv === 4 && r.g) r.g.log.push('🤖 บอทท้าทาย: ประกอบเด็คเอง' + (r.bot.dcol ? ' (สี' + r.bot.dcol + ')' : '') + ' · เรียนรู้มาแล้ว ' + CH.n + ' เกม'); } catch (e) { }
+  try { if (r.bot && r.bot.lv === 4 && r.g) r.g.log.push('🤖 บอทท้าทาย: ประกอบเด็คเอง' + (r.bot.dcol ? ' (สี' + r.bot.dcol + ')' : '') + (r.bot.dsrc ? ' · ' + (CH_SRC[r.bot.dsrc] || '') : '') + ' · เรียนรู้มาแล้ว ' + CH.n + ' เกม'); } catch (e) { }
   return out;
 };
 /* ----- จำ "เทคนิค" ของผู้เล่น: เลือกเป้าตี / จังหวะ React / ลำดับเปิดเกม / คอมโบ ----- */
@@ -6676,6 +6742,7 @@ async function chLearn(r) {
       o.tn += g.n | 0; q.t = Date.now(); if (win && r.bot) q.w++; chTech(g.tk && g.tk[k], win, q);
     }
   });
+  try { chDeckLearn(r, w); } catch (e) { console.error('chDeckLearn', e); }   // รอบ 11: จำเด็คผู้เล่น/เด็คผู้ชนะ/ผลเด็คบอท
   CH.n++;
   if (r.bot && r.bot.lv === 4) {
     const bw = r.p[w].bot ? 1 : 0; CH.bn++; CH.bw += bw;
@@ -6698,7 +6765,7 @@ const chGood = id => { const x = CH.cs[id]; return !!x && x.g >= 12 && chWr(x, 8
 function chPlanPick(r, k, ops) {
   const me = r.p[k], bt = r.bot, W = bt.w || CHW0; bt.rsv = null;
   if (!ops.length) return null;
-  const c0 = ops.slice(0, 6), early = (bt.ot | 0) <= 3, capLeft = Math.max(1, 4 - me.av.filter(x => !x.tk).length);
+  const c0 = ops.slice(0, 6), early = (bt.ot | 0) <= 3, capLeft = Math.max(1, 4 - me.av.filter(x => !x.tk).length), base = chDeployVal(r, k, [], W);
   let best = null;
   for (let m = 1; m < (1 << c0.length); m++) {
     const sel = c0.filter((_, j) => m >> j & 1); if (sel.filter(x => x.d.t === 'Avatar').length > capLeft) continue;
@@ -6709,6 +6776,7 @@ function chPlanPick(r, k, ops) {
       tot += x.gain + (line.length > 1 ? (botCv(r, x.h) * W.dv - pay.keep * .45) - (botCv(r, x.h) * W.dv - x.pay.keep * .45) : 0) + (early ? (B[x.h.id].c || 0) * .25 : 0);
     }
     if (!ok) continue;
+    tot += (chDeployVal(r, k, line.filter(x => x.x.d.t === 'Avatar').map(x => x.x.h), W) - base) * .6;   // คำนวณล่วงหน้า: กระดานหลังลงการ์ดชุดนี้รับการตีกลับได้ดีแค่ไหน
     if (!best || tot > best.tot) best = { tot, line, used };
   }
   if (!best || best.tot <= 0) return null;
@@ -6762,6 +6830,40 @@ function chSelAdj(r, k, f, text, cost, harm) {   // f = { c, z, i } ของต
   }
   return v;
 }
+/* ----- รอบ 11: คำนวณล่วงหน้า 3 ช่วง (เราตี → ศัตรูตีกลับดีที่สุด → เราตีต่อ) ใช้เฉพาะข้อมูลบนสนามที่เห็นได้ ไม่ดูมือ/Deck ศัตรู ----- */
+const chUv = p => 1 + Math.max(0, p) * .8;   // ค่าของ Avatar จากพลัง (ใช้ประเมินตอนจำลอง)
+function chAtkBest(att, def, life, wl) {   // att/def = รายการ POWER · คืนผลที่ดีที่สุดของฝั่งโจมตีหนึ่งรอบ (ตีได้ทุกตัว ตีLIFE ได้เมื่อฝั่งรับว่าง)
+  const A = att.map((p, i) => ({ p, i })).filter(x => x.p > 0).sort((a, b) => b.p - a.p).slice(0, 4), n = def.length, dead = new Array(n).fill(false), lostA = [];
+  let alive = n, best = null;
+  const rec = (j, s, hits) => {
+    if (j === A.length) { const t = s + (hits >= life && hits > 0 ? 1000 : 0); if (!best || t > best.s) best = { s: t, kills: dead.map((x, i) => x ? i : -1).filter(i => i >= 0), lost: lostA.slice(), hits }; return; }
+    rec(j + 1, s, hits);   // ไม่ตี
+    const a = A[j];
+    if (alive === 0) { rec(j + 1, s + 6 * wl + a.p * .5, hits + 1); return; }
+    for (let d = 0; d < n; d++) {
+      if (dead[d]) continue; const pd = def[d];
+      if (a.p > pd) { dead[d] = true; alive--; rec(j + 1, s + chUv(pd), hits); dead[d] = false; alive++; }
+      else if (a.p === pd) { dead[d] = true; alive--; lostA.push(a.i); rec(j + 1, s + chUv(pd) - chUv(a.p) * .9, hits); lostA.pop(); dead[d] = false; alive++; }
+    }
+  };
+  rec(0, 0, 0); return best;
+}
+const CHLK = new Map();
+function chLookVal(mine, opp, U, oU, W) {   // mine/opp = POWER ของ Avatar ที่เหลือหลังจบการโจมตีของเรา · U/oU = LIFE คว่ำของเรา/ศัตรู
+  const wl = (W && W.life) || 1, wd = (W && W.def) || 1, key = mine.join(',') + '/' + opp.join(',') + '/' + U + '/' + oU + '/' + wl.toFixed(2) + '/' + wd.toFixed(2), c = CHLK.get(key);
+  if (c !== undefined) return c;
+  const r2 = chAtkBest(opp, mine, U, wl);   // ช่วง 2: ศัตรูตีกลับให้ได้ผลดีที่สุด
+  let v = -r2.s * wd * .85;
+  if (!(r2.hits >= U && r2.hits > 0)) {
+    const m2 = mine.filter((_, i) => !r2.kills.includes(i)), o2 = opp.filter((_, i) => !r2.lost.includes(i)), r3 = chAtkBest(m2, o2, oU, wl);   // ช่วง 3: เราตีต่อ
+    v += r3.s * .45;
+  }
+  if (CHLK.size > 4000) CHLK.clear(); CHLK.set(key, v); return v;
+}
+function chDeployVal(r, k, adds, W) {   // ค่าของกระดานหลังลง Avatar ชุดนี้ (มองการตีกลับของศัตรู)
+  const me = r.p[k], op = r.p[1 - k], U = me.life.filter(l => !l.up).length, oU = op.life.filter(l => !l.up).length;
+  return chLookVal([...me.av.map(a => P(r, a)), ...adds.map(h => (B[h.id] && B[h.id].p) || 0)], op.av.map(d => P(r, d)), U, oU, W);
+}
 /* ===== จบโหมดท้าทาย ===== */
 
-if (process.env.BOT_TEST) module.exports = { begin, botStep, botIdx, botCv, chTech, chMainBonus, chTune, chPre, chPost, chalDeck, chInfo, chPlanPick, chBPlan, chMull, chLearn, chArmPick, chMut, CH: () => CH, kdMulti, kdProto, kdRich, rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig, pushFst, friendStat, userWs, kill, resolveAtk, passTurn, startTurn, putAv, kdNarai, kdAfter, exileAv, kdLife, fxSummon, summonFree, ask, hit, setBt, open };
+if (process.env.BOT_TEST) module.exports = { chPredict, chDeckLearn, chAtkBest, chLookVal, chBuild, chScoreDeck, chHash, chCnt, setCR: x => { CR = x; }, begin, botStep, botIdx, botCv, chTech, chMainBonus, chTune, chPre, chPost, chalDeck, chInfo, chPlanPick, chBPlan, chMull, chLearn, chArmPick, chMut, CH: () => CH, kdMulti, kdProto, kdRich, rooms, act, inst, find, P, B, view, sview, runQ, wss, shuf, destroyCo, pack, mig, pushFst, friendStat, userWs, kill, resolveAtk, passTurn, startTurn, putAv, kdNarai, kdAfter, exileAv, kdLife, fxSummon, summonFree, ask, hit, setBt, open };
