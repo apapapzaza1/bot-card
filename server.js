@@ -2,13 +2,21 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
-let CEDIT = {};   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
+let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.7';
+const VERSION = process.env.APP_VERSION || 'v1.8';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.8', d: '2026-11-07', items: [
+    'เพิ่มเด็คสำเร็จรูป SD09 ลิงกว่านรก (หนุมาน / นิลพัท / พาลี / คิงคา + Token วานร) พร้อมสกิลและอนิเมชัน',
+    'Land Magic ใช้ได้และเกิดผลทั้งสองฝ่าย',
+    'ตู้สุ่ม: ปุ่มสุ่มต่อกดได้ทันทีระหว่างเปิดซอง · ซื้อเด็คสำเร็จรูปซ้ำเพื่อสุ่มการ์ด UR+ ได้',
+    'อาวุธที่สวมใส่ย้ายตาม Avatar เวลาถูกยึด/เปลี่ยนฝั่ง (พี่หน่วงยังส่งอาวุธลงนรก)',
+    'แก้ปุ่มใช้ความสามารถจากนรกของ ดาบศักดิ์สิทธิ์ อาลอนไดร์ท / แกลลาติน',
+    'เพิ่มเมนูแอดมิน: แก้การ์ด, แจก Gem/ผง, ประกาศ, แก้รายการอัปเดต'
+  ] },
   { v: 'v1.7', d: '2026-11-06', items: [
     'ระดับการ์ดทุกใบ (หน้าจัดเด็ค / ร้านค้า เปิดซอง / คราฟ-ย่อย / เรทการ์ด) ตรงกับชื่อไฟล์รูปอัตโนมัติ เช่น KD01-001-CBR.webp = ระดับ CBR เพิ่มรูปใหม่แล้วไม่ต้องมาแก้รายการทีละใบอีก',
     'เปลี่ยนชื่อระดับ CBR เป็น CBR ทั้งเกม (การ์ดและข้อมูลผู้เล่นเดิมย้ายให้อัตโนมัติ) · ระดับในเกม: C / R / SR / UR / SEC / PR / CBR / USEC'
@@ -113,8 +121,8 @@ console.log('art files:', Object.keys(ART_FILES).length, '| ระดับ CBR:
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
   { const u0 = q.url.split('?')[0];
-    if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, log: CHANGELOG })); }
-    if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
+    if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify(CHOV ? { v: CHOV.v, log: CHOV.log } : { v: VERSION, log: CHANGELOG })); }
+    if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: CHOV ? CHOV.v : VERSION, t: Math.round(Math.max(BUILD_AT(), CHOV ? CHOV.t : 0)) })); }
     if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
     if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
       a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); });
@@ -1234,6 +1242,7 @@ const normBan = o => {
 };
 const BAN_FILE = path.join(__dirname, 'banlist.json');
 let BAN = normBan(JSON.parse(fs.readFileSync(BAN_FILE, 'utf8')));
+(async () => { try { const c = await dbGet('sys:changelog'); if (c && Array.isArray(c.log) && c.v) { CHOV = c; console.log('changelog: โหลดรายการอัปเดตที่แอดมินแก้', c.v); } } catch (e) { } })();
 (async () => { try { const e = await dbGet('sys:cardedit'); if (e && e.m) { CEDIT = e.m; Object.keys(CEDIT).forEach(id => B[id] && Object.assign(B[id], CEDIT[id])); console.log('cardedit: โหลดการแก้การ์ดจากแอดมิน', Object.keys(CEDIT).length); } } catch (e) { } })();
 (async () => { try { const s = await dbGet('sys:banlist'); if (s && Array.isArray(s.ban)) { BAN = normBan(s); console.log('banlist: โหลดจากฐานข้อมูล (แอดมินแก้ไว้)', BAN.asof); } } catch (e) { console.log('banlist load error', e); } })();
 const pushBan = () => wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ t: 'ban', ban: BAN })); });
@@ -1882,6 +1891,16 @@ wss.on('connection', ws => {
           ws.send(JSON.stringify({ note: 'ให้ ' + n + ' แล้ว: ' + gems + ' Gem, ' + dust + ' ผง' })); return;
         }
         if (m.t === 'admnotice') { const t = String(m.text || '').trim().slice(0, 300); if (!t) E('ใส่ข้อความ'); wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ note: '📢 ' + t })); }); ws.send(JSON.stringify({ note: 'ประกาศแล้ว' })); return; }
+      }
+      if (m.t === 'admchget' || m.t === 'admchset' || m.t === 'admchreset') {   // แอดมินแก้รายการอัปเดต (แถบเวอร์ชันหน้าล็อบบี้)
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        const cur = () => CHOV ? { v: CHOV.v, log: CHOV.log } : { v: VERSION, log: CHANGELOG };
+        if (m.t === 'admchset') {
+          const L = Array.isArray(m.log) ? m.log.slice(0, 100).map(x => ({ v: String((x && x.v) || '').trim().slice(0, 20), d: /^\d{4}-\d{2}-\d{2}$/.test(String((x && x.d) || '')) ? x.d : '', items: (Array.isArray(x && x.items) ? x.items : []).slice(0, 40).map(t => String(t).trim().slice(0, 500)).filter(Boolean) })).filter(x => x.v) : [];
+          if (!L.length) E('ต้องมีอย่างน้อย 1 เวอร์ชัน'); CHOV = { v: L[0].v, log: L, t: Date.now() }; await dbPut('sys:changelog', CHOV);
+          ws.send(JSON.stringify({ note: 'บันทึกรายการอัปเดตแล้ว (ปัจจุบัน ' + CHOV.v + ')' }));
+        } else if (m.t === 'admchreset') { CHOV = null; await dbPut('sys:changelog', { v: '', log: [] }); ws.send(JSON.stringify({ note: 'กลับไปใช้รายการอัปเดตจากไฟล์แล้ว' })); }
+        ws.send(JSON.stringify({ t: 'admch', ...cur() })); return;
       }
       if (m.t === 'mkcode') {
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
