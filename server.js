@@ -2,6 +2,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { WebSocketServer } = require('ws');
 const CARDS = JSON.parse(fs.readFileSync(path.join(__dirname, 'cards.json'), 'utf8'));
 const B = {}; CARDS.forEach(c => B[c.id] = c);
+let CEDIT = {};   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
 const VERSION = process.env.APP_VERSION || 'v1.7';
@@ -116,7 +117,7 @@ const srv = http.createServer((q, r) => {
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: VERSION, t: Math.round(BUILD_AT()) })); }
     if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
     if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
-      a.forEach(c => { applyArtV(c); patchGem(c); });
+      a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); });
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
@@ -494,7 +495,7 @@ function P(r, x) {
       if (m.id === 'BT04-056') v += 3;
       if (m.id === 'BT06-054') v += 2;
     } }));
-    { const L2 = r.g.land; if (L2 && L2.o === f.i && L2.c.id === 'SD07-019' && new Set(p.av.map(colOf).filter(Boolean)).size >= 4) v += 2; }
+    { const L2 = r.g.land; if (L2 && L2.c.id === 'SD07-019' && new Set(p.av.map(colOf).filter(Boolean)).size >= 4) v += 2; }
     p.co.forEach(k => {
       if (k.id === 'SD07-020' && !x.tk && B[x.id].n.includes('ขุนพล') && isCol(x, 'ม่วง')) v += 1;
       if (k.id === 'SD08-019' && isRat1(x)) v += 1;
@@ -1052,7 +1053,7 @@ Object.assign(MG, {
   'SD07-014': { cond: (r, i) => r.p[i].av.length > 0 && r.p[i].av.every(isKP),
     steps: [{ key: 'c', pay: 1, text: 'ทิ้งการ์ดบนมือ 1 ใบ', opts: (r, i, cx) => r.p[i].hand.filter(c => c.u !== cx.card.u).map(c => c.u) },
             { key: 't', text: 'เลือก Avatar ศัตรูที่มี Modification ของศัตรูสวมอยู่ 1 ใบ', opts: (r, i) => r.p[1 - i].av.filter(a => a.id !== 'SD07-001' && a.id !== 'KD04-001' && !a.ctl && r.p[1 - i].mg.some(m => m.at === a.u) && !protectedFrom(r, i, a)).map(a => a.u) }],
-    run: (r, i, cx) => { const f = find(r, cx.pick.t[0]); if (!f || f.z !== 'av') return; if (f.c.id === 'BT06-037' && !noFx(r, f.c)) return log(r, '🛡 สว นาโนแมชชีน ไม่สามารถถูกเปลี่ยนการควบคุมได้'); const me = r.p[i]; if (!canPlaceAv(r, i, f.c)) return log(r, 'Avatar เต็ม'); take(r, f.c.u); const c = f.c; c.ctl = { from: f.i }; c.nolife = 1; c.tired = false; me.av.push(c); log(r, '🕴 ยึด ' + nmOf(c) + ' จนจบเทิร์น (ตี LIFE ไม่ได้)'); } },
+    run: (r, i, cx) => { const f = find(r, cx.pick.t[0]); if (!f || f.z !== 'av') return; if (f.c.id === 'BT06-037' && !noFx(r, f.c)) return log(r, '🛡 สว นาโนแมชชีน ไม่สามารถถูกเปลี่ยนการควบคุมได้'); const me = r.p[i]; if (!canPlaceAv(r, i, f.c)) return log(r, 'Avatar เต็ม'); takeKeepWr(r, f.c.u); const c = f.c; c.ctl = { from: f.i }; c.nolife = 1; c.tired = false; me.av.push(c); log(r, '🕴 ยึด ' + nmOf(c) + ' จนจบเทิร์น (ตี LIFE ไม่ได้)'); } },
   'SD07-015': { run: (r, i) => { const p = r.p[i]; if (p.av.filter(isKP).length >= 2) { draw(r, p, 2); log(r, '✨ ' + p.name + ': จั่ว 2 ใบ'); } else { draw(r, p, 1); draw(r, r.p[1 - i], 1); log(r, '✨ ผู้เล่นทุกคนจั่ว 1 ใบ'); } } },
   'SD07-016': { react: 'atkav', run: (r) => { const p = r.g.pend, t = p && find(r, p.tg); if (t && t.z === 'av') { log(r, '✨ นำ ' + nmOf(t.c) + ' กลับขึ้นมือ'); bounce(r, t.c.u); } } },
   'SD07-017': { react: 'never' }, 'SD08-015': { react: 'never' },
@@ -1187,6 +1188,8 @@ function fxSummon01(r, i, x) {
     case 'BT01-021': tutor(r, i, c => isAv(c) && nm(c).includes('ตำรวจสัมภเวสี') && !nm(c).startsWith('สารวัตร'), 'ตำรวจสัมภเวสี'); break;
   }
 }
+// ย้าย Avatar ข้ามฝั่งโดยให้การ์ดที่สวมใส่ (อาวุธ/Modification) ย้ายตามไปด้วย — ยกเว้น toMg (พี่หน่วง) ที่ใช้ take ตรงๆ จึงส่งอาวุธลงนรกทันที
+function takeKeepWr(r, u) { const f = find(r, u), w = f && f.z === 'av' && f.c.wr ? f.c.wr.slice() : []; if (f && f.z === 'av') f.c.wr = []; const t = take(r, u); if (w.length) t.c.wr = w; return t; }
 function stealCard(r, i, u) {
   const f = find(r, u), me = r.p[i]; if (!f || f.z !== 'av' || f.i === i) return false;
   if (r.p.some(q => q.mg.some(m => m.at === f.c.u && m.id === 'BT07-065'))) { log(r, '🛡 ' + nmOf(f.c) + ' สวมใส่ ปลอกคอซื่อสัตย์ ไม่ถูกเปลี่ยนการควบคุม'); return false; }
@@ -1231,6 +1234,7 @@ const normBan = o => {
 };
 const BAN_FILE = path.join(__dirname, 'banlist.json');
 let BAN = normBan(JSON.parse(fs.readFileSync(BAN_FILE, 'utf8')));
+(async () => { try { const e = await dbGet('sys:cardedit'); if (e && e.m) { CEDIT = e.m; Object.keys(CEDIT).forEach(id => B[id] && Object.assign(B[id], CEDIT[id])); console.log('cardedit: โหลดการแก้การ์ดจากแอดมิน', Object.keys(CEDIT).length); } } catch (e) { } })();
 (async () => { try { const s = await dbGet('sys:banlist'); if (s && Array.isArray(s.ban)) { BAN = normBan(s); console.log('banlist: โหลดจากฐานข้อมูล (แอดมินแก้ไว้)', BAN.asof); } } catch (e) { console.log('banlist load error', e); } })();
 const pushBan = () => wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ t: 'ban', ban: BAN })); });
 // กฎประจำตัว "#การ์ดใบนี้นับเป็นชื่อ X" (X ไม่มีเครื่องหมาย "…") = ชื่อหลักที่ 2 ต้องนับรวมกันในโควตา 4 ใบ ; ถ้ามี "…" = ชื่อเสริม ไม่นับ
@@ -1303,7 +1307,7 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (/^(BT09-|CC02-)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, g.land.o, g.land.c, 'land'), gl: g.land.o === i ? glOf(r, i, g.land.c, 'land') : 0 }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : (/^(BT09-|CC02-)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -1558,7 +1562,7 @@ function act(r, i, m) {
       });
       futHide(r, () => {
       if (g.land && g.land.c.id === 'SD02-020' && TRIO.includes(nmOf(a.c))) { a.c.bp = (a.c.bp || 0) + 2; fx({ k: 'buff', u: a.c.u, v: 2 }); log(r, '🏠 สมชายห้องเช่า: POWER +2'); }
-      if (g.land && g.land.o === i && g.land.c.id === 'SD08-017' && isRat(a.c)) { a.c.bp = (a.c.bp || 0) + 2; fx({ k: 'buff', u: a.c.u, v: 2 }); log(r, '🏠 พิภพรัททาทุย: POWER +2'); }
+      if (g.land && g.land.c.id === 'SD08-017' && isRat(a.c)) { a.c.bp = (a.c.bp || 0) + 2; fx({ k: 'buff', u: a.c.u, v: 2 }); log(r, '🏠 พิภพรัททาทุย: POWER +2'); }
       });
       a.c.tired = true; log(r, nmOf(a.c) + ' โจมตี ' + (tk === 'life' ? 'LIFE' : tk === 'co' ? 'Construct' : 'Avatar')); if (!g.atkC || g.atkC.n !== g.n) g.atkC = { n: g.n, c: 0 }; g.atkC.c++;
       if ((a.c.id === 'SD06-002' || a.c.k31 === g.n) && tk === 'life' && op.av.length) g.q.push(() => ask(r, i, { text: 'เตะไข่: เลือก Avatar ฝ่ายเรา 1 ใบ ทำลาย', opts: me.av.map(x => x.u), cb: us => destroyAv(r, us[0]) }));
@@ -1586,7 +1590,7 @@ function act(r, i, m) {
       else E('ไม่มีสกิลนี้'); break; }
     case 'use': {
       { const f0 = find(r, m.u), d0 = f0 && (AB[f0.c.id] || ABIL[f0.c.id]); if (d0 && d0.end) { if (!mine || g.phase !== 'end') E('เฉพาะ End Phase'); } else if (d0 && d0.any && !g.ask && !g.pend && ['main', 'battle', 'end'].includes(g.phase)) { /* สั่งใช้ได้ในเทิร์นใครก็ได้ */ } else mainOnly(); } let f = find(r, m.u), z;
-      if (f && f.i === i) z = f.z; else if (g.land && g.land.o === i && g.land.c.u === m.u) { f = { i, z: 'land', c: g.land.c }; z = 'land'; } else E('ไม่ใช่การ์ดของเรา');
+      if (f && f.i === i) z = f.z; else if (g.land && g.land.c.u === m.u) { f = { i, z: 'land', c: g.land.c }; z = 'land'; }   // Land ใช้ได้ทั้งสองฝ่าย else E('ไม่ใช่การ์ดของเรา');
       if (z === 'hell' && f.c.id === 'BT05-064') {   // อาลอนไดร์ท: ธรณีสูบ 1 ใบ แล้วนำตัวเองจากนรกไปสวมใส่ อัศวินโต๊ะกลม
         if (!hell64OK(r, i)) E('ต้องยังไม่ใช้ Modification Magic เทิร์นนี้ และมี "อัศวินโต๊ะกลม" บน Avatar Zone'); if (futUseGuard(r, i, f, m)) break;
         const cu = f.c.u; ask(r, i, { text: 'อาลอนไดร์ท: เลือก "อัศวินโต๊ะกลม" ที่จะสวมใส่ (ธรณีสูบ 1 ใบ)', opts: me.av.filter(isKnight).map(a => a.u), cancel: true, cb: us => { const t = find(r, us[0]), c2 = me.hell.find(h => h.u === cu); if (!t || !c2) return; mill(r, i, 1, c2); const k = me.hell.indexOf(c2); if (k < 0) return; me.hell.splice(k, 1); me.mg.push(c2); c2.at = t.c.u; g.used[i].Modification = 1; vfx(t.c.u, 'aura', '🗡 อาลอนไดร์ท', '#f97316'); log(r, '🗡 ดาบศักดิ์สิทธิ์ อาลอนไดร์ท: ธรณีสูบ 1 ใบ แล้วสวมใส่ให้ ' + nmOf(t.c)); } }); break;
@@ -1662,7 +1666,7 @@ function resolveAtk(r, p) {
   if (r.g.over) return;
   r.g.inB = 1;
   kdMulti(r, p, a);
-  let pa = P(r, a) + bt4AtkBonus(r, a) + cc2AtkBonus(r, a); const base = { ai: p.ai, aid: a.tk ? null : (a.kd || a.id), an, pa };
+  let pa = P(r, a) + bt4AtkBonus(r, a) + cc2AtkBonus(r, a); const base = { ai: p.ai, aid: a.tk ? (a.id === 'SD09-026' ? a.id : null) : (a.kd || a.id), an, pa };
   const cleanup = () => {
     if (find(r, a.u)) a.bp = 0;
     if (p.sh) { const q = find(r, p.sh); q && (q.c.bp = 0); }
@@ -1722,7 +1726,7 @@ function resolveAtk(r, p) {
     const finish = (rs) => {
       if (rs === 'win') { log(r, dn + ' ตาย'); } else if (rs === 'lose') { log(r, an + ' ตาย'); } else if (rs === 'both') { log(r, 'ตายทั้งคู่'); } else { log(r, 'ไม่มีใครตาย'); }
       afterBattle(r, p, a, d, rs, pa, pd);
-      setBt(r, { ...base, tg: 'av', dn, did: d.tk ? null : (d.kd || d.id), pd, res: rs });
+      setBt(r, { ...base, tg: 'av', dn, did: d.tk ? (d.id === 'SD09-026' ? d.id : null) : (d.kd || d.id), pd, res: rs });
       if (p.tk !== 'av' && find(r, a.u)) surviveFx(r, p.ai, a);
       doPierce();
     };
@@ -1859,6 +1863,26 @@ wss.on('connection', ws => {
         console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
         pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
       }
+      if (m.t === 'admcardget' || m.t === 'admcard' || m.t === 'admgrant' || m.t === 'admnotice') {   // เมนูแอดมิน: แก้การ์ด / แจกของ / ประกาศอัปเดต
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        if (m.t === 'admcardget') { const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); ws.send(JSON.stringify({ t: 'admcard', c: { id: c.id, n: c.n, c: c.c, g: c.g, p: c.p, e: c.e || '' } })); return; }
+        if (m.t === 'admcard') {
+          const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); const f = m.f || {}, o = {};
+          if (typeof f.n === 'string' && f.n.trim() && f.n.length <= 80) o.n = f.n.trim();
+          if (typeof f.e === 'string' && f.e.length <= 3000) o.e = f.e;
+          ['c', 'g', 'p'].forEach(k => { if (f[k] !== '' && f[k] != null && c[k] != null || (f[k] !== '' && f[k] != null && c.t === 'Avatar')) { const v = +f[k]; if (!Number.isInteger(v) || v < 0 || v > 99) E('ค่า ' + k + ' ต้องเป็นเลข 0-99'); o[k] = v; } });
+          Object.assign(c, o); CEDIT[c.id] = { ...(CEDIT[c.id] || {}), ...o }; await dbPut('sys:cardedit', { m: CEDIT, upd: Date.now() });
+          console.log('admin แก้การ์ด', ws.user, c.id, JSON.stringify(o).slice(0, 120)); ws.send(JSON.stringify({ note: 'บันทึกการ์ด ' + c.id + ' แล้ว (ผู้เล่นรีเฟรชหน้าเกมเพื่อรับค่าใหม่)' })); return;
+        }
+        if (m.t === 'admgrant') {
+          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น'); if (!gems && !dust) E('ใส่จำนวน Gem หรือผง');
+          const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex) E('ไม่พบผู้เล่น ' + n);
+          const d = await dbGet(n); d.gems = Math.max(0, (d.gems || 0) + gems); d.dust = Math.max(0, (d.dust || 0) + dust); await dbPut(n, d);
+          userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: '🎁 แอดมินส่งของให้: ' + (gems ? gems + ' Gem ' : '') + (dust ? dust + ' ผง' : '') })); } catch (e) { } });
+          ws.send(JSON.stringify({ note: 'ให้ ' + n + ' แล้ว: ' + gems + ' Gem, ' + dust + ' ผง' })); return;
+        }
+        if (m.t === 'admnotice') { const t = String(m.text || '').trim().slice(0, 300); if (!t) E('ใส่ข้อความ'); wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ note: '📢 ' + t })); }); ws.send(JSON.stringify({ note: 'ประกาศแล้ว' })); return; }
+      }
       if (m.t === 'mkcode') {
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         const c = String(m.c || '').trim().toUpperCase(); if (!/^[A-Z0-9]{3,20}$/.test(c)) E('โค้ดต้องเป็น A-Z หรือ 0-9 ยาว 3-20 ตัว');
@@ -1881,9 +1905,12 @@ wss.on('connection', ws => {
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
-        if (!ST[m.set] || /^SD0[1-3]$/.test(m.set)) E('ไม่มีสินค้า'); if (d.bought.includes(m.set)) E('ซื้อแล้ว'); if (d.gems < 1500) E('Gem ไม่พอ');
-        d.gems -= 1500; d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set);
-        await dbPut(ws.user, d); me_(d); return;
+        if (!ST[m.set] || /^SD0[1-3]$/.test(m.set)) E('ไม่มีสินค้า'); const again = d.bought.includes(m.set); if (d.gems < 1500) E('Gem ไม่พอ');
+        d.gems -= 1500;
+        if (!again) { d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set); await dbPut(ws.user, d); me_(d); return; }
+        // ซื้อซ้ำ: ได้การ์ดครบเด็คอีกชุด และการ์ด UR ของเด็คจะถูกสุ่มเป็น UR+ (UR / SEC / PR / CBR / USEC ตามเรทที่มีรูปจริง)
+        const got = []; ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { let rr = r; if (r === 'UR') { const cd = CARDS.find(x => x.id === id), W = eff(new Set(cd ? cd.v : ['UR']), GW), tot = Object.values(W).reduce((p, q) => p + q, 0); let x = Math.random() * tot; rr = 'UR'; for (const [t, w] of Object.entries(W)) if ((x -= w) < 0) { rr = t; break; } got.push({ id, r: rr }); } add(d, { id, r: rr }); } });
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: [got.length ? got : [{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · สุ่มการ์ด UR+ ได้ ' + got.map(x => x.r).join(', ') })); return;
       }
       if (m.t === 'deldeck') { const d = await dbGet(ws.user); if (!d.decks || !d.decks[m.name]) E('ไม่พบเด็ค'); delete d.decks[m.name]; await dbPut(ws.user, d); me_(d); return; }
       if (m.t === 'buyskin' || m.t === 'eqskin') {
@@ -3168,7 +3195,7 @@ HAND_HOOKS.push((r, i, c, info) => {   // BT05-060 เหน็บกินม�
     ask(r, o, { yn: true, text: 'เหน็บกินมือ: ' + r.p[i].name + ' นำ ' + B[c.id].n + ' จาก Deck ขึ้นมือด้วยความสามารถ — ใช้ยกเลิกไหม?', cb: y => { if (!y) return; const k = r.p[o].hand.indexOf(m), h = r.p[i].hand.indexOf(c); if (k < 0) return;
       r.p[o].hand.splice(k, 1); r.p[o].hell.push(m); if (h >= 0) { r.p[i].hand.splice(h, 1); r.p[i].deck.push(c); } vfx(m.u, 'burst', 'เหน็บกินมือ!', '#ef4444'); fx({ k: 'say', id: 'BT05-060', t: 'ยกเลิก' }); log(r, '🚫 เหน็บกินมือ: ยกเลิกการนำ ' + B[c.id].n + ' ขึ้นมือ (คืนบนสุด Deck)'); } }); });
 });
-const giantG0 = (c, d, me) => (c.t === 'Construct' && d.id === 'BT06-021') ? 5 : (CR && CR.g.land && CR.g.land.c.id === 'BT05-069' && CR.p[CR.g.land.o] === me && c.t === 'Avatar' && c.s === 'ยักษ์' && d.t === 'Avatar' && d.s === 'ยักษ์' && d.p > 0) ? d.p : 0;   // BT05-069
+const giantG0 = (c, d, me) => (c.t === 'Construct' && d.id === 'BT06-021') ? 5 : (CR && CR.g.land && CR.g.land.c.id === 'BT05-069' && c.t === 'Avatar' && c.s === 'ยักษ์' && d.t === 'Avatar' && d.s === 'ยักษ์' && d.p > 0) ? d.p : 0;   // BT05-069
 B['BT05-054A'] = { ...B['BT05-054'], id: 'BT05-054A', t: 'Avatar', st: null, s: 'หุ่นยนต์', c: 5, g: 0, p: 5, e: '' };
 function noteSum(r, i, c) { ccNote(r, i, c); bt8Enter(r, i, c); const g = r.g; bt10Note(r, i, c); if (!g.sm5 || g.sm5.n !== g.n) g.sm5 = { n: g.n, o: [false, false] }; if (!B[c.id].n.includes('Super Air')) g.sm5.o[i] = true; }
 const hell64OK = (r, i) => { const g = r.g, p = r.p[i]; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && !g.used[i].Modification && p.av.some(isKnight) && p.deck.length > 0; };
@@ -3271,7 +3298,7 @@ Object.assign(MG, {
 
 /* ===== BT06 ชุด 1B: React / Modification / Land / Construct ===== */
 const bt6Wears = (r, x, id) => r.p.some(q => q.mg.some(m => m.at === x.u && m.id === id));
-const bt6Land = (r, id, i) => !!(r.g.land && r.g.land.c.id === id && (i == null || r.g.land.o === i));
+const bt6Land = (r, id, i) => !!(r.g.land && r.g.land.c.id === id);   // Land เกิดผลทั้งสองฝ่าย
 const bt6Goddess = c => isAv(c) && B[c.id].n.includes('เทพธิดาแห่งวัลฮัลลา');
 const bt6DogCat = a => isAv(a) && symOf(a) === 'สัตว์' && (nmOf(a).includes('หมา') || nmOf(a).includes('แมว'));
 const bt6Sahat = (r, i) => { const p = r.p[i]; return p.life.length > 0 && p.life.every(l => l.up); };
@@ -3649,7 +3676,7 @@ Object.assign(AB, {
       ask(r, i, { text: 'เลือก Magic "คาถา" จาก Deck หรือ นรก 1 ใบ ขึ้นมือ', opts: all.map(o => o.u), cb: us => { const o = all.find(q => q.u === us[0]), c = o && fromZone(r, i, o.z, o.u); if (!c) return; p.hand.push(c); if (o.z === 'deck') shuf(p.deck); vfx(cx.card.u, 'aura', '📜 คาถา ขึ้นมือ', '#a855f7'); log(r, '✨ จอมเวทย์ กาลู: นำ ' + B[c.id].n + ' ขึ้นมือ'); } }); } },
 });
 /* ===== BT07 รอบ 2: Magic / Construct / Life ===== */
-const landOf = (r, id, i) => !!(r.g.land && r.g.land.c.id === id && r.g.land.o === i);
+const landOf = (r, id, i) => !!(r.g.land && r.g.land.c.id === id);   // Land เกิดผลทั้งสองฝ่าย
 const isPolice = a => !a.tk && nmOf(a).includes('ตำรวจ');
 const isBank = c => isAv(c) && B[c.id].n.includes('แบงค์');
 const hasWiz = (r, i) => r.p[i].av.some(a => isAv(a) && nmOf(a).includes('จอมเวท'));
@@ -5235,7 +5262,7 @@ function bt10AtkBlock(r, atk, tgt) {
 const bt10Prot = (r, who, x, mg) => {
   if (who === undefined || !x || x.tk) return false; const oi = r.p.findIndex(q => q.av.includes(x)); if (oi < 0 || oi === who) return false;
   if (mg && (x.id === 'BT10-038' || (x.id === 'BT08-023' && x.gain8 === 'BT10-038')) && !noFx(r, x) && banks10(r, oi) >= 8) return true;
-  if (r.g.land && r.g.land.c.id === 'BT10-070' && r.g.land.o === oi && (nmOf(x).includes('เพมมุ') || (B[x.id].e || '').includes('เพมมุ')) && r.p[oi].av.some(a => (nmOf(a).includes('เพมมุ') || nmOf(a).includes('สไปรท์')) && linked9(r, a))) return true;
+  if (r.g.land && r.g.land.c.id === 'BT10-070' && (nmOf(x).includes('เพมมุ') || (B[x.id].e || '').includes('เพมมุ')) && r.p[oi].av.some(a => (nmOf(a).includes('เพมมุ') || nmOf(a).includes('สไปรท์')) && linked9(r, a))) return true;
   return false;
 };
 // kill: แทนที่การถูกทำลาย (067 ศาสตราวุธ, 025 โกลเด้น)
@@ -5871,7 +5898,7 @@ Object.assign(MG, {
   'CC01-043': { cond: r => r.p.some((q, qi) => q.av.some(a => (a.ctl && a.ctl.from !== qi) || (a.oo != null && a.oo !== qi))),
     run: r => { let n = 0;   // รู้สึกเหมือนโดนแย่งเมีย: Avatar ที่ถูกเปลี่ยนการควบคุม → กลับเจ้าของเดิม
       r.p.forEach((q, qi) => q.av.slice().forEach(a => { const o = a.ctl ? a.ctl.from : a.oo; if (o == null || o === qi) return;
-        take(r, a.u); delete a.ctl; delete a.oo; delete a.nolife;
+        takeKeepWr(r, a.u); delete a.ctl; delete a.oo; delete a.nolife;
         if (canPlaceAv(r, o, a)) { a.tired = false; r.p[o].av.push(a); n++; vfx(a.u, 'aura', '↩ กลับเจ้าของเดิม', '#38bdf8'); } else r.p[o].hell.push(a); }));
       log(r, '💢 รู้สึกเหมือนโดนแย่งเมีย: Avatar ' + n + ' ใบ กลับไปอยู่กับเจ้าของเดิม'); } },
   'CC01-044': { cond: (r, i) => !r.p[i].av.length && r.p[1 - i].av.length > 0 && r.p[i].hell.some(ccTank) && r.p[i].hell.some(ccRanger),
@@ -5993,7 +6020,7 @@ function cc2Sweep(r) {
   r.p.forEach((q, qi) => q.av.slice().forEach(a => {
     if (a.nw48) { if (!r.p.some(z => z.mg.some(m => m.at === a.u && m.id === 'CC02-048'))) delete a.nw48; else if (!a.tired && a.w48 !== r.g.n) a.tired = true; }
     if (a.cc45 && !r.p.some(z => z.mg.some(m => m.u === a.cc45 && m.at === a.u))) {   // 045: การ์ดออกจากสนาม → คืนการควบคุม
-      delete a.cc45; const o = a.oo; if (o != null && o !== qi) { take(r, a.u); delete a.oo; delete a.ctl; if (canPlaceAv(r, o, a)) { a.tired = false; r.p[o].av.push(a); vfx(a.u, 'beam', '↩ กลับเจ้าของเดิม', '#a855f7'); log(r, '↩ สิงสู่เพื่อสู่สม: ' + nmOf(a) + ' กลับไปอยู่กับเจ้าของเดิม'); } else r.p[o].hell.push(a); }
+      delete a.cc45; const o = a.oo; if (o != null && o !== qi) { takeKeepWr(r, a.u); delete a.oo; delete a.ctl; if (canPlaceAv(r, o, a)) { a.tired = false; r.p[o].av.push(a); vfx(a.u, 'beam', '↩ กลับเจ้าของเดิม', '#a855f7'); log(r, '↩ สิงสู่เพื่อสู่สม: ' + nmOf(a) + ' กลับไปอยู่กับเจ้าของเดิม'); } else r.p[o].hell.push(a); }
     }
   }));
 }
@@ -6244,7 +6271,11 @@ function sd09Life(r, i, id) {
 // จุติ
 Object.assign(SUM, {
   'SD09-004': (r, i, x) => sdDestroyLow9(r, i, 'พาลี (จุติ)'),
-  'SD09-005': (r, i, x) => { const p = r.p[i]; if (sdWanHell9(r, i).length || p.hand.some(sdWanC9)) { vfx(x.u, 'burst', '🌳 คิงคา', '#22c55e'); sdMkTk9(r, i, 'คิงคา'); } else log(r, 'คิงคา: ไม่มี Avatar วานรในนรก/บนมือ'); },
+  'SD09-005': (r, i, x) => { const p = r.p[i];
+    if (sdWanHell9(r, i).length) { vfx(x.u, 'burst', '🌳 คิงคา', '#22c55e'); return sdMkTk9(r, i, 'คิงคา'); }   // มีวานรในนรกอยู่แล้ว → ไม่ต้องแสดงการ์ด
+    const h = p.hand.find(sdWanC9); if (!h) return log(r, 'คิงคา: ไม่มี Avatar วานรในนรก/บนมือ');
+    fx({ k: 'show', ids: [h.id], t: 'คิงคา: แสดง Avatar วานรบนมือ' }); log(r, '👁 คิงคา: แสดง ' + B[h.id].n + ' บนมือ');
+    vfx(x.u, 'burst', '🌳 คิงคา', '#22c55e'); sdMkTk9(r, i, 'คิงคา'); },
 });
 // สั่งใช้จากมือ 001/002 + 009
 const sdHand9 = (name) => ({ zone: 'hand', label: 'ทำลายวานร 2 ใบ แล้วอัญเชิญจากมือ', hint: 'ต้องมี Avatar "วานร" 2 ใบบน Avatar Zone',
