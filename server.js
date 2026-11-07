@@ -1940,9 +1940,9 @@ wss.on('connection', ws => {
         d.gems -= 1500;
         if (!again) { d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set); await dbPut(ws.user, d); me_(d); return; }
         // ซื้อซ้ำ: ได้การ์ดครบกล่องอีกชุด · การ์ดระดับ UR ในกล่องสุ่มเป็น UR ขึ้นไป เรท 90 / 7 / 2.5 / 0.5 ตามความยาก (เรียงตามระดับที่การ์ดใบนั้นมีจริง)
-        const LEGR = { UBR: 'CBR', SCR: 'SEC' }, W4 = [90, 7, 2.5, 0.5], got = [];
-        const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)); have.add('UR'); const tiers = RT.filter(t => RT.indexOf(t) >= RT.indexOf('UR') && have.has(t)).slice(0, 4); if (!tiers.length) return 'UR';
-          const w = tiers.map((t, k) => W4[k]), tot = w.reduce((p, q) => p + q, 0); let x = Math.random() * tot; for (let k = 0; k < tiers.length; k++) if ((x -= w[k]) < 0) return tiers[k]; return tiers[0]; };
+        const LEGR = { UBR: 'CBR', SCR: 'SEC' }, WUR = { UR: 90, SEC: 7, PR: 2.5, CBR: 0.5 }, got = [];   // เรทคงที่ตามระดับ UR 90 / SEC 7 / PR 2.5 / CBR 0.5 (ระดับที่การ์ดใบนั้นไม่มีรูป → ข้าม แล้วปรับเรทรวมใหม่)
+        const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)); have.add('UR'); const tiers = ['UR', 'SEC', 'PR', 'CBR'].filter(t => have.has(t));
+          const tot = tiers.reduce((p, t) => p + WUR[t], 0); let x = Math.random() * tot; for (const t of tiers) if ((x -= WUR[t]) < 0) return t; return 'UR'; };
         const all = [];   // การ์ดทุกใบในกล่อง (แสดงครบทุกใบ ไม่ใช่แค่ UR+)
         ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : (r || ((B[id] && B[id].v) || ['C'])[0]); if (r === 'UR') got.push({ id, r: rr }); all.push({ id, r: rr }); add(d, { id, r: rr }); } });
         const rows = []; for (let k = 0; k < all.length; k += 5) rows.push(all.slice(k, k + 5));
