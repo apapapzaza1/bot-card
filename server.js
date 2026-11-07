@@ -419,13 +419,13 @@ const is016 = x => !!x && !x.tk && (x.id === 'BT04-016' || x.id === 'CC02-029');
 const mg016 = (r, f) => !!(f && f.z === 'av' && MGX > 0 && (is016(f.c) || f.c.mgProt >= r.g.n || bt8Rg(r, f.c)) && f.i !== MGWHO && !noFx(r, f.c));   // Magic ฝ่ายตรงข้ามกำลังจะมีผลกับ 016
 const protectedFrom = (r, who, x, mg) => protectedFrom0(r, who, x) || bt8Prot(r, who, x, mg) || bt9Prot(r, who, x, mg) || bt10Prot(r, who, x, mg) || (who !== undefined && (is016(x) || x.mgProt >= r.g.n) && (MGX > 0 || mg) && r.p.findIndex(q => q.av.includes(x)) !== who && !noFx(r, x));
 const allAvT = (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x)).map(a => a.x.u);
-const canPlaceAv = (r, i, c) => { if (bt9NoPlace(r, i, c) || cc2NoPlace(r, i, c)) return false; if (c.id === 'KD02-001' && !c.kdOK) return false; if (r.g.sa5 && r.g.sa5.i === i && r.g.sa5.n === r.g.n && !B[c.id].n.includes('Super Air')) return false; if (c.id === 'BT05-017' && r.p[i].av.some(a => a.id === 'BT05-017')) return false; if (c.id === 'BT08-011' && r.p[i].av.some(a => a.id === 'BT08-011')) return false; if (c.id === 'BT06-006' && r.p[i].av.some(a => a.id === 'BT06-006')) return false; const p = r.p[i], L = r.g.land, cap = ((L && L.o === i && L.c.id === 'SD08-017' && p.av.every(isRat) && isRat(c)) || (L && L.o === i && L.c.id === 'BT04-059' && p.av.every(a => symOf(a) === 'รัททาทุย') && symOf(c) === 'รัททาทุย')) ? 6 : 4; return p.av.filter(x => !x.tk).length < cap && p.av.length < 6; };
+const canPlaceAv = (r, i, c) => { if (bt9NoPlace(r, i, c) || cc2NoPlace(r, i, c)) return false; if (c.id === 'KD02-001' && !c.kdOK) return false; if (r.g.sa5 && r.g.sa5.i === i && r.g.sa5.n === r.g.n && !B[c.id].n.includes('Super Air')) return false; if (c.id === 'BT05-017' && r.p[i].av.some(a => a.id === 'BT05-017')) return false; if (c.id === 'BT08-011' && r.p[i].av.some(a => a.id === 'BT08-011')) return false; if (c.id === 'BT06-006' && r.p[i].av.some(a => a.id === 'BT06-006')) return false; const p = r.p[i], L = r.g.land, cap = ((L && L.o === i && L.c.id === 'SD08-017' && p.av.every(isRat) && isRat(c)) || (L && L.o === i && L.c.id === 'BT04-059' && p.av.every(a => symOf(a) === 'รัททาทุย') && symOf(c) === 'รัททาทุย')) ? 6 : 4; if (c.tk || (B[c.id] && B[c.id].t === 'Token')) return p.av.length < 6; return p.av.filter(x => !x.tk).length < cap && p.av.length < 6; };
 const addHold = (x, v, until) => { (x.hd = x.hd || []).push({ v, until }); if (v > 0) x.bc = (x.bc || 0) + 1; fx({ k: 'buff', u: x.u, v }); };
 function endTurnFx(r) {
   const g = r.g; bt10End(r); ccEnd(r);   // BT10
   r.p.forEach(q => q.av.forEach(a => { if (a.hd) a.hd = a.hd.filter(h => h.until > g.n); }));
   r.p.forEach(q => q.av.slice().forEach(a => { if (a.ctl) { const to = a.ctl.from; take(r, a.u); delete a.ctl; delete a.nolife;
-    if (canPlaceAv(r, to, a)) { a.tired = false; r.p[to].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ'); } else r.p[to].hell.push(a); } }));
+    if (canPlaceAv(r, to, a)) { r.p[to].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ'); } else r.p[to].hell.push(a); } }));
 }
 function summonAny(r, i, u, from, src) {
   const p = r.p[i], k = p[from].findIndex(h => h.u === u); if (k < 0) return false; const c = p[from][k]; if (from === 'hell' && c.h40) return false; if (cc2SumBlock(r, from, c)) return false; delete c.jt; delete c.mute17; noteSum(r, i, c); c.fh = from === 'hell' ? 1 : 0; bt10Src(c, src);
@@ -569,7 +569,7 @@ function primalSave(r, f0, retry) {
   } });
   return true;
 }
-const sendHell = (r, u) => { const f0 = find(r, u); if (f0 && f0.z === 'hand') (r.g.dh9 = r.g.dh9 || {})[f0.i] = r.g.n; if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => sendHell(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { sendHell(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (f0 && f0.z === 'av' && f0.c.mgImm >= r.g.n && !r.g.inB && r.g.turn !== f0.i) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนามด้วย Magic'); if (primalSave(r, f0, () => sendHell(r, u))) return; const f = take(r, u); if (!f.c.tk) r.p[f.i].hell.push(f.c); };
+const sendHell = (r, u) => { const f0 = find(r, u); if (f0 && f0.z === 'hand') (r.g.dh9 = r.g.dh9 || {})[f0.i] = r.g.n; if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => sendHell(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { sendHell(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (f0 && f0.z === 'av' && f0.c.mgImm >= r.g.n && !r.g.inB && r.g.turn !== f0.i) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนามด้วย Magic'); if (primalSave(r, f0, () => sendHell(r, u))) return; const f = take(r, u); f.c.tired = false; if (!f.c.tk) r.p[f.i].hell.push(f.c); };
 const destroyAv = (r, u) => { const f = find(r, u); if (f && f.z === 'av') kill(r, f.i, u); };
 const bounce = (r, u) => { const f0 = find(r, u); if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => bounce(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { bounce(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (primalSave(r, f0, () => bounce(r, u))) return; const f = take(r, u); fx({ k: 'bounce', u }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
 function summonFree(r, i, c) {
@@ -1014,7 +1014,7 @@ const shieldThen = shieldStep;
 function endTurn456(r) {
   const g = r.g, prev = 1 - g.turn; bt4End(r, prev); bt6End(r, prev); bt7EndTurn(r, prev);
   r.p[prev].av.filter(a => a.id === 'BT01-007' && !noFx(r, a)).forEach(a => { const run = () => { a.pw = (a.pw || 0) + 1; a.bc = (a.bc || 0) + 1; fx({ k: 'buff', u: a.u, v: 1 }); log(r, '🐸 แม่กบ POWER +1'); }; if (!autoGuard(r, prev, a, () => true, run)) run(); });
-  r.p.forEach((q, qi) => q.av.filter(a => a.ctl != null && a.oo != null && a.oo !== qi).forEach(a => { const o = a.oo; delete a.ctl; delete a.oo; q.av.splice(q.av.indexOf(a), 1); if (canPlaceAv(r, o, a)) { a.tired = false; r.p[o].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ'); } else { r.p[o].hell.push(a); log(r, nmOf(a) + ' กลับไม่ได้ (Avatar เต็ม) ลงนรก'); } }));
+  r.p.forEach((q, qi) => q.av.filter(a => a.ctl != null && a.oo != null && a.oo !== qi).forEach(a => { const o = a.oo; delete a.ctl; delete a.oo; q.av.splice(q.av.indexOf(a), 1); if (canPlaceAv(r, o, a)) { r.p[o].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ'); } else { r.p[o].hell.push(a); log(r, nmOf(a) + ' กลับไม่ได้ (Avatar เต็ม) ลงนรก'); } }));
   r.p[prev].av.filter(a => a.id === 'BT02-017' && !noFx(r, a)).forEach(a => { const run = () => { if (!find(r, a.u)) return; take(r, a.u); r.p[prev].deck.unshift(a); fx({ k: 'say', id: a.id, t: 'กลับใต้ Deck' }); log(r, '📤 แรงงานทาสออฟฟิศ กลับไปใต้ Deck'); }; if (!autoGuard(r, prev, a, () => true, run)) run(); });
   r.p.forEach(q => q.av.filter(a => a.endDie).forEach(a => { delete a.endDie; log(r, '💥 ความกล้าหาญ: ' + nmOf(a) + ' ถูกทำลาย'); kill(r, 0, a.u, 1); })); r.p.forEach(q => { q.co.forEach(c => { if (c.pb) { c.pw = (c.pw || 0) - c.pb; c.pb = 0; } });
     q.av.slice().forEach(a => { if (a.ward && g.n >= a.ward) delete a.ward; if (a.exp && g.n >= a.exp) { log(r, '👻 ' + nmOf(a) + ' กลับลงนรก'); sendHell(r, a.u); } }); });
@@ -1061,7 +1061,7 @@ Object.assign(MG, {
   'SD07-014': { cond: (r, i) => r.p[i].av.length > 0 && r.p[i].av.every(isKP),
     steps: [{ key: 'c', pay: 1, text: 'ทิ้งการ์ดบนมือ 1 ใบ', opts: (r, i, cx) => r.p[i].hand.filter(c => c.u !== cx.card.u).map(c => c.u) },
             { key: 't', text: 'เลือก Avatar ศัตรูที่มี Modification ของศัตรูสวมอยู่ 1 ใบ', opts: (r, i) => r.p[1 - i].av.filter(a => a.id !== 'SD07-001' && a.id !== 'KD04-001' && !a.ctl && r.p[1 - i].mg.some(m => m.at === a.u) && !protectedFrom(r, i, a)).map(a => a.u) }],
-    run: (r, i, cx) => { const f = find(r, cx.pick.t[0]); if (!f || f.z !== 'av') return; if (f.c.id === 'BT06-037' && !noFx(r, f.c)) return log(r, '🛡 สว นาโนแมชชีน ไม่สามารถถูกเปลี่ยนการควบคุมได้'); const me = r.p[i]; if (!canPlaceAv(r, i, f.c)) return log(r, 'Avatar เต็ม'); takeKeepWr(r, f.c.u); const c = f.c; c.ctl = { from: f.i }; c.nolife = 1; c.tired = false; me.av.push(c); log(r, '🕴 ยึด ' + nmOf(c) + ' จนจบเทิร์น (ตี LIFE ไม่ได้)'); } },
+    run: (r, i, cx) => { const f = find(r, cx.pick.t[0]); if (!f || f.z !== 'av') return; if (f.c.id === 'BT06-037' && !noFx(r, f.c)) return log(r, '🛡 สว นาโนแมชชีน ไม่สามารถถูกเปลี่ยนการควบคุมได้'); const me = r.p[i]; if (!canPlaceAv(r, i, f.c)) return log(r, 'Avatar เต็ม'); takeKeepWr(r, f.c.u); const c = f.c; c.ctl = { from: f.i }; c.nolife = 1; me.av.push(c); log(r, '🕴 ยึด ' + nmOf(c) + ' จนจบเทิร์น (ตี LIFE ไม่ได้)'); } },
   'SD07-015': { run: (r, i) => { const p = r.p[i]; if (p.av.filter(isKP).length >= 2) { draw(r, p, 2); log(r, '✨ ' + p.name + ': จั่ว 2 ใบ'); } else { draw(r, p, 1); draw(r, r.p[1 - i], 1); log(r, '✨ ผู้เล่นทุกคนจั่ว 1 ใบ'); } } },
   'SD07-016': { react: 'atkav', run: (r) => { const p = r.g.pend, t = p && find(r, p.tg); if (t && t.z === 'av') { log(r, '✨ นำ ' + nmOf(t.c) + ' กลับขึ้นมือ'); bounce(r, t.c.u); } } },
   'SD07-017': { react: 'never' }, 'SD08-015': { react: 'never' },
@@ -1206,7 +1206,7 @@ function stealCard(r, i, u) {
   if (f.c.id === 'BT04-003' && !r.g.nutOK && !noFx(r, f.c)) { log(r, '🛡 ไอ้นัท - คนใจเด็ด ไม่ถูกเปลี่ยนการควบคุม'); return false; }
   if (f.c.hero === r.g.n) { log(r, '🛡 ' + nmOf(f.c) + ' ไม่รับผลความสามารถ'); return false; }
   if (!canPlaceAv(r, i, f.c)) { log(r, 'Avatar เต็ม เปลี่ยนการควบคุมไม่ได้'); return false; }
-  r.p[f.i].av.splice(f.k, 1); if (f.c.oo == null) f.c.oo = f.i; f.c.tired = false; me.av.push(f.c); log(r, '✨ ' + me.name + ' ยึด ' + nmOf(f.c) + ' มาฝั่งเรา'); return true;
+  r.p[f.i].av.splice(f.k, 1); if (f.c.oo == null) f.c.oo = f.i; me.av.push(f.c); log(r, '✨ ' + me.name + ' ยึด ' + nmOf(f.c) + ' มาฝั่งเรา'); return true;
 }
 
 /* ===== [MERGED] SD07/SD08/BT01 LIFE ===== */
@@ -1315,6 +1315,7 @@ function rjStatus(ws) {
   const l = LOST[ws.user]; if (l && Date.now() - l.at < 18e5) ws.send(JSON.stringify({ t: 'lost', op: l.op })); else delete LOST[ws.user];
 }
 const view = (r, i) => {
+  r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
   CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk, deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
   return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
@@ -2201,7 +2202,7 @@ function loki03(r, i) {
   const g = r.g;
   r.p[i].av.filter(a => a.id === 'BT03-023' && !noFx(r, a)).forEach(a => {
     if (!canPlaceAv(r, 1 - i, a)) return log(r, 'Avatar ฝ่ายตรงข้ามเต็ม โลกิย้ายไม่ได้');
-    r.p[i].av.splice(r.p[i].av.indexOf(a), 1); r.p[1 - i].av.push(a); a.noatk = g.n; a.tired = false;
+    r.p[i].av.splice(r.p[i].av.indexOf(a), 1); r.p[1 - i].av.push(a); a.noatk = g.n;
     vfx(a.u, 'burst', 'โลกิ ย้ายฝั่ง!', '#a855f7'); log(r, '🎭 โลกิ: ย้ายไป Avatar Zone ของ ' + r.p[1 - i].name + ' (โจมตีไม่ได้ในเทิร์นนี้)');
   });
 }
@@ -3870,7 +3871,7 @@ function w62(r, f0, redo) {   // BT07-062 ขนมณี แฟลร์: แ�
 function bt7EndTurn(r, prev) {   // 012: Avatar ที่ได้รับ "เมื่อจบเทิร์น นำขึ้นมือ"
   r.p[prev].av.filter(a => a.eh7).forEach(a => { delete a.eh7; if (!find(r, a.u)) return; const f = take(r, a.u); Object.assign(f.c, { pw: 0, tp: 0, bp: 0, tired: false }); r.p[prev].hand.push(f.c); log(r, '↩ ' + nmOf(f.c) + ' กลับขึ้นมือ (จบเทิร์น)'); }); }
 function bt7Back(r, i) {   // 027: คืน Avatar ที่ยึดไว้ เมื่อจบ Draw Phase ของเจ้าของ
-  r.p.forEach((q, qi) => q.av.filter(a => a.c7 && a.oo === i && qi !== i).forEach(a => { delete a.c7; delete a.oo; q.av.splice(q.av.indexOf(a), 1); a.tired = false; if (canPlaceAv(r, i, a)) { r.p[i].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ (จบ Draw Phase)'); } else r.p[i].hell.push(a); })); }
+  r.p.forEach((q, qi) => q.av.filter(a => a.c7 && a.oo === i && qi !== i).forEach(a => { delete a.c7; delete a.oo; q.av.splice(q.av.indexOf(a), 1); if (canPlaceAv(r, i, a)) { r.p[i].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ (จบ Draw Phase)'); } else r.p[i].hell.push(a); })); }
 Object.assign(SUM, {
   'BT07-027': (r, i, x) => {   // พี่วัฒน์ BGN (พอดี จุติ)
     if (!x.jt) return log(r, 'พี่วัฒน์ BGN: ไม่ได้อัญเชิญแบบ พอดี — ไม่มีจุติ'); if (b7Used(r, i, 'วัฒน์')) return log(r, 'พี่วัฒน์ BGN: ใช้ความสามารถได้เทิร์นละ 1 ครั้ง'); b7Mark(r, i, 'วัฒน์');
@@ -4958,7 +4959,7 @@ Object.assign(AB, {
     const x = cx.card, f = find(r, x.u); draw(r, r.p[i], 1); bt10Say(x, 'จั่ว 1 ใบ', '#facc15'); log(r, '✨ ' + r.p[i].name + ': จั่ว 1 ใบ');
     if (!f || f.z !== 'av' || f.i !== i) return;
     if (!canPlaceAv(r, 1 - i, x)) return log(r, 'Avatar ฝ่ายตรงข้ามเต็ม เปลี่ยนการควบคุมไม่ได้');
-    r.p[i].av.splice(f.k, 1); if (x.oo == null) x.oo = i; x.tired = false; r.p[1 - i].av.push(x); vfx(x.u, 'burst', 'เปลี่ยนการควบคุม', '#f43f5e'); log(r, '🔁 ' + nmOf(x) + ' ย้ายไปอยู่ฝั่ง ' + r.p[1 - i].name);
+    r.p[i].av.splice(f.k, 1); if (x.oo == null) x.oo = i; r.p[1 - i].av.push(x); vfx(x.u, 'burst', 'เปลี่ยนการควบคุม', '#f43f5e'); log(r, '🔁 ' + nmOf(x) + ' ย้ายไปอยู่ฝั่ง ' + r.p[1 - i].name);
   } },
   // BT10-003 พี่บูม แก๊งขยะ — เทิร์นละครั้ง สั่งใช้ ทิ้งมือ 1: เลือกปฏิบัติ ค้น "พี่ซี๊ด แก๊งขยะ" หรือ "เบรกเกต แก๊งขยะ" ขึ้นมือ แล้วสับ
   'BT10-003': { z: 'av', can: (r, i) => r.p[i].hand.length > 0, steps: [{ key: 'd', pay: 1, text: 'ทิ้งการ์ดบนมือ 1 ใบ', opts: (r, i) => bt10Hand(r, i) }], run: (r, i, cx) => {
@@ -5942,7 +5943,7 @@ Object.assign(MG, {
     run: r => { let n = 0;   // รู้สึกเหมือนโดนแย่งเมีย: Avatar ที่ถูกเปลี่ยนการควบคุม → กลับเจ้าของเดิม
       r.p.forEach((q, qi) => q.av.slice().forEach(a => { const o = a.ctl ? a.ctl.from : a.oo; if (o == null || o === qi) return;
         takeKeepWr(r, a.u); delete a.ctl; delete a.oo; delete a.nolife;
-        if (canPlaceAv(r, o, a)) { a.tired = false; r.p[o].av.push(a); n++; vfx(a.u, 'aura', '↩ กลับเจ้าของเดิม', '#38bdf8'); } else r.p[o].hell.push(a); }));
+        if (canPlaceAv(r, o, a)) { r.p[o].av.push(a); n++; vfx(a.u, 'aura', '↩ กลับเจ้าของเดิม', '#38bdf8'); } else r.p[o].hell.push(a); }));
       log(r, '💢 รู้สึกเหมือนโดนแย่งเมีย: Avatar ' + n + ' ใบ กลับไปอยู่กับเจ้าของเดิม'); } },
   'CC01-044': { cond: (r, i) => !r.p[i].av.length && r.p[1 - i].av.length > 0 && r.p[i].hell.some(ccTank) && r.p[i].hell.some(ccRanger),
     steps: [{ key: 't', text: 'ซ่อมบำรุง: เลือก Avatar "รถถัง" Cost 3 จากนรก', opts: (r, i) => r.p[i].hell.filter(ccTank).map(c => c.u) }, { key: 'w', text: 'ซ่อมบำรุง: เลือก Avatar "Tank Ranger" Cost 3 จากนรก (สวมใส่)', opts: (r, i) => r.p[i].hell.filter(ccRanger).map(c => c.u) }],
@@ -6063,7 +6064,7 @@ function cc2Sweep(r) {
   r.p.forEach((q, qi) => q.av.slice().forEach(a => {
     if (a.nw48) { if (!r.p.some(z => z.mg.some(m => m.at === a.u && m.id === 'CC02-048'))) delete a.nw48; else if (!a.tired && a.w48 !== r.g.n) a.tired = true; }
     if (a.cc45 && !r.p.some(z => z.mg.some(m => m.u === a.cc45 && m.at === a.u))) {   // 045: การ์ดออกจากสนาม → คืนการควบคุม
-      delete a.cc45; const o = a.oo; if (o != null && o !== qi) { takeKeepWr(r, a.u); delete a.oo; delete a.ctl; if (canPlaceAv(r, o, a)) { a.tired = false; r.p[o].av.push(a); vfx(a.u, 'beam', '↩ กลับเจ้าของเดิม', '#a855f7'); log(r, '↩ สิงสู่เพื่อสู่สม: ' + nmOf(a) + ' กลับไปอยู่กับเจ้าของเดิม'); } else r.p[o].hell.push(a); }
+      delete a.cc45; const o = a.oo; if (o != null && o !== qi) { takeKeepWr(r, a.u); delete a.oo; delete a.ctl; if (canPlaceAv(r, o, a)) { r.p[o].av.push(a); vfx(a.u, 'beam', '↩ กลับเจ้าของเดิม', '#a855f7'); log(r, '↩ สิงสู่เพื่อสู่สม: ' + nmOf(a) + ' กลับไปอยู่กับเจ้าของเดิม'); } else r.p[o].hell.push(a); }
     }
   }));
 }
@@ -6262,7 +6263,7 @@ function sd09Mod(r, x, f) {
   if (x.tk) return 0; let v = 0;
   if (x.id === 'SD09-002' && !noFx(r, x) && linked9(r, x)) v += sdTokN9(r, f.i);
   if (x.id === 'SD09-001' && !noFx(r, x) && linked9(r, x) && r.g.inB && (r.g.curAtk === x || r.g.curDef === x)) v += 1;
-  if (hasEq(r, x, 'SD09-019')) v += 2;
+  { const n19 = r.p.reduce((a, q) => a + q.mg.filter(m => m.at === x.u && m.id === 'SD09-019').length, 0); v += 2 * n19; }   // ดาบ SD09-019: POWER +2 ต่อเล่ม (สแตกได้)
   return v;
 }
 function sd09Link(r, i, x) {
