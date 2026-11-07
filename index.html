@@ -600,6 +600,36 @@ body.ing #bg::before{animation:none}
 #vlog{position:fixed;inset:0;z-index:2147483000;background:#000a;display:flex;align-items:center;justify-content:center}#vlog .vb{width:min(92vw,460px);max-height:80vh;overflow:auto;background:var(--pn);border:2px solid #8886;border-radius:16px;padding:16px;box-shadow:0 0 50px #0009;text-align:left;color:inherit}#vlog h3{margin:0 0 6px}#vlog .vv{margin:12px 0 4px;font-weight:700;color:#fc3}#vlog ul{margin:0;padding-left:20px}#vlog li{margin:4px 0;font-size:.92em;line-height:1.4}#vlog button{margin-top:14px;width:100%;padding:8px}
 .vnb{display:inline-block;background:#ef4444;color:#fff;border-radius:8px;padding:1px 7px;margin-right:6px;font-weight:700;opacity:1;animation:vnbl 1.1s ease-in-out infinite}@keyframes vnbl{50%{opacity:.35}}
 .vupd{position:fixed;top:0;left:0;right:0;z-index:99999;background:#f59e0b;color:#111;text-align:center;font-weight:700;padding:10px 12px;cursor:pointer;box-shadow:0 2px 10px #0006}
+@media(min-width:900px){
+#akp:has(.chs),#akp:has(.akr){width:min(86vw,880px);box-sizing:border-box;padding:14px 22px 18px;font-size:17px}
+#akp h4{font-size:20px;margin-bottom:6px}
+#akp .akr{flex-wrap:wrap;justify-content:center;gap:12px;overflow:visible;padding:6px}
+#akp .akc{font-size:14px;padding:4px;border-width:3px;border-radius:10px;cursor:pointer}
+#akp .akc .c{--w:112px}
+#akp .chs button{padding:16px 14px;font-size:18px}
+#akp{max-height:84dvh}
+#pdlg .pdb{width:min(88vw,900px);padding:20px 24px 18px;max-height:90dvh}
+#pdlg h3{font-size:26px}#pdlg .pds{font-size:16px}
+#pdlg .pdg{--w:130px;gap:12px}
+#pdlg .pdt{font-size:18px}#pdlg .pdt b{font-size:22px}
+#pdlg .pdf button{min-width:150px;font-size:18px;padding:14px 18px}
+.plr{gap:16px}.pc2{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:2px;align-items:center;text-align:left;padding:14px 20px}
+.pc2 .pav,.pc2 .av{grid-row:1/3;margin:0!important}.pc2 b{font-size:1.15em;align-self:end}.pc2 small{align-self:start}
+#game{max-width:none!important;grid-template-columns:clamp(170px,15vw,260px) minmax(0,1fr) clamp(170px,15vw,260px)!important}
+#lg,#dt{font-size:.78em}
+#hand{--w:clamp(58px,11.5dvh,118px);width:min(100%,960px)}
+#bar{width:clamp(200px,16vw,280px)}
+#mid>.pi .pav{width:1.9em;height:1.9em;margin:0 .3em 0 0}
+}
+/* จอ 900-1099px: แถบข้อมูลผู้เล่นเป็นแถบแนวนอนเหนือ/ใต้สนาม */
+@media(min-width:900px) and (max-width:1099px){
+#mid>.pi{position:static!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;align-self:center;width:var(--bw)!important;height:30px;line-height:1;display:flex;align-items:center;justify-content:center;gap:0 12px;white-space:nowrap;overflow:hidden;text-align:center;font-size:.95em;word-break:normal;padding:0}
+}
+/* จอ 1100px ขึ้นไป: แถบข้อมูลผู้เล่นอยู่ข้างสนาม (ไม่กินความสูง) กว้างพอไม่โดนบีบแนวตั้ง */
+@media(min-width:1100px){
+#mid>.pi{width:clamp(150px,calc(50% - var(--bw)/2 - 14px),260px)!important;line-height:1.55;font-size:1em;white-space:normal;word-break:normal;overflow:visible}
+#mid>.pi .pav{width:2.3em;height:2.3em}
+}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -1202,7 +1232,7 @@ e.innerHTML=`<div class="sch"><b>🔎 สอดแนม ${ids.length} ใบ</b
 e.querySelector('button').onclick=()=>e.hidden=true;e.querySelectorAll('[data-zid]').forEach(n=>n.onclick=ev=>{ev.stopPropagation();zoom(n.dataset.zid)});e.hidden=false}
 let scTap=0;document.addEventListener('pointerdown',e=>{const w=$('scw');if(!w||w.hidden){scTap=0;return}if(e.target.closest('#scw [data-zid],#zm,#md'))return;const t=Date.now();if(t-scTap<450){w.hidden=true;scTap=0}else scTap=t},true);   // แตะหน้าจอ 2 ครั้งเพื่อปิดหน้าต่างสอดแนม
 function playmat(){$('zm').innerHTML='<img src="/playmat.webp" style="max-width:98vw;max-height:96vh">';$('zm').hidden=false}
-function fitBoard(){const m=$('mid');if(!m||!m.clientWidth||!m.clientHeight)return;const cs=getComputedStyle(m),px=k=>parseFloat(cs[k])||0,ch=[...m.children].filter(e=>getComputedStyle(e).position!='absolute');let u=px('paddingTop')+px('paddingBottom')+px('rowGap')*Math.max(0,ch.length-1);ch.forEach(e=>{if(!e.classList.contains('sd'))u+=e.offsetHeight});const w=m.clientWidth-px('paddingLeft')-px('paddingRight'),h=(m.clientHeight-u)/2;m.style.setProperty('--bw',Math.floor(Math.max(150,Math.min(w,h*1.8,1100)))+'px')}
+function fitBoard(){const m=$('mid');if(!m||!m.clientWidth||!m.clientHeight)return;const cs=getComputedStyle(m),px=k=>parseFloat(cs[k])||0,ch=[...m.children].filter(e=>getComputedStyle(e).position!='absolute');let u=px('paddingTop')+px('paddingBottom')+px('rowGap')*Math.max(0,ch.length-1);ch.forEach(e=>{if(!e.classList.contains('sd'))u+=e.offsetHeight});const w=m.clientWidth-px('paddingLeft')-px('paddingRight'),h=(m.clientHeight-u)/2;m.style.setProperty('--bw',Math.floor(Math.max(150,Math.min(w,h*1.8,2000)))+'px')}
 function fitZones(){fitBoard();fitZ0();alignMg()}
 function fitZ0(){document.querySelectorAll('#mid .sd .z-av').forEach(z=>{const k=[...z.children].filter(x=>x.classList.contains('c'));k.forEach(c=>c.style.marginLeft='');if(k.length<2)return;const w=k[0].offsetWidth,gap=parseFloat(getComputedStyle(z).columnGap)||0,need=k.length*w+(k.length-1)*gap,av=z.clientWidth-2;if(need>av){const ov=(need-av)/(k.length-1);k.slice(1).forEach(c=>c.style.marginLeft=(-ov)+'px')}})}
 let amT=0;const amQ=()=>{cancelAnimationFrame(amT);amT=requestAnimationFrame(()=>{try{alignMg()}catch(e){}})};
