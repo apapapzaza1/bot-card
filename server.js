@@ -1924,7 +1924,8 @@ wss.on('connection', ws => {
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
-        if (!ST[m.set]) E('ไม่มีสินค้า'); const again = /^SD0[1-3]$/.test(m.set) || d.bought.includes(m.set);   // SD01-03 แจกฟรี → ซื้อได้เฉพาะแบบซื้อซ้ำ if (d.gems < 1500) E('Gem ไม่พอ');
+        if (!ST[m.set]) E('ไม่มีสินค้า'); const again = /^SD0[1-3]$/.test(m.set) || d.bought.includes(m.set);   // SD01-03 แจกฟรี → ซื้อได้เฉพาะแบบซื้อซ้ำ
+        if (d.gems < 1500) E('Gem ไม่พอ');
         d.gems -= 1500;
         if (!again) { d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set); await dbPut(ws.user, d); me_(d); return; }
         // ซื้อซ้ำ: ได้การ์ดครบกล่องอีกชุด · การ์ดระดับ UR ในกล่องสุ่มเป็น UR ขึ้นไป เรท 90 / 7 / 2.5 / 0.5 ตามความยาก (เรียงตามระดับที่การ์ดใบนั้นมีจริง)
