@@ -5570,6 +5570,88 @@ function botMull(r, k) {
   const me = r.p[k], us = r.bot.lv === 4 ? chMull(r, k) : r.bot.lv === 1 ? [] : me.hand.filter(h => B[h.id].t === 'Avatar' && B[h.id].c >= 5).slice(0, 2).map(h => h.u);
   return botAct(r, k, { t: 'mull', us });
 }
+// ===== วางแผนล่วงหน้า (ระดับยาก/ท้าทาย) =====
+// ลงการ์ด: มองล่วงหน้า 2 ใบ — ใบแรกที่เลือกต้องไม่ทำให้ใบที่สองจ่าย Cost ไม่ได้/คุ้มน้อยลง (แทนที่จะเลือกใบที่ดีสุดทีละใบ)
+function botLook(r, k, ops, W) {
+  const me = r.p[k]; if (ops.length < 2) return;
+  const ev = (h2, hand2, avN, coN) => {
+    const d = B[h2.id]; if (!d) return -9;
+    if (d.t === 'Avatar') { if (h2.id === 'SD03-003' || avN >= 3 || !canPlaceAv(r, k, h2)) return -9; }
+    else if (d.t === 'Construct') { if (coN >= 3 || me.co.some(x => B[x.id].n === d.n)) return -9; }
+    else return -9;
+    const pay = botPay(r, k, h2, hand2); if (!pay) return -9;
+    return botCv(r, h2) * W.dv - pay.keep * .45 + (d.t === 'Avatar' && avN < 3 ? 2 : 0) - (d.t === 'Construct' ? 1.5 : 0);
+  };
+  for (const o of ops) {
+    const used = new Set([o.h.u, ...o.pay.us]), hand2 = me.hand.filter(h => !used.has(h.u));
+    const avN = me.av.length + (o.d.t === 'Avatar' ? 1 : 0), coN = me.co.length + (o.d.t === 'Construct' ? 1 : 0);
+    let best = 0; for (const h2 of hand2) { const g2 = ev(h2, hand2, avN, coN); if (g2 > best) best = g2; }
+    o.look = best; if (o.gain > -1.5) o.gain += best * .5;
+  }
+}
+// โจมตี: ลองทุกลำดับ/ทุกเป้าของ Avatar ที่พร้อมตี แล้วจำลองผลทั้งเทิร์น (ใครตาย / LIFE ที่ตีได้ / สนามเราว่างจนโดนตีกลับหรือไม่)
+// คืน { o } = การโจมตีแรกที่ควรทำ (อยู่ใน opts) · 'stop' = ไม่ควรตีต่อ · null = ใช้วิธีเดิม
+function botPlanAtk(r, k, opts, W) {
+  const op = r.p[1 - k], me = r.p[k];
+  let att = [...new Set(opts.map(o => o.a))]; if (!att.length) return null;
+  att = att.sort((x, y) => P(r, y) - P(r, x)).slice(0, 4);
+  const U = me.life.filter(l => !l.up).length, oU = op.life.filter(l => !l.up).length;
+  const oav = op.av.map(d => ({ u: d.u, p: P(r, d), dv: botCv(r, d), a: P(r, d) > 0 })), oco = op.co.map(d => ({ u: d.u, p: (B[d.id].p || 0) + (d.pw || 0) }));
+  const mvs = att.map(a => {
+    const byTg = new Map(); opts.filter(o => o.a === a).forEach(o => { const c = byTg.get(o.tg); if (!c || o.sc > c.o.sc) byTg.set(o.tg, { tg: o.tg, o }); });
+    if (!byTg.has('life') && !a.nolife && P(r, a) > 0) byTg.set('life', { tg: 'life', o: null });
+    return [null, ...byTg.values()];
+  });
+  const evalSeq = (order, pick) => {
+    const dead = new Set(), deadCo = new Set(); let val = 0, hits = 0, mine = me.av.length, first = null;
+    for (let n = 0; n < order.length; n++) {
+      const ch = pick[n]; if (!ch) continue; const a = order[n], pa = P(r, a), my = botCv(r, a);
+      if (ch.tg === 'life') {
+        if (!ch.o && oav.some(x => !dead.has(x.u))) return null;   // ยังมี Avatar ขวางอยู่ → ตี LIFE ไม่ได้
+        hits++; val += 8 * W.life + pa;
+      } else {
+        const d = oav.find(x => x.u === ch.tg), c = !d && oco.find(x => x.u === ch.tg);
+        if (d) { if (dead.has(d.u)) return null; if (pa > d.p) { dead.add(d.u); val += 2 + d.dv * W.dv; } else if (pa === d.p && pa > 0) { dead.add(d.u); mine--; val += 1 + d.dv * W.dv - my * .5 * W.keep; } else return null; }
+        else if (c) { if (deadCo.has(c.u) || pa <= c.p) return null; deadCo.add(c.u); val += 1.5 + c.p * .3; }
+        else return null;
+      }
+      if (!first) first = ch;
+      if (ch.o) val += .25 * ch.o.sc;   // คงความชอบเดิม (รวมค่าที่ระบบเรียนรู้ปรับไว้)
+    }
+    if (hits >= oU && hits > 0) val += 1000;   // ปิดเกม
+    const oppLeft = oav.filter(x => x.a && !dead.has(x.u)).length;
+    if (mine <= 0 && oppLeft > 0) { const safe = U - oppLeft; if (safe < 2) val -= 25 * (2 - safe); }   // ตีจนสนามเราโล่ง แล้วโดนตีกลับจน LIFE ใกล้หมด
+    if (first && !first.o) return null;          // การโจมตีแรกต้องทำได้จริงตอนนี้
+    return { val, first };
+  };
+  const perms = a => a.length <= 1 ? [a] : a.flatMap((x, i) => perms([...a.slice(0, i), ...a.slice(i + 1)]).map(p => [x, ...p]));
+  const orders = att.length <= 3 ? perms(att) : [att];
+  let best = null;
+  for (const order of orders) {
+    const lists = order.map(a => mvs[att.indexOf(a)]), pick = new Array(order.length).fill(null);
+    const rec = n => { if (n === order.length) { const e = evalSeq(order, pick); if (e && (!best || e.val > best.val)) best = e; return; } for (const ch of lists[n]) { pick[n] = ch; rec(n + 1); } pick[n] = null; };
+    rec(0);
+  }
+  if (!best) return null;
+  if (!best.first) return 'stop';
+  return { o: best.first.o };
+}
+// วางแผน "ล่อให้ตีบ้าน": ถ้า LIFE ใบถัดไปมีความสามารถ (ได้ประโยชน์ตอนถูกหงาย) และ LIFE เหลือพอจะไม่ตายภายในเทิร์นนี้ → ปล่อยให้โดนตีฟรีเพื่อรับผล LIFE แทนการรีบลง Avatar / ใช้ React กัน
+// inBattle = true ตอนโดนโจมตีอยู่ (นับเฉพาะตัวที่ยังตีได้) · false ตอน Main Phase (นับ Avatar ฝั่งตรงข้ามทั้งหมดที่ตีได้เทิร์นหน้า)
+function botBait(r, k, inBattle) {
+  const g = r.g, me = r.p[k], op = r.p[1 - k], bt = r.bot;
+  if (!bt || bt.lv < 3) return false;
+  const nxt = me.life.find(l => !l.up), c = nxt && B[nxt.id];
+  if (!c || c.t !== 'Life' || !(c.e || '').trim()) return false;
+  const U = me.life.filter(l => !l.up).length;
+  const T = op.av.filter(a => P(r, a) > 0 && (!inBattle || !a.tired)).length;
+  if (T < 1 || U - T < 2) return false;                         // ต้องมีคนตีจริง และเหลือ LIFE อย่างน้อย 2 ใบหลังโดนตีครบ
+  if (!inBattle) {
+    if (me.av.length) return false;                              // ล่อเฉพาะตอนสนามเราโล่ง
+    if (!(bt.baitN === g.n || bt.baitN == null || g.n - bt.baitN > 2)) return false;   // กันล่อติดกันทุกเทิร์นถ้าอีกฝั่งไม่ยอมตี
+  }
+  return true;
+}
 function botMain(r, k) {
   const g = r.g, me = r.p[k], bt = r.bot, lv = Math.min(bt.lv, 3), W = bt.w || CHW0, T = bt.tried, ops = [];
   if (bt.lv === 4) { for (const [x, z] of chZones(me)) { if (T.has('u' + x.u) || !abOf(r, k, x, z) || !chAbilEarly(r, k, x)) continue; T.add('u' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true; } }   // ท้าทาย: สกิลจั่ว/ค้นหา ใช้ก่อนลงการ์ด
@@ -5581,6 +5663,8 @@ function botMain(r, k) {
     const pay = botPay(r, k, h); if (!pay) return;
     ops.push({ h, d, pay, gain: botCv(r, h) * W.dv - pay.keep * .45 + (d.t === 'Avatar' && me.av.length < 3 ? 2 : 0) - (d.t === 'Construct' ? 1.5 : 0) + chMainBonus(r, k, h) });
   });
+  if (bt.lv >= 3) botLook(r, k, ops, W);   // มองล่วงหน้า 2 ใบ
+  if (botBait(r, k, false)) { const n0 = ops.length; for (let j = ops.length - 1; j >= 0; j--) if (ops[j].d.t === 'Avatar') ops.splice(j, 1); if (ops.length < n0 || me.hand.some(h => B[h.id] && B[h.id].t === 'Avatar')) bt.baitN = g.n; }   // ล่อให้ตี LIFE
   ops.sort((a, b) => b.gain - a.gain);
   bt.rsv = null;
   const o = bt.lv === 4 ? chPlanPick(r, k, ops.filter(x => x.gain > -1.5 + W.th)) : lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 + W.th : -2.5));
@@ -5627,7 +5711,10 @@ function botBattle(r, k) {
   if (!opts.length) { me.av.forEach(a => T.add('a' + a.u)); return false; }
   if (bt.lv === 4) { chTune(r, k, opts); try { chBPlan(r, k, opts); } catch (e) { console.error('chBPlan', e); } }
   opts.sort((x, y) => y.sc - x.sc);
-  const o = lv === 1 ? pick(opts.slice(0, 3)) : opts[0];
+  let o = lv === 1 ? pick(opts.slice(0, 3)) : opts[0];
+  if (bt.lv >= 3) { let pl = null; try { pl = botPlanAtk(r, k, opts, W); } catch (e) { console.error('botPlanAtk', e); }
+    if (pl === 'stop') { me.av.forEach(a => T.add('a' + a.u)); return false; }
+    if (pl && pl.o) o = pl.o; }   // วางแผนทั้งเทิร์น
   T.add('a' + o.a.u); (o.sup || []).forEach(u => T.add('a' + u)); botAct(r, k, { t: 'atk', u: o.a.u, tg: o.tg, sup: o.sup || [] }); return true;
 }
 function botEnd(r, k) {
@@ -5691,6 +5778,7 @@ const BOT_REACT = new Set(['BT03-047', 'SD01-017', 'BT01-039', 'BT02-049', 'SD06
 function botReact(r, k) {
   const g = r.g, p = g.pend, me = r.p[k], T = r.bot.tried; if (g.used[k].React) return false;
   const atF = p.k === 'atk' ? find(r, p.u) : null, tgF = p.k === 'atk' && p.tk === 'av' ? find(r, p.tg) : null;
+  if (p.k === 'atk' && p.tk === 'life' && botBait(r, k, true)) return false;   // ปล่อยให้ตี LIFE เพื่อรับผล LIFE
   for (const h of me.hand) {
     const d = B[h.id]; if (!d || d.t !== 'Magic' || d.st !== 'React' || (!BOT_REACT.has(h.id) && r.bot.lv !== 4)) continue;
     const key = 'r' + h.u + ':' + (p.u || (p.ev && p.ev.u)); if (T.has(key)) continue;
