@@ -1844,6 +1844,12 @@ wss.on('connection', ws => {
         ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: 'เปลี่ยนรูปโปรไฟล์แล้ว' })); return;
       }
       if (m.t === 'fstat') { ws.fr = new Set(((await dbGet(ws.user)).fr) || []); pushFst(ws, true); return; }
+      if (m.t === 'fprof') {   // ดูโปรไฟล์/ประวัติของเพื่อน (เฉพาะคนที่เป็นเพื่อนกัน)
+        const t = String(m.name || '').toLowerCase(), d = await dbGet(ws.user);
+        if (!(d.fr || []).includes(t)) E('ดูโปรไฟล์ได้เฉพาะเพื่อนของคุณ');
+        const o = await dbGet(t); if (!o) E('ไม่พบผู้ใช้'); const f = pfView(o);
+        ws.send(JSON.stringify({ t: 'fprof', name: t, pic: o.pic || null, on: userWs(t).length > 0, lv: f.lv, cur: f.cur, need: f.need, st: f.st, hist: (f.hist || []).slice(0, 30) })); return;
+      }
       if (m.t === 'finv') {
         const t = String(m.name || '').toLowerCase(), code = String(m.room || '').toUpperCase(), d = await dbGet(ws.user), q = rooms[code];
         if (!(d.fr || []).includes(t)) E('ไม่ใช่เพื่อนของคุณ');
