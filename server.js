@@ -7,10 +7,15 @@ FORCE_ONLY1.forEach(id => { if (B[id]) B[id].o = 'Only #1'; });
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.9';
+const VERSION = process.env.APP_VERSION || 'v1.9.1';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.9.1', d: '2026-11-10', items: [
+    'แก้บัค: ปุ่ม "จบเทิร์น" ข้าม End Phase — ตอนนี้เข้า End Phase ก่อนจบเทิร์น สกิล End Phase (เช่น อินาริ โอคามิ จั่วการ์ด) ทำงานปกติ',
+    'แก้บัค: ศาลพระภูมิ ถูกเลือกเป็นเป้าโจมตีไม่ได้ เมื่อมี Avatar {ผี} ใบอื่นบน Avatar Zone',
+    'แก้บัค: การ์ดนินจา (ชิโยเมะ / ฮันโซ / โกเอมอน / ฟูมะ) แสดงปุ่มสกิลบนมือ และใช้ได้แม้ Avatar Zone เต็ม · โกเอมอนใช้ใน Battle Phase ได้เมื่อ LIFE หงาย 3 ใบ',
+  ] },
   { v: 'v1.9', d: '2026-11-10', items: [
     'เพิ่มชุด BT11 (75 ใบ: Avatar / Magic / Land / Modification / Construct / LIFE) พร้อมสกิลและอนิเมชันครบทุกใบ — มีในร้านค้า ตู้สุ่ม และสร้างเด็คได้',
     'กลไกใหม่: มิติมืด (ใช้ความสามารถจากมิติมืดได้), ธรณีสูบของ ไวรัส, อาวุธนคร + นครทินนอล, ชุดสมาชม, หน่วยรบ XVI, เครื่องใช้ไฟฟ้า (Magic Zone), คณะพระถังซัมจั๋ง (ชนะด้วย พระไตรปิฎก 3 ใบ)',
@@ -1494,6 +1499,12 @@ function passTurn(r, i) {
   const step = () => { const w = kdSwapList(r)[0]; if (!w) return passTurn1(r, i); kdSwap(r, w.qi, w.a, step); };
   step();
 }
+function finTurn(r, i) {   // ปุ่ม "จบเทิร์น": เข้า End Phase ก่อน (ให้เอฟเฟกต์ End Phase ทำงาน) แล้วจึงจบเทิร์น
+  const g = r.g;
+  if (g.phase !== 'end') { g.phase = 'end'; bt7End(r, i); }
+  const done = () => { if (g.over || g.turn !== i || g.phase !== 'end') return; if (r.p[i].hand.length > 7) { log(r, r.p[i].name + ': มือเกิน 7 ต้องทิ้งก่อนจบเทิร์น'); return; } passTurn(r, i); };
+  if (g.ask || g.pend || g.q.length) g.q.push(done); else done();
+}
 function passTurn1(r, i) {
   const g = r.g; g.noReact = null; bt8End(r, i);
   r.p.forEach(q => q.av.forEach(a => { a.tp = 0; a.bp = 0; a.bs = null; })); g.turn = 1 - i; g.n++; endTurn456(r); endTurnFx(r); loki03(r, i); startTurn(r);
@@ -1522,7 +1533,7 @@ function act(r, i, m) {
     }
     case 'next':
       if (!mine) E('ไม่ใช่เทิร์นเรา'); if (g.phase === 'battle' || m.fin) { bt8Force(r, i); ccMustAtk(r, i); }
-      if (m.fin) { if (g.phase === 'dice' || g.phase === 'pick' || g.phase === 'mull') E('ยังจบเทิร์นไม่ได้'); if (me.hand.length > 7) { const need = me.hand.length - 7, us = [...new Set((m.disc || []).map(Number))]; if (us.length === need) { us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ (มือเกิน 7)'); passTurn(r, i); } else { g.phase = 'end'; log(r, me.name + ': มือเกิน 7 ต้องทิ้ง ' + need + ' ใบ'); } } else passTurn(r, i); break; }
+      if (m.fin) { if (g.phase === 'dice' || g.phase === 'pick' || g.phase === 'mull') E('ยังจบเทิร์นไม่ได้'); if (me.hand.length > 7) { const need = me.hand.length - 7, us = [...new Set((m.disc || []).map(Number))]; if (us.length === need) { us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ (มือเกิน 7)'); finTurn(r, i); } else { if (g.phase !== 'end') { g.phase = 'end'; bt7End(r, i); } log(r, me.name + ': มือเกิน 7 ต้องทิ้ง ' + need + ' ใบ'); } } else finTurn(r, i); break; }
       if (g.phase === 'main') { g.phase = g.n === 0 ? 'end' : 'battle'; if (g.phase === 'battle') enterBattle03(r); else bt7End(r, i); }
       else if (g.phase === 'battle') { g.phase = 'end'; bt7End(r, i); }
       else passTurn(r, i);
@@ -1640,7 +1651,7 @@ function act(r, i, m) {
       else if (m.k === 'exile') { if (host ? !wearSk(r, i, host, c).some(x => x.k === 'exile') : !extraSk(r, i, c).length) E('ใช้สกิลนี้ตอนนี้ไม่ได้'); exileOta(r, i, c, host); }
       else E('ไม่มีสกิลนี้'); break; }
     case 'use': {
-      { const f0 = find(r, m.u), d0 = f0 && (AB[f0.c.id] || ABIL[f0.c.id]); if (d0 && d0.end) { if (!mine || g.phase !== 'end') E('เฉพาะ End Phase'); } else if (d0 && d0.any && !g.ask && !g.pend && ['main', 'battle', 'end'].includes(g.phase)) { /* สั่งใช้ได้ในเทิร์นใครก็ได้ */ } else mainOnly(); } let f = find(r, m.u), z;
+      { const f0 = find(r, m.u), d0 = f0 && (AB[f0.c.id] || ABIL[f0.c.id]); if (d0 && d0.end) { if (!mine || g.phase !== 'end') E('เฉพาะ End Phase'); } else if (d0 && d0.any && !g.ask && !g.pend && ['main', 'battle', 'end'].includes(g.phase)) { /* สั่งใช้ได้ในเทิร์นใครก็ได้ */ } else if (d0 && f0.c.id === 'BT10-004' && f0.z === 'hand' && mine && g.phase === 'battle' && !g.ask && !g.pend && r.p[i].life.filter(l => l.up).length >= 3) { /* โกเอมอน: LIFE หงาย 3 ใบ ใช้ใน Battle Phase ได้ */ } else mainOnly(); } let f = find(r, m.u), z;
       if (f && f.i === i) z = f.z; else if (g.land && g.land.c.u === m.u) { f = { i, z: 'land', c: g.land.c }; z = 'land'; }   // Land ใช้ได้ทั้งสองฝ่าย else E('ไม่ใช่การ์ดของเรา');
       if (z === 'hell' && f.c.id === 'BT05-064') {   // อาลอนไดร์ท: ธรณีสูบ 1 ใบ แล้วนำตัวเองจากนรกไปสวมใส่ อัศวินโต๊ะกลม
         if (!hell64OK(r, i)) E('ต้องยังไม่ใช้ Modification Magic เทิร์นนี้ และมี "อัศวินโต๊ะกลม" บน Avatar Zone'); if (futUseGuard(r, i, f, m)) break;
@@ -2535,7 +2546,7 @@ const isNir = c => !c.tk && (B[c.id].n.startsWith('นายนิรยบา�
 const hellNames = p => new Set(p.hell.filter(c => isAv(c) && B[c.id].s === 'นรก').map(c => B[c.id].n)).size;
 const KD_HAND = { 'KD02-001': 1 };
 let BYP33 = 0;
-const kdHandAb = (r, i, c) => (r.g.turn === i && r.g.phase === 'main' && !r.g.ask && !r.g.pend && ABIL[c.id] && ABIL[c.id].cond(r, i, c)) ? 1 : 0;
+const kdHandAb = (r, i, c) => (r.g.turn === i && (r.g.phase === 'main' || (c.id === 'BT10-004' && r.g.phase === 'battle' && r.p[i].life.filter(l => l.up).length >= 3)) && !r.g.ask && !r.g.pend && ABIL[c.id] && ABIL[c.id].cond(r, i, c)) ? 1 : 0;
 function kdMill(r, i, cs, src) {
   const p = r.p[i];
   if (src && isMig(src)) cs.filter(c => c.id === 'KD04-012').forEach(c => { const k = p.hell.indexOf(c); if (k >= 0) { p.hell.splice(k, 1); p.hand.push(c); log(r, '✋ สุดยอดท่าไม้ตายผู้กล้า THE END: ถูกธรณีสูบด้วย ไมเกรน นำขึ้นมือ'); } });
@@ -2668,7 +2679,7 @@ function modKD(r, x, f) {
   if (hasEq(r, x, 'KD03-018')) v += 3;
   return v;
 }
-const kdUntarget = (r, owner, x) => (x.id === 'BT08-035' && !noFx(r, x) && r.p[owner].av.some(a => a.u !== x.u && isKP(a) && isCol(a, 'เขียว'))) || (x.id === 'BT05-038' && !noFx(r, x) && r.p[owner].av.some(a => a.id === 'BT05-054')) || (x.id === 'KD03-005' || x.id === 'BT04-009') && !noFx(r, x) && otaOf(x).length > 0 && r.p[owner].av.some(a => a.u !== x.u && isIdol(a) && B[a.id].n !== B[x.id].n);
+const kdUntarget = (r, owner, x) => (x.id === 'BT01-020' && !noFx(r, x) && r.p[owner].av.some(a => a.u !== x.u && isAv(a) && symOf(a) === 'ผี')) || (x.id === 'BT08-035' && !noFx(r, x) && r.p[owner].av.some(a => a.u !== x.u && isKP(a) && isCol(a, 'เขียว'))) || (x.id === 'BT05-038' && !noFx(r, x) && r.p[owner].av.some(a => a.id === 'BT05-054')) || (x.id === 'KD03-005' || x.id === 'BT04-009') && !noFx(r, x) && otaOf(x).length > 0 && r.p[owner].av.some(a => a.u !== x.u && isIdol(a) && B[a.id].n !== B[x.id].n);
 function kdPaid(r, i, pc, summoned) {
   if ((pc.id !== 'KD03-009' && pc.id !== 'BT04-013') || !isIdol(summoned)) return;
   const p = r.p[i];
@@ -5079,6 +5090,10 @@ Object.assign(MG, {
    ===================================================================== */
 const bt10Ninjas = (r, i, ex) => r.p[i].av.filter(a => isAv(a) && nmOf(a).includes('นินจา') && nmOf(a).trim() !== ex).map(a => a.u);
 const bt10NameUsed = (r, i, nm) => !!(r.g.b10u && r.g.b10u[i + ':' + nm] === r.g.n);   // "ใช้ความสามารถนี้ของ Avatar ชื่อนี้ได้ 1 ครั้ง/เทิร์น"
+const bt10Room = (r, i, c, need) => {   // มีที่ว่างพอ "หลังนำนินจากลับมือ" แล้วหรือไม่
+  if (canPlaceAv(r, i, c)) return true; const p = r.p[i], L = bt10Ninjas(r, i, B[c.id].n.trim()); if (L.length < need) return false;
+  const rm = L.slice(0, need).map(u => p.av.find(a => a.u === u)).filter(Boolean), pos = rm.map(a => p.av.indexOf(a)); rm.forEach(a => p.av.splice(p.av.indexOf(a), 1));
+  let ok = false; try { ok = canPlaceAv(r, i, c); } finally { rm.forEach((a, k) => p.av.splice(pos[k], 0, a)); } return ok; };
 const bt10Mark = (r, i, nm) => { (r.g.b10u = r.g.b10u || {})[i + ':' + nm] = r.g.n; };
 // อัญเชิญใบนี้จากมือหลังนำนินจากลับมือ แล้วทำผลอัตโนมัติ "ถูกอัญเชิญด้วยความสามารถตัวเอง"
 function bt10NinjaSwap(r, i, x, need, auto) {
@@ -5101,16 +5116,17 @@ Object.assign(SUM, {
 
 Object.assign(ABIL, {
   // BT10-005 ฮันโซ นินจาในตำนาน — สั่งใช้ จากบนมือ: นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้ → เลือก "นินจา" 1 ใบ ได้รับเตะไข่ จนจบเทิร์น
-  'BT10-005': { zone: 'hand', label: 'นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 1 && canPlaceAv(r, i, c), run: (r, i, x) =>
+  'BT10-005': { zone: 'hand', label: 'นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 1 && bt10Room(r, i, c, 1), run: (r, i, x) =>
     bt10NinjaSwap(r, i, x, 1, (r2, i2, x2) => { const L = bt10Ninjas(r2, i2, ''); if (!L.length) return;
       ask(r2, i2, { text: 'ฮันโซ: เลือก Avatar "นินจา" 1 ใบ ได้รับ เตะไข่ จนจบเทิร์น', opts: L, cb: us => { const t = find(r2, us[0]); if (t) { t.c.kk = r2.g.n; vfx(t.c.u, 'aura', 'เตะไข่', '#f97316'); log(r2, '🥷 ' + nmOf(t.c) + ' ได้รับ เตะไข่ จนจบเทิร์น'); } } }); }) },
   // BT10-006 ชิโยเมะ นินจาสาว — สั่งใช้ จากบนมือ: นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้ → Avatar ฝ่ายตรงข้าม 1 ใบ POWER -3 จนจบเทิร์น
-  'BT10-006': { zone: 'hand', label: 'นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 1 && canPlaceAv(r, i, c), run: (r, i, x) =>
+  'BT10-006': { zone: 'hand', label: 'นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 1 && bt10Room(r, i, c, 1), run: (r, i, x) =>
     bt10NinjaSwap(r, i, x, 1, (r2, i2) => { const T = foeAvT(r2, i2); if (!T.length) return;
       ask(r2, i2, { text: 'ชิโยเมะ: เลือก Avatar ฝ่ายตรงข้าม 1 ใบ POWER -3 จนจบเทิร์น', opts: T, cb: us => { const t = find(r2, us[0]); if (t) { addTp(t.c, -3); vfx(t.c.u, 'aura', 'POWER -3', '#ef4444'); log(r2, '🔻 ' + nmOf(t.c) + ' POWER -3 จนจบเทิร์น'); } } }); }) },
   // BT10-004 โกเอมอน นินจาจอมโจร — สั่งใช้ จากบนมือ: นำ "นินจา" 2 ใบกลับมือ แล้วอัญเชิญใบนี้ (ส่วนที่ได้รับสกิลโจมตี LIFE และใช้ใน Battle Phase: รอ)
-  'BT10-004': { zone: 'hand', label: 'นำ "นินจา" 2 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 2, run: (r, i, x) => bt10NinjaSwap(r, i, x, 2, null) },
+  'BT10-004': { zone: 'hand', label: 'นำ "นินจา" 2 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 2 && bt10Room(r, i, c, 2), run: (r, i, x) => bt10NinjaSwap(r, i, x, 2, null) },
 });
+['BT10-004', 'BT10-005', 'BT10-006'].forEach(k => { KD_HAND[k] = 1; });   // แสดงปุ่มสกิลบนมือ
 
 Object.assign(AB, {
   // BT10-028 นายนิรยบาล ดาร์กช็อก — เทิร์นละครั้ง สั่งใช้ ถ้าเทิร์นนี้เราธรณีสูบ: เลือกการ์ดในนรกเรา (ไม่ใช่ Only) นำกลับเข้าใต้ Deck
@@ -6884,7 +6900,7 @@ Object.assign(AB, {
 });
 Object.assign(ABIL, {
   // 010 ฟูมะ — สั่งใช้ จากบนมือ: นำ "นินจา" (ไม่ใช่ชื่อนี้) กลับมือ แล้วอัญเชิญใบนี้ (POWER +3 และ End Phase เนรเทศ → Main Phase ถัดไปกลับลงสนาม)
-  'BT11-010': { zone: 'hand', label: 'นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 1 && canPlaceAv(r, i, c) && r.g.phase === 'main',
+  'BT11-010': { zone: 'hand', label: 'นำ "นินจา" 1 ใบกลับมือ แล้วอัญเชิญใบนี้', cond: (r, i, c) => !bt10NameUsed(r, i, B[c.id].n.trim()) && bt10Ninjas(r, i, B[c.id].n.trim()).length >= 1 && bt10Room(r, i, c, 1) && r.g.phase === 'main',
     run: (r, i, x) => bt10NinjaSwap(r, i, x, 1, (r2, i2, x2) => { x2.s10 = 1; addTp(x2, 3); vfx(x2.u, 'aura', 'POWER +3', '#22c55e'); log(r2, '🌪 ฟูมะ: POWER +3 — End Phase จะเนรเทศ แล้วกลับลงสนามใน Main Phase ถัดไป'); }) },
 });
 KD_HAND['BT11-010'] = 1;
