@@ -42,6 +42,10 @@ const CHANGELOG = [
   { v: 'v1.5', d: '2026-11-06', items: [
     'เปลี่ยน GEM เป็นไร้สี เพิ่มอีกหลายใบ (นายนิรยบาลทุกใบ, ตำรวจสัมภเวสี, Tank Ranger, เสามงคล, อาณาจักรของแพง, แบงค์, ลิลิธ, เมฟิสโตเฟเลส, กวนอู, เตียวหุย ฯลฯ รวมทุกใบที่พิมพ์ซ้ำ)'
   ] },
+  { v: 'v1.5', d: '2026-11-11', items: [
+    'ทำสกิลพร้อมอนิเมชัน: ODY1 (ทาโกะซัง ×3, ทาโกะจัง, โอเดนย่ากาย, ทศกัณฑ์, เอาแค่การ์ด, อร่อยมัก, ถุงเกราะ, ดาว O.D.Y 88), PRE0 (ผู้เล่น ×6 + น้ำใจ), PRMO (แบ่งแยกดินแดน, หมู่บ้านพอดี, นางลักษมี ฯลฯ), FPRO, SL02 และใบพิมพ์ซ้ำทุกใบในรายการ',
+    'เพิ่มกล่องอีเวนต์หลังบ้าน (ไม่อยู่ในร้านค้า) ซีรีส์ ODY1 / PRMO / PRE0 / FPRO / SL01 / SL02 เรทเน้นของยากไว้ก่อน'
+  ] },
   { v: 'v1.4', d: '2026-11-06', items: [
     'เปลี่ยน GEM เป็นไร้สี เพิ่มอีกหลายใบ (รัททาทุยทุกใบ, แมลงปอ, ไดโนกาฬสินธุ์, บึงทมิฬ People, ตัวละครวุยก๊ก, SD02 ฯลฯ รวมทุกใบที่พิมพ์ซ้ำ)'
   ] },
@@ -468,6 +472,31 @@ function pack(set, gar, K) {
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
 }
+/* ===== EVENT BOX (หลังบ้าน): ซองละ 5 ใบ · ช่อง 1-3 = ช่องพื้นฐาน, ช่อง 4 = ช่องกลาง, ช่อง 5 = ช่องลุ้น · เรทเน้นให้ได้ยากไว้ก่อน (ยากกว่าตู้ BT ปกติ)
+   ยังไม่ผูกกับร้านค้า — ใช้จาก: evPack(set) / grantEventBox(d, set, n) (ให้การ์ดเข้าบัญชีผู้เล่น สำหรับรางวัลอีเวนต์) / แอดมินส่ง {t:'evbox', set, n} เพื่อดูเรท+จำลองเปิด (ไม่บันทึก) */
+const EVENT_BOX_SETS = ['ODY1', 'PRMO', 'PRE0', 'FPRO', 'SL01', 'SL02'];
+const EVW = {
+  base: { C: 86, R: 12, SR: 1.7, UR: .25, SEC: .04, PR: .01 },
+  mid: { C: 62, R: 28, SR: 7.5, UR: 2, SEC: .4, PR: .1 },
+  top: { R: 64, SR: 26, UR: 8, SEC: 1.5, PR: .4, CBR: .08, USEC: .02 },
+};
+const EVS = ['base', 'base', 'base', 'mid', 'top'];
+const evEff = (av, W) => { const o = {}, have = RT.filter(t => av.has(t)); for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : have[0]; o[tt] = (o[tt] || 0) + w; } return o; };   // ระดับที่ไม่มีในกล่อง → ปัดลงไประดับที่มีจริง (ถ้าต่ำกว่าทุกระดับ → ระดับต่ำสุดที่มี)
+const evPool = set => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => o.push({ id: c.id, r }))); return o; };
+function evPack(set, K) {
+  K = K || {}; const R = K.R || (K.R = evPool(set)); if (!R.length) return [];
+  const av = K.av || (K.av = new Set(R.map(x => x.r))), by = r => (K.by = K.by || {})[r] || (K.by[r] = R.filter(x => x.r === r));
+  const roll = W => { const e = evEff(av, W), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return [...av][0]; };
+  const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); };
+  return EVS.map(s => g(roll(EVW[s])));
+}
+function evRates(set) {   // เรทต่อใบ/ต่อซอง + จำนวนการ์ดแต่ละระดับในกล่อง
+  const R = evPool(set), av = new Set(R.map(x => x.r)), cnt = {}; R.forEach(x => cnt[x.r] = (cnt[x.r] || 0) + 1);
+  const slots = EVS.map(s => { const e = evEff(av, EVW[s]), tot = Object.values(e).reduce((a, b) => a + b, 0), o = {}; for (const [t, w] of Object.entries(e)) o[t] = +(w / tot * 100).toFixed(3); return o; });
+  const per = {}; slots.forEach(sl => { for (const [t, v] of Object.entries(sl)) per[t] = +((per[t] || 0) + v / 100).toFixed(4); });
+  return { set, cards: R.length, count: cnt, slots, perPack: per };
+}
+function grantEventBox(d, set, n) { const K = {}, out = []; for (let k = 0; k < (n || 1); k++) evPack(set, K).forEach(x => { add(d, x); out.push(x); }); return out; }
 const inst2 = (id, art) => { const c = inst(id); if (art && art[id]) c.ar = art[id]; return c; };
 function deckInsts(d) { const left = {}; Object.entries(d.vr || {}).forEach(([k, n]) => { const [i, r] = k.split('|'); (left[i] = left[i] || []).push(...Array(Math.max(0, n | 0)).fill(r)); });
   const mk = id => { const c = inst(id), a = (left[id] && left[id].shift()) || (d.art && d.art[id]); if (a) c.ar = a; return c; };
@@ -496,7 +525,7 @@ const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
 let CR = null, FXN = 0;
 const fx = o => { if (!CR || !CR.g) return; const g = CR.g; (g.fxl = g.fxl || []).push({ n: ++FXN, ...o }); if (g.fxl.length > 20) g.fxl.shift(); };
-function sweep(r) { chk052(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); mgHellTrig(r, p, m); } } }); }
+function sweep(r) { if (r.g && !r.g.land && r.g.land2) { r.g.land = r.g.land2; r.g.land2 = null; } chk052(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); mgHellTrig(r, p, m); } } }); }
 function mgHellTrig(r, p, m) { if (['ตีแม่', 'ตีพ่อ'].includes(B[m.id].n.trim())) { const pi = r.p.indexOf(p); fx({ k: 'say', id: m.id, t: 'หงาย LIFE' }); log(r, '🪓 ' + B[m.id].n.trim() + ' ตกนรก: หงาย LIFE ใบบนสุดของ ' + p.name); lifeUp(r, pi); } }
 
 /* ===== ENGINE: กฎ v3.2 + สกิล SD01-08 + BT01-02 ===== */
@@ -734,7 +763,7 @@ function fxSummon0(r, i, x) {
 function fxAtk0(r, i, a, tg, tk) { try { futHide(r, () => fxAtk0_(r, i, a, tg, tk)); } finally { if (r.g.futNeg && r.g.futNeg.a === a.u) r.g.futNeg = null; } }
 function fxAtk0_(r, i, a, tg, tk) {
   if (noFx(r, a)) return;
-  if (a.id === 'BT01-001' && tk === 'av') { const d = r.p[1 - i].av.find(x => x.u === tg); if (d && symOf(d) === 'เทพ') { fx({ k: 'say', id: a.id, t: 'ทำลายเป้าหมาย' }); log(r, '💥 นนทก นิ้วเพชร: ทำลาย ' + nmOf(d)); destroyAv(r, d.u); } }
+  if ((a.id === 'BT01-001' || a.id === 'ODY1-007') && tk === 'av') { const d = r.p[1 - i].av.find(x => x.u === tg); if (d && symOf(d) === 'เทพ') { fx({ k: 'say', id: a.id, t: 'ทำลายเป้าหมาย' }); log(r, '💥 นนทก นิ้วเพชร: ทำลาย ' + nmOf(d)); destroyAv(r, d.u); } }
   fxAtk03(r, i, a, tg, tk); fxAtk2(r, i, a); atkTrig(r, i, a); bt4Atk(r, i, a, tg, tk); bt6AtkS2(r, i, a, tg, tk); bt7Atk(r, i, a, tg, tk);
   if (a.id === 'SD01-002') { addTp(a, 2); log(r, '✨ พระนารายณ์ POWER +2'); }
   if (a.id === 'SD03-002') { mill(r, i, 2, a); addTp(a, 1); log(r, '✨ พ่อจีจ้า POWER +1'); }
@@ -787,6 +816,7 @@ function reactOK0(r, i, c, def) { const p = r.g.pend; if (!p || p.who !== i) ret
   if (def.react === 'use') return !!(p.ev && p.ev.k === 'use');
   if (def.react === 'atk') return p.k === 'atk';
   if (def.react === 'atkav') return p.k === 'atk' && p.tk === 'av';
+  if (def.react === 'tako') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg && !a.tk && /ทาโกะ/.test(B[a.id].n));   // ODY1-064
   if (def.react === 'atkTank') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg && isTank(a));
   if (def.react === 'atkPeople') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg && isPeopleF(a));
   if (def.react === 'atkAv') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg);
@@ -812,7 +842,7 @@ function castFinal(r, i, card, c, def, ctx, steps) {
   steps.forEach(s => s.pay && (ctx.pick[s.key] || []).forEach(u => sendHell(r, u)));
   g.used[i][c.st] = 1; take(r, card.u); let t = null;
   if (def.mod) { t = find(r, ctx.pick.tg[0]); if (!t || t.z !== 'av') E('เป้าหมายหาย'); card.at = t.c.u; me.mg.push(card); }
-  else if (c.st === 'Land') { if (g.land) r.p[g.land.o].hell.push(g.land.c); g.land = { c: card, o: i }; }
+  else if (c.st === 'Land') putLandX(r, i, card);
   else me.hell.push(card);
   ev(r, card.kd || card.id, card.ar); g.curMg = { card, i }; g.q.push(() => { g.curMg = null; }); log(r, me.name + ' ร่าย ' + c.st + ': ' + c.n + (t ? ' → ' + nmOf(t.c) : ''));
   const side = () => { if (t && def.mod) bt8Wear(r, i, card, t.c); bt10Cast(r, i, c); if (c.t === 'Magic' && c.s === 'ฤษี') rishiFx(r); bt7Spell(r, i, c); bt8Spell(r, i, c); weaponTrig03(r, c); };   // ทริกเกอร์ "เมื่อมีการใช้ Magic" — ถูกยกเลิกแล้วต้องไม่เกิด
@@ -839,7 +869,7 @@ const hasCamp = (r, i) => r.p[i].co.some(c => c.id === 'SD06-018');
 const rnd = a => a[Math.floor(Math.random() * a.length)];
 const hasEq = (r, x, id) => r.p.some(q => q.mg.some(m => m.at === x.u && m.id === id));
 const tiredCnt = r => allAv(r).filter(a => a.x.tired).length;
-const landIs = (r, id) => !!(r.g.land && r.g.land.c.id === id);
+const landIs = (r, id) => !!((r.g.land && r.g.land.c.id === id) || (r.g.land2 && r.g.land2.c.id === id));
 function hasKw(r, x, kw) {
   if (x.tk) return kw === 'ลูกฮึด' && sd09Grant(r, x); if (kw === 'โล่มนุษย์' || kw === 'ลูกฮึด') { const f9 = find(r, x.u); if (f9 && f9.z === 'av' && odOn8(r, 1 - f9.i, 'BT08-033')) return false; }   // BT08-033 Overdose
   if ((B[x.id].e || '').includes(kw) && isAv(x) && !(B7NK[x.id] && B7NK[x.id].includes(kw)) && !(kw === 'สามัคคี' && (x.id === 'BT05-004' || x.id === 'BT05-013')) && !(kw === 'เตะไข่' && x.id === 'BT05-037')) return true;
@@ -874,11 +904,14 @@ function hasKw(r, x, kw) {
 function mod456(r, x, f) {
   let v = 0; const p = r.p[f.i];
   if (hasEq(r, x, 'BT02-056')) v += 2;
+  if (x.od65) v += 2 * x.od65.filter(o => o.t >= r.g.n).length;   // ODY1-065 ถุงเกราะโอเดนย่า: +2 จนจบเทิร์นถัดไปของฝ่ายตรงข้าม
   if ((x.wr || []).some(w => w.id === 'BT02-028')) v += 2;
   if (noFx(r, x)) return v;
   if (x.id === 'BT02-001') v += r.p.reduce((s, q) => s + q.life.filter(l => l.up).length, 0);
   if (x.id === 'BT01-002') v += 2 * p.life.filter(l => l.up).length;
-  if (x.id === 'BT01-004') v += p.av.filter(a => a.u !== x.u && symOf(a) === 'เทพ').length;
+  if (x.id === 'BT01-004' || x.id === 'ODY1-010') v += p.av.filter(a => a.u !== x.u && symOf(a) === 'เทพ').length;
+  if (x.id === 'BT05-015' && r.g.turn !== f.i) v += 2;   // BT05-015: POWER +2 ในเทิร์นฝ่ายตรงข้าม
+  if (x.id === 'PRE0-005' && new Set(p.hell.filter(c => !c.tk && isAv(c)).map(c => B[c.id].n.trim())).size >= 10) v += 2;   // PRE0-005: นรกมี Avatar ชื่อไม่ซ้ำ 10 ใบ+
   if (['กุ่ย', 'ฮอล', 'นาย'].includes(B[x.id].n)) v += p.av.filter(a => a.id === 'BT02-014' && !noFx(r, a)).length;
   (x.wr || []).forEach(w => { if (w.id === 'SD04-003') v += 1; if (w.id === 'SD06-008') v += hasCamp(r, f.i) ? 2 : 1; });
   if (campTxt(x) && hasCamp(r, f.i)) v += 1;
@@ -1423,7 +1456,7 @@ function rjStatus(ws) {
 const view = (r, i) => {
   r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
   CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back') } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -1438,7 +1471,7 @@ const draw = (r, p, n) => { DRAWING++; try { for (let k = 0; k < n && p.deck.len
 const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
 const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) if (p.mg[k].at === u) { const [g] = p.mg.splice(k, 1); if (g.id === 'BT11-068' && b11Move68(r, p, g, u)) continue; delete g.at; p.hell.push(g); mgHellTrig(r, p, g); } });
-const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); if (f.z === 'hell' && f.c.h40) E('การ์ดใบนี้ไม่สามารถถูกนำออกจากนรกได้ (หมอเลิฟ ฟันเหยิน)'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') { delete f.c.half; delete f.c.kdSwap; release(r, u); if (f.c.wr && f.c.wr.length) { f.c.wr.forEach(w => { delete w.nmo; if (ccWoo(r, f, w)) return; r.p[f.i].hell.push(w); }); f.c.wr = []; } } if (f.z === 'mg' && f.c.id === 'BT10-060' && f.c.at) { const u60 = f.c.at; r.g.q.push(() => { const t = find(r, u60); if (t && t.z === 'av') { log(r, '🛸 ผู้มาเยือนออกจากสนาม: ส่ง ' + nmOf(t.c) + ' ลงนรก'); sendHell(r, u60); } }); } if (f.z === 'mg' && f.c.id === 'BT01-042' && f.c.at) { const ua = f.c.at; r.g.q.push(() => { const t = find(r, ua); if (!t || t.z !== 'av') return; const o = t.c.oo != null ? t.c.oo : 1 - t.i; const x = take(r, ua).c; delete x.oo; Object.assign(x, { pw: 0, tp: 0, bp: 0, tired: false }); if (!x.tk) r.p[o].hand.push(x); log(r, '🎭 ริกกี้ นักปลอมแปลง ถูกทำลาย: ' + nmOf(x) + ' กลับขึ้นมือเจ้าของ'); }); }
+const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); if (f.z === 'hell' && f.c.h40) E('การ์ดใบนี้ไม่สามารถถูกนำออกจากนรกได้ (หมอเลิฟ ฟันเหยิน)'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') { delete f.c.half; delete f.c.kdSwap; delete f.c.pc; release(r, u); if (f.c.wr && f.c.wr.length) { f.c.wr.forEach(w => { delete w.nmo; if (ccWoo(r, f, w)) return; r.p[f.i].hell.push(w); }); f.c.wr = []; } } if (f.z === 'mg' && f.c.id === 'BT10-060' && f.c.at) { const u60 = f.c.at; r.g.q.push(() => { const t = find(r, u60); if (t && t.z === 'av') { log(r, '🛸 ผู้มาเยือนออกจากสนาม: ส่ง ' + nmOf(t.c) + ' ลงนรก'); sendHell(r, u60); } }); } if (f.z === 'mg' && f.c.id === 'BT01-042' && f.c.at) { const ua = f.c.at; r.g.q.push(() => { const t = find(r, ua); if (!t || t.z !== 'av') return; const o = t.c.oo != null ? t.c.oo : 1 - t.i; const x = take(r, ua).c; delete x.oo; Object.assign(x, { pw: 0, tp: 0, bp: 0, tired: false }); if (!x.tk) r.p[o].hand.push(x); log(r, '🎭 ริกกี้ นักปลอมแปลง ถูกทำลาย: ' + nmOf(x) + ' กลับขึ้นมือเจ้าของ'); }); }
  delete f.c.at; delete f.c.cx; delete f.c.jt; delete f.c.fh; if (f.z === 'hand') delete f.c.stl; if (f.z === 'av' && f.c.id === 'BT05-054A') { f.c.id = 'BT05-054'; delete f.c.kd; } return f; };
 let DRNO = 0;
 const isDoc = c => !!c && !c.tk && B[c.id] && B[c.id].t === 'Magic' && B[c.id].n.trim() === 'หมอมาแล้วววว';
@@ -1610,8 +1643,8 @@ function act(r, i, m) {
       if (av && g.lim && g.lim[i] && symOf(f.c) !== g.lim[i]) E('เทิร์นนี้อัญเชิญได้เฉพาะ Avatar ' + g.lim[i]);
       if (av ? !canPlaceAv(r, i, f.c) : me.co.length >= 3) E(av ? 'Avatar เต็ม' : 'Construct เต็ม 3');
       if (!av && me.co.some(x => B[x.id].n === c.n)) E('Construct ชื่อซ้ำ');
-      const ps = pays(), ecc = (av || f.c.id === 'BT07-072' || f.c.id === 'BT10-074') ? handCost(r, i, f.c) : null, cEff = ecc != null ? { ...c, c: ecc } : c; payOK(cEff, ps, me); const gsum = ps.reduce((a, q) => a + (giantG(cEff, B[q.id], me) || B[q.id].g || 0), 0); ps.forEach(q => { if (B[q.id].n === 'ตุ๊กตารัททาทุย' && !(av && isRat(f.c))) E('ตุ๊กตารัททาทุย ใช้จ่ายได้เฉพาะ Avatar รัททาทุย'); if (q.id === 'KD01-004' && !(av && symOf(f.c) === 'เทพ')) E('พระลักษมี ใช้เป็น Cost ได้เฉพาะ Avatar เทพ'); { const cr3 = COST03[q.id]; if (cr3 && !(av && cr3.ok(f.c))) E(cr3.msg); } });
-      ps.forEach(p => { take(r, p.u); me.hell.push(p); }); take(r, m.u); me[av ? 'av' : 'co'].push(f.c); if (av) heroMk(r, i, f.c); if (av && cEff.c > 0 && gsum === cEff.c) { f.c.jt = 1; log(r, '🎯 พอดี! ' + nmOf(f.c) + ' อัญเชิญด้วย Gem พอดี Cost (' + gsum + ')'); } else delete f.c.jt; if (av) noteSum(r, i, f.c); if (av) bt7Cost(r, i, f.c, ps); if (av) bt10Cost(r, i, f.c, ps); if (av) sd09Cost(r, i, f.c, ps);   // ระบบ พอดี
+      const ps = pays(), ecc = (av || f.c.id === 'BT07-072' || f.c.id === 'BT10-074') ? handCost(r, i, f.c) : null, cEff = ecc != null ? { ...c, c: ecc } : c; payOK(cEff, ps, me); const gsum = ps.reduce((a, q) => a + (giantG(cEff, B[q.id], me) || B[q.id].g || 0), 0); if (f.c.id === 'PRE0-004' && !(ps.length === 5 && ps.every(q => (B[q.id].g || 0) === 1))) E('ผู้เล่นจำไม อัญเชิญได้โดยการทิ้งการ์ด GEM 1 จำนวน 5 ใบ เท่านั้น'); if (landIs(r, 'PRMO-039') && cEff.c > 0 && gsum !== cEff.c) E('หมู่บ้านพอดี: ต้องทิ้ง GEM ให้พอดีกับ Cost (' + cEff.c + ')'); ps.forEach(q => { if (B[q.id].n === 'ตุ๊กตารัททาทุย' && !(av && isRat(f.c))) E('ตุ๊กตารัททาทุย ใช้จ่ายได้เฉพาะ Avatar รัททาทุย'); if (q.id === 'KD01-004' && !(av && symOf(f.c) === 'เทพ')) E('พระลักษมี ใช้เป็น Cost ได้เฉพาะ Avatar เทพ'); { const cr3 = COST03[q.id]; if (cr3 && !(av && cr3.ok(f.c))) E(cr3.msg); } });
+      ps.forEach(p => { take(r, p.u); me.hell.push(p); }); take(r, m.u); me[av ? 'av' : 'co'].push(f.c); if (av) f.c.pc = 1; if (av) heroMk(r, i, f.c); if (av && cEff.c > 0 && gsum === cEff.c) { f.c.jt = 1; log(r, '🎯 พอดี! ' + nmOf(f.c) + ' อัญเชิญด้วย Gem พอดี Cost (' + gsum + ')'); } else delete f.c.jt; if (av) noteSum(r, i, f.c); if (av) bt7Cost(r, i, f.c, ps); if (av) bt10Cost(r, i, f.c, ps); if (av) sd09Cost(r, i, f.c, ps);   // ระบบ พอดี
       if (av) { g.q.push(() => costFx(r, i, ps, f.c)); g.q.push(() => fxSummon(r, i, f.c)); } else g.q.push(() => { if (f.c.id === 'SD08-018') summonRat1(r, i); });
       g.q.push(() => fxPaid(r, i, ps, f.c));
       if (hall) { g.pend.tg = f.c.u; g.pend.tk = 'av'; vfx(f.c.u, 'burst', 'ย้ายเป้าหมาย!', '#a855f7'); fx({ k: 'say', id: f.c.kd || f.c.id, t: 'อัญเชิญตอบโต้' }); log(r, '🛡 นักรบ ฮอล: อัญเชิญตอบโต้ — เปลี่ยนเป้าหมายการโจมตีมาที่ ฮอล'); }
@@ -1985,6 +2018,12 @@ wss.on('connection', ws => {
       }
       if (await dlHandle(ws, m)) return;
       if (await qHandle(ws, m)) return;
+      if (m.t === 'evbox') {   // แอดมิน: ดูเรทกล่องอีเวนต์หลังบ้าน + จำลองเปิด (ไม่บันทึกลงบัญชี)
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        if (!EVENT_BOX_SETS.includes(m.set)) { ws.send(JSON.stringify({ t: 'evbox', sets: EVENT_BOX_SETS.map(evRates), note: 'กล่องอีเวนต์: ' + EVENT_BOX_SETS.join(' / ') })); return; }
+        const n = Math.max(1, Math.min(200, m.n | 0 || 1)), K = {}, tally = {}; for (let k = 0; k < n; k++) evPack(m.set, K).forEach(x => tally[x.r] = (tally[x.r] || 0) + 1);
+        ws.send(JSON.stringify({ t: 'evbox', rates: evRates(m.set), sim: { packs: n, tally }, note: 'จำลองเปิด ' + m.set + ' ' + n + ' ซอง: ' + Object.entries(tally).map(([t, v]) => t + ' ' + v).join(' · ') })); return;
+      }
       if (m.t === 'banset' || m.t === 'banreset') {   // แอดมินแก้ไข/รีเซ็ตแบนลิสต์ (เก็บถาวร + ประกาศให้ผู้เล่นออนไลน์ทันที)
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         if (m.t === 'banreset') { BAN = normBan(JSON.parse(fs.readFileSync(BAN_FILE, 'utf8'))); await dbPut('sys:banlist', { reset: 1, upd: Date.now() }); }
@@ -2191,7 +2230,7 @@ wss.on('connection', ws => {
 });
 /* ===== คนรวย (BT02-006): ขัดจังหวะ "ความสามารถอัตโนมัติ" ของอีกฝ่ายด้วย =====
    autoGuard คืน true = ขัดจังหวะแล้ว (ถ้าเจ้าของคนรวยปฏิเสธ จะเรียก fn ให้เอง) / false = ไม่เข้าเงื่อนไข ให้ผู้เรียกทำต่อตามปกติ */
-const ATK_TRIG = new Set(['SD05-001', 'SD06-003', 'BT02-004', 'BT02-005', 'BT01-001', 'KD01-009', 'BT03-002', 'BT03-018', 'BT04-002']);
+const ATK_TRIG = new Set(['ODY1-007', 'SD05-001', 'SD06-003', 'BT02-004', 'BT02-005', 'BT01-001', 'KD01-009', 'BT03-002', 'BT03-018', 'BT04-002']);
 function autoGuard(r, o, card, kind, fn) {
   if (!card || card.tk || r.g.ask || r.g.over) return false;
   const rp = r.p[1 - o], a = rp.av.find(x => kdRich(r, 1 - o, x));
@@ -2390,7 +2429,7 @@ function chk052(r) {
     const h = find(r, m.at); if (h && h.z === 'av' && P(r, h.c) === 0) { vfx(h.c.u, 'burst', 'แกงส้มตะปูเสียบ!', '#ef4444'); log(r, '💥 แผนการ: แกงส้มตะปูเสียบ — ' + nmOf(h.c) + ' POWER 0 ถูกทำลาย'); destroyAv(r, h.c.u); } }));
 }
 function placeLand03(r, i, card) {
-  const g = r.g; if (g.land) r.p[g.land.o].hell.push(g.land.c); g.land = { c: card, o: i }; g.used[i].Land = 1; ev(r, card.kd || card.id);
+  const g = r.g; putLandX(r, i, card); g.used[i].Land = 1; ev(r, card.kd || card.id);
   fx({ k: 'say', id: card.id, t: 'วางลง Land Zone' }); log(r, '🌋 ' + r.p[i].name + ': วาง ' + B[card.id].n + ' ลง Land Magic Zone (จากการสอดแนม)');
 }
 function land058(r, i, seen) {
@@ -3173,6 +3212,74 @@ Object.assign(MG, {
 Object.assign(CANON, { 'BT04-053': 'KD04-014',
   'BT05-058': 'KD02-017', 'BT05-070': 'KD04-016', 'BT05-071': 'KD02-024', 'BT05-072': 'KD04-022', 'BT05-073': 'KD02-023', 'BT05-074': 'SD08-021', 'BT05-075': 'KD01-025', 'PRMO-100': 'KD02-017', 'SL02-007': 'KD02-017',   // อย่าให้มีครั้งที่ 2 (ฉบับพิมพ์ซ้ำ)
   'ODY1-069': 'SD05-020', 'PRMO-056': 'SD05-020', 'SL01-006': 'SD05-020', 'CC02-061': 'SD05-020' });   // ชายจากอนาคต (ฉบับพิมพ์ซ้ำ)
+/* ===== v1.5: ODY1 / PRE0 / PRMO / FPRO / SL02 (สกิล + อนิเมชันที่มีอยู่แล้ว) ===== */
+// ฉบับพิมพ์ซ้ำที่ข้อความ/ค่าสเตตัสเหมือนใบที่ทำไว้แล้ว → ใช้สกิลของใบต้นฉบับ (รูปยังแสดงตาม id จริง)
+Object.assign(CANON, { 'FPRO-002': 'BT03-004', 'PRMO-078': 'BT03-004', 'FPRO-004': 'CC01-001', 'FPRO-005': 'KD01-005', 'PRMO-032': 'BT03-002', 'PRMO-052': 'BT03-022', 'PRMO-058': 'BT04-015', 'PRMO-075': 'BT02-012', 'SL02-006': 'BT06-031', 'PRMO-018': 'SD04-015', 'ODY1-082': 'BT01-048', 'ODY1-090': 'SD03-016', 'PRMO-051': 'SD05-014', 'ODY1-085': 'BT01-035', 'ODY1-080': 'BT01-044', 'PRMO-010': 'BT02-041', 'PRMO-063': 'BT03-001', 'PRMO-091': 'SD07-001' });
+// PRMO-029 แบ่งแยกดินแดน: ทั้ง 2 ฝ่ายมี Land Magic ได้พร้อมกัน (Land ของฝ่ายตรงข้ามเข้าช่อง land2)
+function putLandX(r, i, card) {
+  const g = r.g, L = g.land, is29 = !!L && L.c.id === 'PRMO-029';
+  if (is29 && L.o !== i) { if (g.land2) r.p[g.land2.o].hell.push(g.land2.c); g.land2 = { c: card, o: i }; fx({ k: 'say', id: 'PRMO-029', t: 'แบ่งดินแดน' }); log(r, '🗺 แบ่งแยกดินแดน: ' + r.p[i].name + ' วาง ' + B[card.id].n + ' อีกฝั่ง โดยไม่ทำลาย Land ของอีกฝ่าย'); return; }
+  if (L) r.p[L.o].hell.push(L.c);
+  if (!is29 && g.land2) { r.p[g.land2.o].hell.push(g.land2.c); g.land2 = null; }
+  g.land = { c: card, o: i };
+}
+const takoN = c => !c.tk && /ทาโกะ/.test(B[c.id].n);
+const tutN = (r, i, x, n) => { vfx(x.u, 'burst', '🥢 ค้นสูตร ' + n.replace('ทาโกะซัง ', ''), '#f59e0b'); tutor(r, i, c => isAv(c) && B[c.id].n.trim() === n, n); };
+const takoHell = (r, i) => r.p[i].hell.filter(c => !c.tk && isAv(c) && B[c.id].n.trim().startsWith('ทาโกะซัง')).map(c => c.u);
+Object.assign(SUM, {
+  'ODY1-001': (r, i, x) => tutN(r, i, x, 'ทาโกะซัง สูตรมนุษย์'),
+  'ODY1-002': (r, i, x) => tutN(r, i, x, 'ทาโกะซัง สูตรนรก'),
+  'ODY1-003': (r, i, x) => tutN(r, i, x, 'ทาโกะซัง สูตรสวรรค์'),
+  'ODY1-004': (r, i, x) => {   // ทาโกะจัง: คืน ทาโกะซัง 3 ใบ (ชื่อต่างกัน) จากนรก → สับ Deck → จั่ว 1
+    const p = r.p[i], nm = u => { const c = p.hell.find(h => h.u === u); return c ? B[c.id].n.trim() : ''; };
+    if (new Set(takoHell(r, i).map(nm)).size < 3) return log(r, 'จุติ ทาโกะจัง: นรกมี ทาโกะซัง ชื่อต่างกันไม่ครบ 3 ใบ');
+    const go = () => ask(r, i, { text: 'จุติ: เลือก Avatar ทาโกะซัง 3 ใบ ที่ชื่อต่างกัน จากนรก กลับเข้า Deck (ยกเลิก = ไม่ใช้)', opts: takoHell(r, i), n: 3, min: 3, cancel: true, cb: us => {
+      if (new Set(us.map(nm)).size !== 3) { log(r, '❌ ต้องเลือก ทาโกะซัง ที่ชื่อต่างกัน 3 ใบ'); return go(); }
+      us.forEach(u => { const c = fromZone(r, i, 'hell', u); if (c) p.deck.push(c); }); shuf(p.deck); vfx(x.u, 'burst', '🐙 คืนสูตรเข้า Deck', '#38bdf8'); draw(r, p, 1); log(r, '✨ ' + p.name + ': คืน ทาโกะซัง 3 ใบเข้า Deck แล้วจั่ว 1 ใบ'); } });
+    go();
+  },
+  'ODY1-028': (r, i, x) => {   // ยึด Avatar ศัตรู 1 ใบ มาในสภาพนอน
+    const T = r.p[1 - i].av.filter(a => !protectedFrom(r, i, a)).map(a => a.u); if (!T.length) return log(r, 'จุติ ทศกัณฑ์: ไม่มี Avatar ให้ยึด');
+    ask(r, i, { text: 'จุติ: เลือก Avatar ฝ่ายตรงข้าม 1 ใบ เปลี่ยนการควบคุมมาฝั่งเรา (สภาพนอน) — ยกเลิก = ไม่ใช้', opts: T, cancel: true, cb: us => { if (!stealCard(r, i, us[0])) return; const f = find(r, us[0]); if (f) f.c.tired = true; fx({ k: 'say', id: x.id, t: 'ยึดการควบคุม!' }); vfx(us[0], 'burst', 'เปลี่ยนการควบคุม', '#f43f5e'); } });
+  },
+  'PRE0-001': (r, i, x) => {   // เมื่ออัญเชิญแบบจ่าย Cost: ดู 3 ใบล่างสุดของ Deck ศัตรู เลือก 1 ใบวางบนสุด
+    if (!x.pc) return log(r, 'จุติ ผู้เล่นยุคแรก: ไม่ได้อัญเชิญแบบจ่าย Cost');
+    const o = r.p[1 - i], seen = o.deck.slice(0, 3); if (!seen.length) return log(r, 'จุติ: Deck ฝ่ายตรงข้ามหมด');
+    fx({ k: 'scout', i, ids: seen.map(c => c.kd || c.id) }); log(r, '🔎 ' + r.p[i].name + ': ดูการ์ด ' + seen.length + ' ใบล่างสุดของ Deck ' + o.name);
+    ask(r, i, { text: 'จุติ: เลือก 1 ใบ จาก 3 ใบล่างสุดของ Deck ฝ่ายตรงข้าม วางไว้ใบบนสุดของ Deck ฝ่ายตรงข้าม', opts: seen.map(c => c.u), n: 1, min: 1, cb: us => { const k = o.deck.findIndex(c => c.u === us[0]); if (k < 0) return; o.deck.push(o.deck.splice(k, 1)[0]); vfx(x.u, 'burst', '⬆ วางบนสุด Deck ศัตรู', '#a855f7'); log(r, '⬆ วางการ์ด 1 ใบไว้บนสุดของ Deck ' + o.name); } });
+  },
+  'PRE0-002': (r, i, x) => {   // สุ่มการ์ดบนมือศัตรู 1 ใบ วางบนสุดของ Deck ศัตรู
+    const o = r.p[1 - i]; if (!o.hand.length) return log(r, 'จุติ ผู้เล่นภักดี: ฝ่ายตรงข้ามไม่มีการ์ดบนมือ');
+    const c = o.hand[crypto.randomInt(o.hand.length)], t = fromZone(r, 1 - i, 'hand', c.u); if (!t) return; o.deck.push(t);
+    vfx(x.u, 'burst', '🎲 สุ่มการ์ดบนมือศัตรูไปบนสุด Deck', '#38bdf8'); log(r, '🎲 ' + r.p[i].name + ': สุ่มการ์ดบนมือ ' + o.name + ' 1 ใบ วางไว้บนสุดของ Deck');
+  },
+  'PRE0-003': (r, i, x) => {   // ดูการ์ดบนมือศัตรูทั้งหมด
+    const o = r.p[1 - i]; if (!o.hand.length) return log(r, 'จุติ ผู้เล่นเหลี่ยม: ฝ่ายตรงข้ามไม่มีการ์ดบนมือ');
+    fx({ k: 'scout', i, ids: o.hand.map(c => c.kd || c.id) }); log(r, '👁 ' + r.p[i].name + ': ดูการ์ดบนมือ ' + o.name + ' ทั้งหมด (' + o.hand.length + ' ใบ)');
+    ask(r, i, { text: 'จุติ: การ์ดบนมือฝ่ายตรงข้ามทั้งหมด (กดตกลงเพื่อปิด)', opts: o.hand.map(c => c.u), n: o.hand.length, min: 0, cb: () => { } });
+  },
+  'PRE0-004': (r, i, x) => {   // ถามจำนวน Avatar / Magic ใน Deck ที่เหลือของศัตรู และ {only}
+    const o = r.p[1 - i], av = o.deck.filter(c => !c.tk && B[c.id].t === 'Avatar').length, mg = o.deck.filter(c => !c.tk && B[c.id].t === 'Magic').length;
+    const only = [...new Set([...o.deck, ...o.hand, ...o.hell, ...o.av, ...o.mg, ...o.co, ...(o.life || [])].map(c => c.tk ? '' : (B[c.id].o || '')).filter(Boolean))];
+    vfx(x.u, 'burst', '🧠 ผู้เล่นจำไม', '#22c55e'); log(r, '🧠 ' + r.p[i].name + ' ถาม ' + o.name + ': Deck ที่เหลือมี Avatar ' + av + ' ใบ · Magic ' + mg + ' ใบ · Only: ' + (only.join(', ') || 'ไม่มี'));
+    ask(r, i, { text: 'จุติ: ข้อมูล Deck ที่เหลือของฝ่ายตรงข้าม', choices: ['Avatar ' + av + ' ใบ', 'Magic ' + mg + ' ใบ', 'Only: ' + (only.join(', ') || 'ไม่มี')], cb: () => { } });
+  },
+  'PRE0-005-2': (r, i, x) => {   // ยึด Avatar ศัตรูที่ POWER น้อยกว่า ไป Magic Zone เรา
+    const O = r.p[1 - i].av.filter(a => !a.tk && P(r, a) < P(r, x) && !protectedFrom(r, i, a)).map(a => a.u); if (!O.length) return log(r, 'จุติ ผู้เล่นโซเชียล: ไม่มี Avatar ที่ POWER น้อยกว่า');
+    ask(r, i, { text: 'จุติ: เลือก Avatar ฝ่ายตรงข้ามที่ POWER น้อยกว่า นำไปไว้ Magic Zone ฝ่ายเรา', opts: O, cb: us => { const c = toMg(r, i, us[0]); if (c) log(r, '🌀 ผู้เล่นโซเชียล: นำ ' + B[c.id].n + ' ไปไว้ Magic Zone ของเรา'); } });
+  },
+});
+Object.assign(MG, {
+  'ODY1-063': { steps: [{ key: 'c', pay: 1, text: 'ทิ้งการ์ด "โอเดนย่า" หรือ "ทาโกะ" บนมือ 1 ใบ', opts: (r, i, cx) => r.p[i].hand.filter(c => !c.tk && (!cx || !cx.card || c.u !== cx.card.u) && /โอเดนย่า|ทาโกะ/.test(B[c.id].n)).map(c => c.u) }, { key: 't', text: 'เลือก Avatar 1 ใบบนสนาม ขึ้นมือเจ้าของ', opts: (r, i) => allAvT(r, i) }],
+    run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t && t.z === 'av') { vfx(t.c.u, 'burst', '↩ ขึ้นมือเจ้าของ', '#f59e0b'); log(r, '✨ เอาแค่การ์ด !!!: นำ ' + nmOf(t.c) + ' กลับขึ้นมือเจ้าของ'); bounce(r, t.c.u); } } },
+  'ODY1-064': { react: 'tako', run: (r) => { const p = r.g.pend, t = p && find(r, p.tg); if (t && t.z === 'av') { addTp(t.c, 2); vfx(t.c.u, 'aura', 'POWER +2', '#22c55e'); log(r, '🍢 โอเดนย่า อร่อยมัก: ' + nmOf(t.c) + ' POWER +2 จนจบเทิร์น'); } } },
+  'ODY1-066': { run: (r, i) => { const L = allAv(r).filter(a => takoN(a.x) && (a.i === i || !protectedFrom(r, i, a.x))); L.forEach(a => { addPw(a.x, 1); vfx(a.x.u, 'aura', 'POWER +1', '#22c55e'); }); log(r, '⭐ ดาว O.D.Y 88: ทาโกะบนสนาม ' + L.length + ' ใบ POWER +1'); } },
+  'PRE0-001-2': { mod: 1 },
+});
+AB['ODY1-065'] = { z: 'mg', run: (r, i, cx) => {   // ถุงเกราะโอเดนย่า: ทำลายการ์ดนี้ → Avatar ที่สวมใส่ POWER +2 จนจบเทิร์นถัดไปของฝ่ายตรงข้าม
+  const t = find(r, cx.card.at); if (!t || t.z !== 'av') return; sendHell(r, cx.card.u);
+  (t.c.od65 = t.c.od65 || []).push({ t: r.g.n + 1 }); fx({ k: 'say', id: 'ODY1-065', t: 'ทำลายถุงเกราะ' }); vfx(t.c.u, 'aura', 'POWER +2 (ถึงจบเทิร์นศัตรู)', '#22c55e'); log(r, '🛡 ถุงเกราะโอเดนย่า: ' + nmOf(t.c) + ' POWER +2 จนจบเทิร์นถัดไปของฝ่ายตรงข้าม'); } };
+// ===== กล่องอีเวนต์ (หลังบ้าน ไม่อยู่ในร้านค้า): ซีรีส์ที่ไม่ใช่ SD/KD/CC/BT → ODY1 / PRMO / PRE0 / FPRO / SL01 / SL02 =====
 CARDS.forEach(c => { if (!/^(PRMO|FPRO|ODY1|CC0)/.test(c.id) || CANON[c.id]) return; const t = CARDS.find(o => o.id.startsWith('BT04-') && o.n === c.n && o.e === c.e && o.t === c.t && o.c === c.c && o.p === c.p && o.s === c.s); if (t) CANON[c.id] = CANON[t.id] || t.id; });   // พิมพ์ซ้ำ (PRMO ฯลฯ) ที่ข้อความเหมือน BT04 ทุกตัวอักษร ใช้สกิลเดียวกัน
 { const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return f(...a); } finally { MGX--; MGWHO = o; } }; } };   // 016 ริกกี้ คุณตา: ไม่รับผลจาก Magic ฝ่ายตรงข้าม
   Object.keys(MG).forEach(k => w(MG[k])); }
@@ -3844,7 +3951,7 @@ Object.assign(AB, {
       ask(r, i, { text: 'เลือก Magic "คาถา" จาก Deck หรือ นรก 1 ใบ ขึ้นมือ', opts: all.map(o => o.u), cb: us => { const o = all.find(q => q.u === us[0]), c = o && fromZone(r, i, o.z, o.u); if (!c) return; p.hand.push(c); if (o.z === 'deck') shuf(p.deck); vfx(cx.card.u, 'aura', '📜 คาถา ขึ้นมือ', '#a855f7'); log(r, '✨ จอมเวทย์ กาลู: นำ ' + B[c.id].n + ' ขึ้นมือ'); } }); } },
 });
 /* ===== BT07 รอบ 2: Magic / Construct / Life ===== */
-const landOf = (r, id, i) => !!(r.g.land && r.g.land.c.id === id);   // Land เกิดผลทั้งสองฝ่าย
+const landOf = (r, id, i) => !!((r.g.land && r.g.land.c.id === id) || (r.g.land2 && r.g.land2.c.id === id));   // Land เกิดผลทั้งสองฝ่าย
 const isPolice = a => !a.tk && nmOf(a).includes('ตำรวจ');
 const isBank = c => isAv(c) && B[c.id].n.includes('แบงค์');
 const hasWiz = (r, i) => r.p[i].av.some(a => isAv(a) && nmOf(a).includes('จอมเวท'));
@@ -4700,7 +4807,8 @@ const bt9AtkBlock = (r, atk, tgt) => {   // เป้าหมายการโ
   if (tgt.id !== 'BT09-007' && me.av.some(a => a.id === 'BT09-007' && !noFx(r, a) && linked9(r, a))) return true;             // โฮคุ (เฉพาะตอน Link): เลือกโจมตี Avatar ใบอื่นของเราไม่ได้ ยกเว้นโฮคุ
   return false;
 };
-const bt9NoAtk = (r, a) => (a.id === 'BT09-025' && !noFx(r, a)) || hasEq(r, a, 'BT09-065');                  // โลกิ / กระสอบ
+const odyOK5 = (r, a) => { const f = find(r, a.u); if (!f || f.z !== 'av') return true; const O = r.p[f.i].av.filter(x => x.u !== a.u); return O.length > 0 && O.every(x => !x.tk && /ทาโกะ/.test(B[x.id].n)); };   // ODY1-005: โจมตีได้เมื่อ Avatar Zone เรามี ทาโกะ เท่านั้น
+const bt9NoAtk = (r, a) => (a.id === 'BT09-025' && !noFx(r, a)) || hasEq(r, a, 'BT09-065') || (a.id === 'ODY1-005' && !noFx(r, a) && !odyOK5(r, a));                  // โลกิ / กระสอบ
 
 /* ---------- ห่อ P : POWER ต่อเนื่อง ---------- */
 const _P94 = P;
