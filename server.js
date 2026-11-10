@@ -212,8 +212,8 @@ const CRAFT_OWN = 1000, CRAFT_NEW_DUST = 1500, CRAFT_NEW_GEM = 2500, DUST_KEEP =
    - โหมด (mode): any ทุกโหมด / bot เล่นกับบอท / pvp เล่นกับเพื่อน / hard บอทระดับยาก
    - รีเซ็ตตามเวลาไทย (UTC+7): รายวัน 00:00 ทุกวัน, รายสัปดาห์ 00:00 คืนวันอาทิตย์ (เริ่มสัปดาห์ใหม่วันจันทร์)
    - ปรับเควส/รางวัลได้ที่ตาราง QD (รายวัน) QW (รายสัปดาห์) QCH_DEF (ชาเลนจ์ตั้งต้น) QACH (ความสำเร็จ) ในบล็อกนี้ที่เดียว */
-const QM = { any: '', bot: ' (เล่นกับบอท)', pvp: ' (เล่นกับเพื่อน)', hard: ' (เล่นกับบอทระดับยาก)' };
-const QMN = { any: 'ทุกโหมด', bot: 'เล่นกับบอท', pvp: 'เล่นกับเพื่อน', hard: 'บอทระดับยาก' };
+const QM = { any: '', bot: ' (เล่นกับบอท)', pvp: ' (เล่นกับเพื่อน)', hard: ' (เล่นกับบอทระดับยาก)', chal: ' (เล่นกับบอทท้าทาย)' };
+const QMN = { any: 'ทุกโหมด', bot: 'เล่นกับบอท', pvp: 'เล่นกับเพื่อน', hard: 'บอทระดับยาก', chal: 'บอทท้าทาย' };
 const QT = { g: 'เล่นให้ครบ N เกม', w: 'ชนะ N เกม', wf: 'ชนะภายใน 12 เทิร์น N เกม', sm: 'อัญเชิญ Avatar N ใบ', bd: 'ก่อสร้าง Construct N ใบ', mg: 'ใช้ Magic N ใบ', ak: 'โจมตีด้วย Avatar N ครั้ง', us: 'ใช้ความสามารถ N ครั้ง', s5: 'อัญเชิญ Avatar Cost 5 ขึ้นไป N ใบ', op: 'เปิดซองการ์ด N ซอง', cr: 'คราฟการ์ด N ใบ', st: 'ชนะติดต่อกัน N เกม' };
 const QNOMODE = ['op', 'cr', 'st'];   // ตัวนับที่ไม่แยกโหมด
 const qText = (m, md, n) => QT[m].replace('N', n.toLocaleString('en-US')) + (QNOMODE.includes(m) ? '' : (QM[md] || ''));
@@ -302,7 +302,7 @@ function qAdd(d, m, n, modes) {
   (QCH || []).forEach(c => { if (c.m === m && MD.includes(c.md) && !q.ch.includes(c.id)) q.cp[c.id] = (q.cp[c.id] | 0) + n; });
   if (QEV && QEV.length) { const now = Date.now(); QEV.forEach(e => { if (e.off || e.m !== m || !MD.includes(e.md)) return; if (qEvInfo(q, e, now).st === 'open') q.ev[e.id].p = (q.ev[e.id].p | 0) + n; }); }
 }
-const qModes = r => { const md = ['any', r.bot ? 'bot' : 'pvp']; if (r.bot && r.bot.lv >= 3) md.push('hard'); return md; };
+const qModes = r => { const md = ['any', r.bot ? 'bot' : 'pvp']; if (r.bot && r.bot.lv >= 3) md.push('hard'); if (r.bot && r.bot.lv === 4) md.push('chal'); return md; };
 function qGame(d, r, k, win) {   // เรียกตอนเกมจบ: โอนตัวนับในเกมเข้าบัญชี
   const g = r.g, md = qModes(r), c = r.p[k].qc || {}; r.p[k].qc = {};
   Object.entries(c).forEach(([m, n]) => qAdd(d, m, n, md));
@@ -327,9 +327,9 @@ function qEvInfo(q, e, now) {   // สถานะเควส Event ของ�
   if (st === 'open' && !e.acc && !v) v = q.ev[e.id] = { a: now, p: 0, cl: 0, day: T.day };
   return { st, end };
 }
-function qEvRows(q, admin) {
+function qEvRows(q, admin, ch) {
   const now = Date.now();
-  return (QEV || []).filter(e => admin || !e.off).map(e => {
+  return (QEV || []).filter(e => (admin || !e.off) && !!e.ch === !!ch).map(e => {
     const I = qEvInfo(q, e, now), v = q.ev[e.id] || {}, lim = e.lim | 0, full = lim > 0 && (e.cn | 0) >= lim && !v.cl, pe = e.pre && QEV.find(z => z.id === e.pre);
     return { id: e.id, tx: (e.name ? e.name + ' — ' : '') + qText(e.m, e.md, e.need), desc: e.desc || '', p: Math.min(e.need, v.p | 0), n: e.need, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0,
       cards: (e.cards || []).map(c => ({ id: c.id, r: c.r, n: c.n, nm: (B[c.id] && B[c.id].n) || c.id })), cl: v.cl ? 1 : 0, st: I.st, left: I.end && I.st !== 'exp' ? Math.max(0, I.end - now) : 0, startIn: e.start && now < e.start ? e.start - now : 0,
@@ -347,8 +347,8 @@ function qView(d, admin) {
     if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0 };
     const o = qAchR(t, a.md); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0 };
   });
-  const el = qEvRows(q, !!admin), rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl), a: rd(al), e: el.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length };
-  const v = { d: dl, w: wl, c: cl, a: al, e: el, rd: R, red: R.d + R.w + R.c + R.a + R.e, rs: { d: T.dEnd, w: T.wEnd } };
+  const el = qEvRows(q, !!admin, 0), ce = qEvRows(q, !!admin, 1), rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl) + ce.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length, a: rd(al), e: el.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length };
+  const v = { d: dl, w: wl, c: cl.concat(ce), a: al, e: el, rd: R, red: R.d + R.w + R.c + R.a + R.e, rs: { d: T.dEnd, w: T.wEnd } };
   if (admin) v.meta = { m: Object.keys(QT).filter(k => k !== 'st').map(k => [k, QT[k]]), md: Object.keys(QMN).map(k => [k, QMN[k]]) };
   return v;
 }
@@ -358,7 +358,7 @@ function qClaim(d, kind, id, all) {   // รับรางวัล: คืน 
   const q = qInit(d), V = qView(d), tot = { gems: 0, dust: 0, cards: [], n: 0 }, give = o => { qGive(d, o, tot.cards); tot.gems += o.gems | 0; tot.dust += o.dust | 0; tot.n++; };
   const L = (V[kind] || []).filter(x => all || String(x.id) === String(id));
   for (const x of L) {
-    if (kind === 'e') {
+    if (kind === 'e' || (kind === 'c' && x.st)) {
       const e = (QEV || []).find(z => z.id === x.id); if (!e || x.st !== 'open' || x.cl || x.full || x.p < x.n) continue;
       if ((e.lim | 0) > 0) { if ((e.cn | 0) >= (e.lim | 0)) continue; e.cn = (e.cn | 0) + 1; QEVDIRTY = 1; }
       q.ev[e.id].cl = 1; (e.cards || []).forEach(c => { for (let k = 0; k < (c.n | 0); k++) { const o = { id: c.id, r: c.r }; add(d, o); tot.cards.push(o); } });
@@ -430,8 +430,8 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
     });
     const pre = String(m.pre || ''); if (pre && !QEV.some(z => z.id === pre)) E('ไม่พบเควสก่อนหน้า');
     QEV.push({ id: 'e' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), desc: String(m.desc || '').trim().slice(0, 120), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), cards,
-      acc: m.acc ? 1 : 0, start, end, dur: cl(m.dur, 525600), pre, lim: cl(m.lim, 1e6), cn: 0, rep: m.rep ? 1 : 0, off: 0, t: Date.now() });
-    await qEvSave(); sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มเควส Event แล้ว' })); return true;
+      ch: m.ch ? 1 : 0, acc: m.acc ? 1 : 0, start, end, dur: cl(m.dur, 525600), pre, lim: cl(m.lim, 1e6), cn: 0, rep: m.rep ? 1 : 0, off: 0, t: Date.now() });
+    await qEvSave(); sendQ(); ws.send(JSON.stringify({ note: m.ch ? 'เพิ่มชาเลนจ์แล้ว' : 'เพิ่มเควส Event แล้ว' })); return true;
   }
   if (m.t === 'qevdel' || m.t === 'qevtog') {
     const k = QEV.findIndex(c => c.id === String(m.id)); if (k < 0) E('ไม่พบเควส Event');
