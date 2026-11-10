@@ -272,6 +272,11 @@ const QACH = [
   { id: 'a_s5', ic: '🦖', name: 'ยักษ์ใหญ่ (Avatar Cost 5+)', m: 's5', md: 'any', tiers: [5, 25, 100, 250, 500, 1000] },
   { id: 'a_op', ic: '📦', name: 'นักเปิดซอง', m: 'op', md: 'any', tiers: [1, 5, 10, 25, 50, 100, 200, 400, 700, 1000] },
   { id: 'a_cr', ic: '🔮', name: 'ช่างคราฟ', m: 'cr', md: 'any', tiers: [1, 3, 5, 10, 20, 40, 80] }];
+// ===== เควสเพิ่มโดยแอดมินทุกระดับ (รายวัน/รายสัปดาห์/ความสำเร็จ) — เก็บใน sys:qextra · รายวัน/รายสัปดาห์ที่เพิ่มจะแสดงทุกวัน/ทุกสัปดาห์เสมอ (ไม่สุ่ม) =====
+let QEX = { d: [], w: [] }, QEXL = null;
+function qEx() { if (!QEXL) QEXL = dbGet('sys:qextra').then(o => { if (o) { QEX.d = o.d || []; QEX.w = o.w || []; (o.a || []).forEach(a => { if (!QACH.some(z => z.id === a.id)) QACH.push({ ...a, ex: 1 }); }); } return QEX; }); return QEXL; }
+const qExSave = () => dbPut('sys:qextra', { d: QEX.d, w: QEX.w, a: QACH.filter(a => a.ex).map(a => ({ id: a.id, ic: a.ic, name: a.name, m: a.m, md: a.md, tiers: a.tiers, ex: 1 })) });
+setTimeout(() => qEx().catch(() => { }), 0);
 const qAchR = (t, md) => ({ gems: gK((100 + 125 * t) * 2 * (md === 'pvp' ? 1.5 : 1)), dust: t >= 1 ? 200 * t : 0, art: (t >= 3 && (t - 3) % 3 === 0) ? 1 : 0 });   // ของรางวัล x2 (การ์ดเท่าเดิม) · ความสำเร็จโหมดเพื่อน (pvp) gem +50%   // รางวัลต่อขั้น (t เริ่มที่ 0)
 const Q_ART_W = [['SEC', 70], ['PR', 20], ['CBR', 10]];   // การ์ดอาร์ทสุ่ม SEC 70% / PR 20% / CBR 10%
 function qArt() {
@@ -345,11 +350,13 @@ function qView(d, admin) {
   const dI = qPick(QD.length, 10, 'D' + T.day), wI = qPick(QW.length, 30, 'W' + T.wk);
   const dl = dI.map(i => { const t = QD[i]; return mk(qText(t[0], t[1], t[2]), q.dp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.dc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
   const wl = wI.map(i => { const t = QW[i]; return mk(qText(t[0], t[1], t[2]), q.wp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.wc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
+  const xr = (arr, Pg, Cl) => (arr || []).filter(t => !t.off).map(t => Object.assign(mk(qText(t.m, t.md, t.need), Pg[t.m + ':' + t.md], t.need, t, Cl.includes(t.id), t.id), { ex: 1 }));
+  dl.push(...xr(QEX.d, q.dp, q.dc)); wl.push(...xr(QEX.w, q.wp, q.wc));
   const cl = (QCH || []).map(c => Object.assign(mk((c.name ? c.name + ' — ' : '') + qText(c.m, c.md, c.need), q.cp[c.id], c.need, c, q.ch.includes(c.id), c.id), { lim: c.lim | 0, cn: c.cn | 0, full: (c.lim | 0) > 0 && (c.cn | 0) >= (c.lim | 0) && !q.ch.includes(c.id) ? 1 : 0 }));
   const al = QACH.map(a => {
     const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0), t = q.ac[a.id] | 0;
-    if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0 };
-    const o = qAchR(t, a.md); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0 };
+    if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0, ex: a.ex ? 1 : 0 };
+    const o = qAchR(t, a.md); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0, ex: a.ex ? 1 : 0 };
   });
   const el = qEvRows(q, !!admin, 0), ce = qEvRows(q, !!admin, 1), rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl) + ce.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length, a: rd(al), e: el.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length };
   const v = { d: dl, w: wl, c: cl.concat(ce), a: al, e: el, rd: R, red: R.d + R.w + R.c + R.a + R.e, rs: { d: T.dEnd, w: T.wEnd } };
@@ -406,8 +413,8 @@ async function dlHandle(ws, m) {
   return true;
 }
 async function qHandle(ws, m) {   // ข้อความ WebSocket ของระบบเควส (คืน true ถ้าจัดการแล้ว)
-  if (!['qget', 'qclaim', 'qchadd', 'qchdel', 'qevacc', 'qevadd', 'qevdel', 'qevtog'].includes(m.t)) return false;
-  await qCh(); await qEv(); const d = await dbGet(ws.user), adm = ws.user === ADMIN, sendQ = () => ws.send(JSON.stringify({ t: 'qs', q: qView(d, adm) }));
+  if (!['qget', 'qclaim', 'qchadd', 'qchdel', 'qevacc', 'qevadd', 'qevdel', 'qevtog', 'qxadd', 'qxdel'].includes(m.t)) return false;
+  await qCh(); await qEv(); await qEx(); const d = await dbGet(ws.user), adm = ws.user === ADMIN, sendQ = () => ws.send(JSON.stringify({ t: 'qs', q: qView(d, adm) }));
   if (m.t === 'qget') { sendQ(); return true; }
   if (m.t === 'qclaim') {
     const k = ['d', 'w', 'c', 'a', 'e'].includes(m.k) ? m.k : E('ประเภทเควสผิด'), tot = qClaim(d, k, m.id, !!m.all); if (!tot.n) E('ยังรับรางวัลไม่ได้');
@@ -423,6 +430,25 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
     q.ev[e.id] = { a: now, p: 0, cl: 0, day: qTH().day }; await dbPut(ws.user, d); sendQ(); ws.send(JSON.stringify({ note: '📥 รับเควสแล้ว เริ่มนับได้เลย' })); return true;
   }
   if (!adm) E('เฉพาะแอดมิน');
+  if (m.t === 'qxadd' || m.t === 'qxdel') {   // แอดมิน: เพิ่ม/ลบเควส รายวัน (d) / รายสัปดาห์ (w) / ความสำเร็จ (a)
+    const k = String(m.k); if (!['d', 'w', 'a'].includes(k)) E('ประเภทเควสผิด');
+    if (m.t === 'qxdel') {
+      if (k === 'a') { const i = QACH.findIndex(a => a.ex && a.id === String(m.id)); if (i < 0) E('ไม่พบความสำเร็จที่เพิ่มเอง'); QACH.splice(i, 1); }
+      else { const i = QEX[k].findIndex(t => t.id === String(m.id)); if (i < 0) E('ไม่พบเควส'); QEX[k].splice(i, 1); }
+      await qExSave(); sendQ(); ws.send(JSON.stringify({ note: 'ลบเควสแล้ว' })); return true;
+    }
+    const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md);
+    if (!QT[M] || (k !== 'a' && M === 'st') || (!QM[MD] && MD !== 'any')) E('ชนิดเควสไม่ถูกต้อง');
+    if (k === 'a') {
+      const tiers = [...new Set(String(m.tiers || '').split(/[\s,]+/).map(s => cl(s, 1e8)).filter(n => n > 0))].sort((x, y) => x - y).slice(0, 20); if (!tiers.length) E('ใส่ขั้นเป้าหมาย เช่น 5,20,50');
+      const name = String(m.name || '').trim().slice(0, 40); if (!name) E('ใส่ชื่อความสำเร็จ');
+      QACH.push({ id: 'ax' + Date.now().toString(36), ic: String(m.ic || '🏅').trim().slice(0, 4) || '🏅', name, m: M, md: MD, tiers, ex: 1 });
+    } else {
+      const need = cl(m.need, 1e7); if (!need) E('ใส่จำนวนเป้าหมาย');
+      QEX[k].push({ id: 'x' + k + Date.now().toString(36), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), t: Date.now() });
+    }
+    await qExSave(); sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มเควสแล้ว' })); return true;
+  }
   if (m.t === 'qevadd') {
     const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), ts = v => { v = +v; return v > 0 && isFinite(v) ? Math.floor(v) : 0; };
     const M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md); if (!QT[M] || M === 'st' || (!QM[MD] && MD !== 'any')) E('ชนิดเควสไม่ถูกต้อง');
