@@ -732,10 +732,11 @@ function reactOK0(r, i, c, def) { const p = r.g.pend; if (!p || p.who !== i) ret
   if (def.react === 'atkAv') return p.k === 'atk' && p.tk === 'av' && r.p[i].av.some(a => a.u === p.tg);
   if (def.react === 'never') return false;
   return true; }
+const oppTg = (i, S) => S.map(s => s.key === 'tg' && (s.n || 1) === 1 ? { ...s, opts: (...a) => { const r = a[0]; return [...new Set([...s.opts(...a), ...r.p[1 - i].av.filter(x => !protectedFrom(r, i, x, 1)).map(x => x.u)])]; } } : s);   // สวมใส่ให้ Avatar ฝ่ายตรงข้ามได้ทุกใบ (ตัวเราใช้เงื่อนไขเดิม)
 function startCast(r, i, f, c, def, pre) {
   const g = r.g, ctx = { ev: g.pend && g.pend.ev, pend: g.pend, pick: {}, card: f.c };
   if (def.cond && !def.cond(r, i)) E('เงื่อนไขการใช้ไม่ครบ');
-  const steps = bt8CampF(r, i, f.c, bt7WearF(c, ((S0) => def.mod ? bt6WearSteps(r, i, S0) : S0)(def.steps || (def.mod ? [{ key: 'tg', text: 'เลือก Avatar ที่จะสวมใส่ ' + c.n, opts: (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x, 1) && (!def.tgf || def.tgf(a.x))).map(a => a.x.u) }] : []))));
+  const steps = bt8CampF(r, i, f.c, bt7WearF(c, ((S0) => def.mod ? bt6WearSteps(r, i, oppTg(i, S0)) : S0)(def.steps || (def.mod ? [{ key: 'tg', text: 'เลือก Avatar ที่จะสวมใส่ ' + c.n, opts: (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x, 1) && (!def.tgf || def.tgf(a.x))).map(a => a.x.u) }] : []))));
   for (const s of steps) if (s.opts(r, i, ctx).length < (s.min == null ? (s.n || 1) : s.min)) E('เงื่อนไขการใช้ไม่ครบ');
   if (pre != null) steps.forEach(s => { if (s.key === 'tg' && (s.n || 1) === 1 && s.opts(r, i, ctx).includes(pre)) ctx.pick.tg = [pre]; });   // แตะ/ลากไอเทมไปที่ Avatar ตรงๆ ข้ามขั้นเลือกเป้า
   let k = 0;
