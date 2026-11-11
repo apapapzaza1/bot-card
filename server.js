@@ -340,13 +340,13 @@ function qEvRows(q, admin, ch) {
   const now = Date.now();
   return (QEV || []).filter(e => (admin || !e.off) && !!e.ch === !!ch).map(e => {
     const I = qEvInfo(q, e, now), v = q.ev[e.id] || {}, lim = e.lim | 0, full = lim > 0 && (e.cn | 0) >= lim && !v.cl, pe = e.pre && QEV.find(z => z.id === e.pre);
-    return { id: e.id, tx: (e.name ? e.name + ' — ' : '') + qText(e.m, e.md, e.need), desc: e.desc || '', p: Math.min(e.need, v.p | 0), n: e.need, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0,
+    return { id: e.id, tx: (e.name ? e.name + ' — ' : '') + qText(e.m, e.md, e.need), desc: e.desc || '', p: Math.min(e.need, v.p | 0), n: e.need, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0, eb: e.eb || null,
       cards: (e.cards || []).map(c => ({ id: c.id, r: c.r, n: c.n, nm: (B[c.id] && B[c.id].n) || c.id })), cl: v.cl ? 1 : 0, st: I.st, left: I.end && I.st !== 'exp' ? Math.max(0, I.end - now) : 0, startIn: e.start && now < e.start ? e.start - now : 0,
       acc: e.acc ? 1 : 0, dur: e.dur | 0, rep: e.rep ? 1 : 0, pre: pe ? (pe.name || qText(pe.m, pe.md, pe.need)) : '', lim, cn: e.cn | 0, full: full ? 1 : 0, off: e.off ? 1 : 0 };
   });
 }
 function qView(d, admin) {
-  const q = qInit(d), T = qTH(), mk = (tx, p, n, o, cl, id) => ({ id, tx, p: Math.min(n, p | 0), n, gems: o.gems | 0, dust: o.dust | 0, art: o.art | 0, cl: cl ? 1 : 0 });
+  const q = qInit(d), T = qTH(), mk = (tx, p, n, o, cl, id) => ({ id, tx, p: Math.min(n, p | 0), n, gems: o.gems | 0, dust: o.dust | 0, art: o.art | 0, eb: o.eb || null, cl: cl ? 1 : 0 });
   const dI = qPick(QD.length, 10, 'D' + T.day), wI = qPick(QW.length, 30, 'W' + T.wk);
   const dl = dI.map(i => { const t = QD[i]; return mk(qText(t[0], t[1], t[2]), q.dp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.dc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
   const wl = wI.map(i => { const t = QW[i]; return mk(qText(t[0], t[1], t[2]), q.wp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.wc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
@@ -360,11 +360,12 @@ function qView(d, admin) {
   });
   const el = qEvRows(q, !!admin, 0), ce = qEvRows(q, !!admin, 1), rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl) + ce.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length, a: rd(al), e: el.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length };
   const v = { d: dl, w: wl, c: cl.concat(ce), a: al, e: el, rd: R, red: R.d + R.w + R.c + R.a + R.e, rs: { d: T.dEnd, w: T.wEnd } };
-  if (admin) v.meta = { m: Object.keys(QT).filter(k => k !== 'st').map(k => [k, QT[k]]), md: Object.keys(QMN).map(k => [k, QMN[k]]) };
+  if (admin) v.meta = { m: Object.keys(QT).filter(k => k !== 'st').map(k => [k, QT[k]]), md: Object.keys(QMN).map(k => [k, QMN[k]]), eb: EVENT_BOX_SETS };
   return v;
 }
 const qRed = d => { try { return qView(d).red; } catch (e) { return 0; } };
-function qGive(d, o, cards) { d.gems += o.gems | 0; d.dust = (d.dust || 0) + (o.dust | 0); for (let k = 0; k < (o.art | 0); k++) { const c = qArt(); if (c) { add(d, c); cards.push(c); } } }
+function qGive(d, o, cards) { d.gems += o.gems | 0; d.dust = (d.dust || 0) + (o.dust | 0); for (let k = 0; k < (o.art | 0); k++) { const c = qArt(); if (c) { add(d, c); cards.push(c); } }
+  if (o.eb && o.eb.n > 0) for (let k = 0; k < o.eb.n; k++) { const set = o.eb.set === 'ANY' ? pick(EVENT_BOX_SETS) : o.eb.set; if (EVENT_BOX_SETS.includes(set)) grantEventBox(d, set, 1).forEach(x => cards.push(x)); } }   // รางวัลกล่องอีเวนต์: สุ่มเปิดซอง (ซองละ 5 ใบ) ใส่บัญชี · set = 'ANY' คือสุ่มทุกกล่อง
 function qClaim(d, kind, id, all) {   // รับรางวัล: คืน { gems, dust, cards, n }
   const q = qInit(d), V = qView(d), tot = { gems: 0, dust: 0, cards: [], n: 0 }, give = o => { qGive(d, o, tot.cards); tot.gems += o.gems | 0; tot.dust += o.dust | 0; tot.n++; };
   const L = (V[kind] || []).filter(x => all || String(x.id) === String(id));
@@ -412,6 +413,7 @@ async function dlHandle(ws, m) {
   } finally { DL_BUSY.delete(u); }
   return true;
 }
+const qEbIn = m => { const s = String(m.ebs || '').toUpperCase(); if (!s) return null; if (s !== 'ANY' && !EVENT_BOX_SETS.includes(s)) E('ไม่มีกล่องอีเวนต์ ' + s); return { set: s, n: Math.max(1, Math.min(20, m.ebn | 0 || 1)) }; };   // รางวัลกล่องอีเวนต์ของเควส (แอดมินเลือกกล่อง/สุ่มทุกกล่อง + จำนวนซอง)
 async function qHandle(ws, m) {   // ข้อความ WebSocket ของระบบเควส (คืน true ถ้าจัดการแล้ว)
   if (!['qget', 'qclaim', 'qchadd', 'qchdel', 'qevacc', 'qevadd', 'qevdel', 'qevtog', 'qxadd', 'qxdel'].includes(m.t)) return false;
   await qCh(); await qEv(); await qEx(); const d = await dbGet(ws.user), adm = ws.user === ADMIN, sendQ = () => ws.send(JSON.stringify({ t: 'qs', q: qView(d, adm) }));
@@ -445,7 +447,7 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
       QACH.push({ id: 'ax' + Date.now().toString(36), ic: String(m.ic || '🏅').trim().slice(0, 4) || '🏅', name, m: M, md: MD, tiers, ex: 1 });
     } else {
       const need = cl(m.need, 1e7); if (!need) E('ใส่จำนวนเป้าหมาย');
-      QEX[k].push({ id: 'x' + k + Date.now().toString(36), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), t: Date.now() });
+      QEX[k].push({ id: 'x' + k + Date.now().toString(36), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), eb: qEbIn(m), t: Date.now() });
     }
     await qExSave(); sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มเควสแล้ว' })); return true;
   }
@@ -459,7 +461,7 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
       if (!(B[id].v || []).includes(r)) E('การ์ด ' + id + ' ไม่มีความหายาก "' + r + '" (มี: ' + (B[id].v || []).join('/') + ')'); return { id, r, n: cl(n0 || 1, 20) || 1 };
     });
     const pre = String(m.pre || ''); if (pre && !QEV.some(z => z.id === pre)) E('ไม่พบเควสก่อนหน้า');
-    QEV.push({ id: 'e' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), desc: String(m.desc || '').trim().slice(0, 120), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), cards,
+    QEV.push({ id: 'e' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), desc: String(m.desc || '').trim().slice(0, 120), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), eb: qEbIn(m), cards,
       ch: m.ch ? 1 : 0, acc: m.acc ? 1 : 0, start, end, dur: cl(m.dur, 525600), pre, lim: cl(m.lim, 1e6), cn: 0, rep: m.rep ? 1 : 0, off: 0, t: Date.now() });
     await qEvSave(); sendQ(); ws.send(JSON.stringify({ note: m.ch ? 'เพิ่มชาเลนจ์แล้ว' : 'เพิ่มเควส Event แล้ว' })); return true;
   }
@@ -472,7 +474,7 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
   if (m.t === 'qchadd') {
     const M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md); if (!QT[M] || M === 'st' || !QM[MD] && MD !== 'any') E('ชนิดชาเลนจ์ไม่ถูกต้อง');
     const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), need = cl(m.need, 1e6); if (!need) E('ใส่จำนวนเป้าหมาย');
-    L.push({ id: 'c' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), m: M, md: MD, need, gems: cl(m.gems, 1e6), dust: cl(m.dust, 1e6), art: cl(m.art, 20), lim: cl(m.lim, 1e6), cn: 0, t: Date.now() });
+    L.push({ id: 'c' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), m: M, md: MD, need, gems: cl(m.gems, 1e6), dust: cl(m.dust, 1e6), art: cl(m.art, 20), eb: qEbIn(m), lim: cl(m.lim, 1e6), cn: 0, t: Date.now() });
     await dbPut('sys:challenges', { list: L }); QCH = L; sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มชาเลนจ์แล้ว' })); return true;
   }
   const k = L.findIndex(c => c.id === String(m.id)); if (k < 0) E('ไม่พบชาเลนจ์');
@@ -499,7 +501,7 @@ function pack(set, gar, K) {
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
 }
 /* ===== EVENT BOX (หลังบ้าน): ซองละ 5 ใบ · ช่อง 1-3 = ช่องพื้นฐาน, ช่อง 4 = ช่องกลาง, ช่อง 5 = ช่องลุ้น · เรทเน้นให้ได้ยากไว้ก่อน (ยากกว่าตู้ BT ปกติ)
-   ยังไม่ผูกกับร้านค้า — ใช้จาก: evPack(set) / grantEventBox(d, set, n) (ให้การ์ดเข้าบัญชีผู้เล่น สำหรับรางวัลอีเวนต์) / แอดมินส่ง {t:'evbox', set, n} เพื่อดูเรท+จำลองเปิด (ไม่บันทึก) */
+   ไม่อยู่ในร้านค้า — แจกเป็นรางวัลเควส (ฟิลด์ eb ของเควส → qGive) · ใช้จาก: evPack(set) / grantEventBox(d, set, n) (ให้การ์ดเข้าบัญชีผู้เล่น สำหรับรางวัลอีเวนต์) / แอดมินส่ง {t:'evbox', set, n} เพื่อดูเรท+จำลองเปิด (ไม่บันทึก) */
 const EVENT_BOX_SETS = ['ODY1', 'PRMO', 'PRE0', 'FPRO', 'SL01', 'SL02'];
 const EVW = {
   base: { C: 86, R: 12, SR: 1.7, UR: .25, SEC: .04, PR: .01 },
