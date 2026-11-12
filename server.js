@@ -2173,7 +2173,7 @@ wss.on('connection', ws => {
             if (old >= 0) { T.list.splice(old, 1); note = '🌐 อัปเดตเด็ค "' + nm + '" ในสาธารณะแล้ว'; } else note = '🌐 แชร์เด็ค "' + nm + '" ลงสาธารณะแล้ว';
             T.list.unshift(e);
           }
-          await dbPut('sys:pubdecks', T); ws.send(pdMsg(T, note));
+          await dbPut('sys:pubdecks', T); PUBD.list = T.list || []; PUBD.t = Date.now(); ws.send(pdMsg(T, note));
         }); return;
       }
       if (m.t === 'savedeck') {
@@ -2240,7 +2240,7 @@ wss.on('connection', ws => {
       if (m.t === 'bot') {
         if (rjRoom(ws.user)) E('มีเกมค้างอยู่ กดกลับเข้าเกมก่อน');
         Object.keys(rooms).filter(c => rooms[c].bot && !rooms[c].g && rooms[c].p[0] && rooms[c].p[0].name === ws.user).forEach(c => dropRoom(c));
-        const lv = [1, 2, 3, 4].includes(+m.lvl) ? +m.lvl : 2, code = 'BOT' + Math.random().toString(36).slice(2, 6).toUpperCase();
+        const lv = [1, 2, 3, 4].includes(+m.lvl) ? +m.lvl : 2; if (lv === 4) await pubLoad(); const code = 'BOT' + Math.random().toString(36).slice(2, 6).toUpperCase();
         const mkP = name => ({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] });
         r = rooms[code] = { p: [mkP(ws.user), mkP('บอท (' + BOT_LV[lv].n + ')')], g: null, code, exp: Date.now() + 18e5, cfg: { clock: 0, react: 0, ban: true }, bot: { lv, tried: new Set(), at: 0, fail: 0, tn: -1, w: null, arm: null } };
         i = 0; const bp = r.p[1], bd = botDeck(); bp.bot = 1; bp.eq = {}; bp.deck = shuf(bd.main.map(inst)); bp.life = shuf(bd.life.map(id => ({ ...inst(id), up: 0 })));
@@ -7422,7 +7422,7 @@ const chIds = o => Object.entries(o || {}).flatMap(([id, n]) => Array(n | 0).fil
 const chHash = s => { const a = s.main.slice().sort().join(',') + '|' + s.life.slice().sort().join(','); let h = 5381; for (let i = 0; i < a.length; i++) h = ((h << 5) + h + a.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
 const chMem = () => { if (!CH.dm) CH.dm = {}; if (!CH.dw) CH.dw = []; if (!CH.bd) CH.bd = {}; return CH; };
 const chRate = x => ((x.w | 0) + 1) / ((x.g | 0) + 2);
-const CH_SRC = { bd: 'ใช้เด็คที่เคยชนะมาก่อน', mirror: 'ต่อยอดจากเด็คที่จำได้ของผู้เล่น', win: 'ต่อยอดจากเด็คผู้ชนะที่จำไว้', new: 'ประกอบใหม่จากสถิติ', pre: 'เด็คสำเร็จรูป', st: 'ต่อยอดจากเด็คสำเร็จรูป' };
+const CH_SRC = { bd: 'ใช้เด็คที่เคยชนะมาก่อน', mirror: 'ต่อยอดจากเด็คที่จำได้ของผู้เล่น', win: 'ต่อยอดจากเด็คผู้ชนะที่จำไว้', new: 'ประกอบใหม่จากสถิติ', pub: 'เด็คสาธารณะ', pre: 'เด็คสำเร็จรูป', st: 'ต่อยอดจากเด็คสำเร็จรูป' };
 function chDeckLearn(r, w) {
   chMem(); const now = Date.now(), vsBot = !!(r.bot && r.bot.lv === 4);
   r.p.forEach((p, k) => {
@@ -7462,7 +7462,7 @@ function chScoreDeck(d, name, pred) {   // คะแนนคาดการณ�
   if (d.src === 'win') s += .5;             // เด็คผู้ชนะที่จำไว้
   return s;
 }
-function chalDeck(name) {
+function chalDeckBuild(name) {
   chMem(); const pred = chPredict(name), oi = pred ? pred.oi : { col: '', only: '', avgP: 2.5 };
   const ok = d => d && d.main.length === 50 && d.life.length === 5 && !deckViol(d.main, d.life).length && !banViol(d.main).length;
   const cands = [], seen = new Set(), push = (d, src) => { if (!ok(d)) return; const h = chHash(d); if (seen.has(h)) return; seen.add(h); d.src = src; cands.push(d); };
@@ -7482,11 +7482,58 @@ function chalDeck(name) {
   cands.forEach(d => { d.sc = chScoreDeck(d, name, pred) + Math.random() * .4; });
   cands.sort((a, b) => b.sc - a.sc); return cands[0];
 }
+
+// ---------- เด็คสาธารณะสำหรับบอทโหมดท้าทาย ----------
+const PUBD = { list: [], t: 0 }, PUBFIX = new Map();
+async function pubLoad() { try { const T = await dbGet('sys:pubdecks'); PUBD.list = (T && T.list) || []; PUBD.t = Date.now(); } catch (e) { console.error('pubLoad', e); } }
+function pdViol(main, life) { try { return deckViol(main, life).concat(banViol(main)); } catch (e) { return ['err']; } }
+// ซ่อมเด็คสาธารณะที่ผิดกติกา/ติดแบน: ตัดใบที่ทำให้ผิดออก แล้วเติมด้วยใบที่มีอยู่ในเด็คเดียวกัน (ไม่เปลี่ยนสีหลักของเด็ค)
+function pdFix(e) {
+  const key = e.id + '@' + (e.at || 0); if (PUBFIX.has(key)) return PUBFIX.get(key);
+  let res = null;
+  try {
+    let main = (e.main || []).filter(i => B[i]), life = (e.life || []).filter(i => B[i]);
+    const cntV = (m, l) => pdViol(m, l).filter(v => !/^Main/.test(v)).length;
+    if (life.length === 5 && !pdViol(main, life).length && main.length === 50) res = { main, life, vr: e.vr || {}, fixed: 0 };
+    else if (life.length === 5) {
+      let removed = 0;
+      for (let t = 0; t < 40 && cntV(main, life) > 0; t++) {
+        const base = cntV(main, life); let bi = -1, bv = base;
+        for (let k = main.length - 1; k >= 0; k--) { const m2 = main.slice(0, k).concat(main.slice(k + 1)), v = cntV(m2, life); if (v < bv) { bv = v; bi = k; } }
+        if (bi < 0) break; main.splice(bi, 1); removed++;
+      }
+      if (cntV(main, life) === 0 && main.length >= 30) {
+        const pool = [...new Set(main)].filter(i => B[i].t !== 'Life').sort((a, b) => main.filter(x => x === b).length - main.filter(x => x === a).length);
+        for (let g = 0; g < 200 && main.length < 50; g++) { let add = false; for (const id of pool) { const m2 = main.concat(id); if (cntV(m2, life) === 0) { main = m2; add = true; break; } } if (!add) break; }
+        if (main.length === 50 && !pdViol(main, life).length) res = { main, life, vr: removed ? {} : (e.vr || {}), fixed: removed };
+      }
+    }
+  } catch (err) { console.error('pdFix', err); }
+  PUBFIX.set(key, res); if (PUBFIX.size > 600) PUBFIX.clear(); return res;
+}
+function pubCands() {
+  const out = [], seen = new Set();
+  for (const e of PUBD.list || []) { const f = pdFix(e); if (!f) continue; const d = { main: f.main.slice(), life: f.life.slice(), vr: f.vr, src: 'pub', pname: e.name, powner: e.owner }, h = chHash(d); if (seen.has(h)) continue; seen.add(h); d.col = chDeckInfo(d).col; out.push(d); }
+  return out;
+}
+// ผสม: ส่วนใหญ่เลือกเด็คที่สวนเด็คผู้เล่นได้ดีสุด (เดาจากประวัติเด็คที่ผู้เล่นเคยใช้) ส่วนหนึ่งสุ่มเพื่อไม่ให้ซ้ำซาก
+function chalDeck(name) {
+  try {
+    const cands = pubCands();
+    if (cands.length) {
+      chMem(); const pred = chPredict(name);
+      if (cands.length > 1 && Math.random() < .25) return cands[Math.floor(Math.random() * cands.length)];
+      cands.forEach(d => { d.sc = chScoreDeck(d, name, pred) + Math.random() * .5; });
+      cands.sort((a, b) => b.sc - a.sc); return cands[0];
+    }
+  } catch (e) { console.error('chalDeck pub', e); }
+  return chalDeckBuild(name);
+}
 function chalPrep(r) {
   const k = botIdx(r), hu = r.p[1 - k], bt = r.bot, bp = r.p[k];
   const d = chalDeck(hu.name);   // เล่นแฟร์: ไม่แตะ hu.deck / hu.life ของเกมนี้
-  bp.deck = shuf(d.main.map(inst)); bp.life = shuf(d.life.map(id => ({ ...inst(id), up: 0 })));
-  const arm = chArmPick(); bt.arm = arm.id; bt.w = chAdapt(arm.w, hu.name); bt.dcol = d.col || ''; bt.dsrc = d.src || ''; bt.ot = 0; bt.otn = -1; bt.played = []; bt.cmb = chCombos(hu.name);
+  { const y = deckInsts({ main: d.main, life: d.life, vr: d.vr || {}, art: {} }); bp.deck = y.deck; bp.life = y.life; }
+  const arm = chArmPick(); bt.arm = arm.id; bt.w = chAdapt(arm.w, hu.name); bt.dcol = d.col || ''; bt.dsrc = d.src || ''; bt.dname = d.pname || ''; bt.ot = 0; bt.otn = -1; bt.played = []; bt.cmb = chCombos(hu.name);
 }
 // ---------- hook: เริ่มเกม (สแนปช็อตเด็ค) / นับพฤติกรรม / จบเกม (เรียนรู้) ----------
 const _beginCH = begin;
@@ -7494,7 +7541,7 @@ begin = function (r) {
   try { if (r.bot && r.bot.lv === 4) chalPrep(r); } catch (e) { console.error('chalPrep', e); }
   try { r.snap = r.p.map(p => ({ main: p.deck.map(c => c.id), life: p.life.map(c => c.id) })); } catch (e) { r.snap = null; }
   const out = _beginCH(r);
-  try { if (r.bot && r.bot.lv === 4 && r.g) r.g.log.push('🤖 บอทท้าทาย: ประกอบเด็คเอง' + (r.bot.dcol ? ' (สี' + r.bot.dcol + ')' : '') + (r.bot.dsrc ? ' · ' + (CH_SRC[r.bot.dsrc] || '') : '') + ' · เรียนรู้มาแล้ว ' + CH.n + ' เกม'); } catch (e) { }
+  try { if (r.bot && r.bot.lv === 4 && r.g) r.g.log.push('🤖 บอทท้าทาย: ประกอบเด็คเอง' + (r.bot.dcol ? ' (สี' + r.bot.dcol + ')' : '') + (r.bot.dsrc ? ' · ' + (CH_SRC[r.bot.dsrc] || '') + (r.bot.dname ? ' "' + r.bot.dname + '"' : '') : '') + ' · เรียนรู้มาแล้ว ' + CH.n + ' เกม'); } catch (e) { }
   return out;
 };
 /* ----- จำ "เทคนิค" ของผู้เล่น: เลือกเป้าตี / จังหวะ React / ลำดับเปิดเกม / คอมโบ ----- */
