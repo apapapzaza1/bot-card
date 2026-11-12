@@ -7,10 +7,15 @@ FORCE_ONLY1.forEach(id => { if (B[id]) B[id].o = 'Only #1'; });
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.9.1';
+const VERSION = process.env.APP_VERSION || 'v1.9.2';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.9.2', d: '2026-11-12', items: [
+    'ปรับเรทสุ่ม "ทุกตู้" ให้ยากขึ้น: ตู้ BT (ช่อง Rare / ช่องลุ้น / ช่องการันตี), BOC (CC), กล่องอีเวนต์หลังบ้าน และการสุ่ม UR+ ตอนซื้อเด็คสำเร็จรูปซ้ำ',
+    'แก้เรท "ต่อใบ" กลับด้าน: เดิม PR / CBR (มี 1 ใบต่อชุด) ออกง่ายกว่า SEC แต่ละใบ — ตอนนี้ระบบบังคับให้การ์ดแต่ละใบของ PR ออกยากกว่า SEC และ CBR ยากกว่า PR (ยากขึ้นเป็นขั้นอย่างน้อย 2 เท่า) ทุกชุด · หน้า "เรท" แสดงเลขตรงกับที่สุ่มจริง',
+    'ปรับให้ SEC ออกง่ายขึ้นมาก (ประมาณ 4 เท่าจากเรทรอบแรกของ v1.9.2) ห่างจาก PR / CBR ชัดเจน ทุกตู้ · BOC: UR เพิ่มเล็กน้อยเพื่อให้ UR ต่อใบยังง่ายกว่า SEC',
+  ] },
   { v: 'v1.9.1', d: '2026-11-10', items: [
     'แก้บัค: ปุ่ม "จบเทิร์น" ข้าม End Phase — ตอนนี้เข้า End Phase ก่อนจบเทิร์น สกิล End Phase (เช่น อินาริ โอคามิ จั่วการ์ด) ทำงานปกติ',
     'แก้บัค: ศาลพระภูมิ ถูกเลือกเป็นเป้าโจมตีไม่ได้ เมื่อมี Avatar {ผี} ใบอื่นบน Avatar Zone',
@@ -202,7 +207,7 @@ const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => {
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','CC01','CC02'];
 // BOC (CC): ซองละ 5 ใบ ใบ 1-4 = SR, ใบที่ 5 = ช่องลุ้น · ราคา 200/1,800 · การันตีแยกจาก BT (ทุก 20 ซอง)
 const isCC = set => /^CC/.test(set), CC_PITY = 20;
-const CCW = { SR: 90, UR: 7, SEC: 2.5, PR: .5 }, CCG = { UR: 90, SEC: 9, PR: 1 };
+const CCW = { SR: 82.97, UR: 10, SEC: 7, PR: .03 }, CCG = { UR: 74.9, SEC: 25, PR: .1 };   // v1.9.2: เรทยากขึ้น · PR ต่อใบยากกว่า SEC ต่อใบเสมอ (ดู capPC)
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
 const RT = ART_R;   // ลำดับระดับ ต่ำ→สูง (ใช้ชุดเดียวกับการสแกนชื่อไฟล์)
@@ -488,15 +493,28 @@ function qCount(r, i, m, pre) {   // นับการลงการ์ด/โ
 }
 /* ===================== จบระบบเควส ===================== */
 
-const RW = { R: 92, SR: 7, UR: .8, SEC: .15, PR: .03, CBR: .015, USEC: .005 };
-const CW = { R: 70, SR: 24, UR: 4.5, SEC: 1, PR: .3, CBR: .15, USEC: .05 };
-const GW = { UR: 90, SEC: 8.5, PR: 1, CBR: .4, USEC: .1 };
+const RW = { R: 92.795, SR: 6, UR: .6, SEC: .6, PR: .003, CBR: .0015, USEC: .0005 };   // ช่อง Rare (v1.9.2 ปรับให้ยากขึ้น)
+const CW = { R: 70.267, SR: 23, UR: 3.5, SEC: 3.2, PR: .02, CBR: .01, USEC: .003 };   // ช่องลุ้น (v1.9.2)
+const GW = { UR: 74.66, SEC: 25, PR: .2, CBR: .1, USEC: .04 };   // ช่องลุ้นตอนการันตี (v1.9.2)
 function eff(av, W) { const o = {}; for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : 'C'; o[tt] = (o[tt] || 0) + w; } return o; }
+/* กันเรท "ต่อใบ" กลับด้าน — ตั้งแต่ระดับ UR ขึ้นไป โอกาสได้ "การ์ดแต่ละใบ" ของระดับที่หายากกว่า ต้องไม่เกิน PC_RATIO (ครึ่งหนึ่ง) ของระดับก่อนหน้า (UR > SEC > PR > CBR > USEC)
+   เหตุผล: PR/CBR มีแค่ 1 ใบต่อชุด แต่ SEC มี 13-30 ใบ ถ้าดูแค่เรทต่อระดับ การ์ด PR 1 ใบจะออกง่ายกว่า SEC แต่ละใบ · cnt(t) = จำนวนใบระดับ t ในกล่อง (ค่ารวมถูก normalize ตอนสุ่ม) */
+const PC_RATIO = 0.5;
+function capPC(e, cnt) {
+  const o = { ...e }, from = RT.indexOf('UR'); let prev = null;
+  for (const t of RT) {
+    if (RT.indexOf(t) < from || !(o[t] > 0)) continue;
+    const n = Math.max(1, cnt(t) | 0);
+    if (prev != null) o[t] = Math.min(o[t], prev * PC_RATIO * n);
+    prev = o[t] / n;
+  }
+  return o;
+}
 function pack(set, gar, K) {
   K = K || {}; const R = K.R || (K.R = (() => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => o.push({ id: c.id, r }))); return o; })());
   const av = K.av || (K.av = new Set(R.map(x => x.r))), by = r => (K.by = K.by || {})[r] || (K.by[r] = R.filter(x => x.r === r));
-  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(W).filter(([t]) => av.has(t)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
-  const roll = W => { const e = eff(av, W), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return 'R'; };
+  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(capPC(Object.fromEntries(Object.entries(W).filter(([t]) => av.has(t))), t => by(t).length)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
+  const roll = W => { const e = capPC(eff(av, W), t => by(t).length), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return 'R'; };
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
 }
@@ -504,9 +522,9 @@ function pack(set, gar, K) {
    ไม่อยู่ในร้านค้า — แจกเป็นรางวัลเควส (ฟิลด์ eb ของเควส → qGive) · ใช้จาก: evPack(set) / grantEventBox(d, set, n) (ให้การ์ดเข้าบัญชีผู้เล่น สำหรับรางวัลอีเวนต์) / แอดมินส่ง {t:'evbox', set, n} เพื่อดูเรท+จำลองเปิด (ไม่บันทึก) */
 const EVENT_BOX_SETS = ['ODY1', 'PRMO', 'PRE0', 'FPRO', 'SL01', 'SL02'];
 const EVW = {
-  base: { C: 86, R: 12, SR: 1.7, UR: .25, SEC: .04, PR: .01 },
-  mid: { C: 62, R: 28, SR: 7.5, UR: 2, SEC: .4, PR: .1 },
-  top: { R: 64, SR: 26, UR: 8, SEC: 1.5, PR: .4, CBR: .08, USEC: .02 },
+  base: { C: 87.336, R: 11.2, SR: 1.3, UR: .08, SEC: .08, PR: .004 },
+  mid: { C: 64.37, R: 27, SR: 6.5, UR: 1.3, SEC: .8, PR: .03 },
+  top: { R: 64, SR: 25, UR: 6.8, SEC: 4, PR: .15, CBR: .04, USEC: .01 },
 };
 const EVS = ['base', 'base', 'base', 'mid', 'top'];
 const evEff = (av, W) => { const o = {}, have = RT.filter(t => av.has(t)); for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : have[0]; o[tt] = (o[tt] || 0) + w; } return o; };   // ระดับที่ไม่มีในกล่อง → ปัดลงไประดับที่มีจริง (ถ้าต่ำกว่าทุกระดับ → ระดับต่ำสุดที่มี)
@@ -514,13 +532,13 @@ const evPool = set => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '
 function evPack(set, K) {
   K = K || {}; const R = K.R || (K.R = evPool(set)); if (!R.length) return [];
   const av = K.av || (K.av = new Set(R.map(x => x.r))), by = r => (K.by = K.by || {})[r] || (K.by[r] = R.filter(x => x.r === r));
-  const roll = W => { const e = evEff(av, W), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return [...av][0]; };
+  const roll = W => { const e = capPC(evEff(av, W), t => by(t).length), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return [...av][0]; };
   const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); };
   return EVS.map(s => g(roll(EVW[s])));
 }
 function evRates(set) {   // เรทต่อใบ/ต่อซอง + จำนวนการ์ดแต่ละระดับในกล่อง
   const R = evPool(set), av = new Set(R.map(x => x.r)), cnt = {}; R.forEach(x => cnt[x.r] = (cnt[x.r] || 0) + 1);
-  const slots = EVS.map(s => { const e = evEff(av, EVW[s]), tot = Object.values(e).reduce((a, b) => a + b, 0), o = {}; for (const [t, w] of Object.entries(e)) o[t] = +(w / tot * 100).toFixed(3); return o; });
+  const slots = EVS.map(s => { const e = capPC(evEff(av, EVW[s]), t => cnt[t] || 0), tot = Object.values(e).reduce((a, b) => a + b, 0), o = {}; for (const [t, w] of Object.entries(e)) o[t] = +(w / tot * 100).toFixed(3); return o; });
   const per = {}; slots.forEach(sl => { for (const [t, v] of Object.entries(sl)) per[t] = +((per[t] || 0) + v / 100).toFixed(4); });
   return { set, cards: R.length, count: cnt, slots, perPack: per };
 }
@@ -2122,8 +2140,8 @@ wss.on('connection', ws => {
         if (d.gems < 1500) E('Gem ไม่พอ');
         d.gems -= 1500;
         if (!again) { d.bought.push(m.set); giveSt(d, m.set); (d.stg = d.stg || []).includes(m.set) || d.stg.push(m.set); await dbPut(ws.user, d); me_(d); return; }
-        // ซื้อซ้ำ: ได้การ์ดครบกล่องอีกชุด · การ์ดระดับ UR ในกล่องสุ่มเป็น UR ขึ้นไป เรท 90 / 7 / 2.5 / 0.5 ตามความยาก (เรียงตามระดับที่การ์ดใบนั้นมีจริง)
-        const LEGR = { UBR: 'CBR', SCR: 'SEC' }, WUR = { UR: 90, SEC: 7, PR: 2.5, CBR: 0.5 }, got = [];   // เรทคงที่ตามระดับ UR 90 / SEC 7 / PR 2.5 / CBR 0.5 (ระดับที่การ์ดใบนั้นไม่มีรูป → ข้าม แล้วปรับเรทรวมใหม่)
+        // ซื้อซ้ำ: ได้การ์ดครบกล่องอีกชุด · การ์ดระดับ UR ในกล่องสุ่มเป็น UR ขึ้นไป เรท 86.5 / 12 / 1.2 / 0.3 ตามความยาก (เรียงตามระดับที่การ์ดใบนั้นมีจริง)
+        const LEGR = { UBR: 'CBR', SCR: 'SEC' }, WUR = { UR: 86.5, SEC: 12, PR: 1.2, CBR: 0.3 }, got = [];   // เรทคงที่ตามระดับ UR 86.5 / SEC 12 / PR 1.2 / CBR 0.3 (ระดับที่การ์ดใบนั้นไม่มีรูป → ข้าม แล้วปรับเรทรวมใหม่)
         const rollUR = id => { const cd = CARDS.find(x => x.id === id), have = new Set(((cd && cd.v) || ['UR']).map(t => LEGR[t] || t)); have.add('UR'); const tiers = ['UR', 'SEC', 'PR', 'CBR'].filter(t => have.has(t));
           const tot = tiers.reduce((p, t) => p + WUR[t], 0); let x = Math.random() * tot; for (const t of tiers) if ((x -= WUR[t]) < 0) return t; return 'UR'; };
         const all = [];   // การ์ดทุกใบในกล่อง (แสดงครบทุกใบ ไม่ใช่แค่ UR+)
