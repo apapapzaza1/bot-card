@@ -898,6 +898,7 @@ const rnd = a => a[Math.floor(Math.random() * a.length)];
 const hasEq = (r, x, id) => r.p.some(q => q.mg.some(m => m.at === x.u && m.id === id));
 const tiredCnt = r => allAv(r).filter(a => a.x.tired).length;
 const landIs = (r, id) => !!((r.g.land && r.g.land.c.id === id) || (r.g.land2 && r.g.land2.c.id === id));
+const muayLimit = r => landIs(r, 'BT01-049') && !!(r.g.atkC && r.g.atkC.n === r.g.n && r.g.atkC.c >= 1);   // มวยทะเล: สั่งโจมตีได้แค่ 1 ใบต่อเทิร์น (ทั้งสองฝ่าย)
 function hasKw(r, x, kw) {
   if (x.tk) return kw === 'ลูกฮึด' && sd09Grant(r, x); if (kw === 'โล่มนุษย์' || kw === 'ลูกฮึด') { const f9 = find(r, x.u); if (f9 && f9.z === 'av' && odOn8(r, 1 - f9.i, 'BT08-033')) return false; }   // BT08-033 Overdose
   if ((B[x.id].e || '').includes(kw) && isAv(x) && !(B7NK[x.id] && B7NK[x.id].includes(kw)) && !(kw === 'สามัคคี' && (x.id === 'BT05-004' || x.id === 'BT05-013')) && !(kw === 'เตะไข่' && x.id === 'BT05-037')) return true;
@@ -1708,6 +1709,7 @@ function act(r, i, m) {
       const a = own(m.u); if (a.z !== 'av' || a.c.tired) E('โจมตีไม่ได้');
       if (a.c.nolife && m.tg === 'life') E('Avatar นี้โจมตี LIFE ไม่ได้');
       if (m.tg === 'life' && op.co.some(x => x.id === 'BT06-068')) E('ป้อมยามสามัคคี: ฝ่ายตรงข้ามโจมตี LIFE ไม่ได้');
+      if (muayLimit(r)) E('มวยทะเล: ต่างฝ่ายต่างสั่ง Avatar โจมตีได้แค่ 1 ใบต่อเทิร์น');
       if (a.c.id === 'BT02-024' && !noFx(r, a.c)) E('เสามงคลโจมตีไม่ได้');
       if (a.c.id === 'CC01-018' && !noFx(r, a.c)) E('เสามงคล ทรงจีน โจมตีไม่ได้');
       if (a.c.id === 'CC01-013' && !noFx(r, a.c)) E('เจนนี่ โจมตีไม่ได้');
@@ -4936,6 +4938,7 @@ const _be94 = bt6End;
 bt6End = function (r, prev) {   // นับ End Phase สำหรับ กระสอบ / สวนกล้วยหนีภาษี
   _be94(r, prev);
   r.p.forEach(q => q.mg.slice().forEach(m => { if (m.id === 'BT09-065') { m.e9 = (m.e9 || 0) + 1; if (m.e9 >= 4) { q.mg.splice(q.mg.indexOf(m), 1); delete m.at; delete m.e9; q.hell.push(m); log(r, '👜 กระสอบ: End Phase ที่ 4 — ส่งลงนรก'); } } }));
+  ['land', 'land2'].forEach(kk => { const M = r.g[kk]; if (M && M.c.id === 'BT01-049') { M.e1 = (M.e1 || 0) + 1; if (M.e1 >= 4) { r.p[M.o].hell.push(M.c); r.g[kk] = null; log(r, '🥊 มวยทะเล: อยู่ครบ 4 เทิร์น — ส่งลงนรก'); } } });
   const L = r.g.land; if (L && L.c.id === 'BT09-070') { L.e9 = (L.e9 || 0) + 1; if (L.e9 >= 4) { r.p[L.o].hell.push(L.c); r.g.land = null; log(r, '🍌 สวนกล้วยหนีภาษี: End Phase ที่ 4 — ส่งลงนรก'); } }
 };
 const _ba94 = bt6After;
@@ -5943,6 +5946,7 @@ function botMain(r, k) {
 }
 function botBattle(r, k) {
   const g = r.g, me = r.p[k], op = r.p[1 - k], bt = r.bot, lv = Math.min(bt.lv, 3), W = bt.w || CHW0, T = bt.tried, opts = [];
+  if (muayLimit(r)) { me.av.forEach(a => T.add('a' + a.u)); return false; }   // มวยทะเล: ตีครบ 1 ใบแล้ว
   const ready = me.av.filter(a => !a.tired && !T.has('a' + a.u)).length;   // ตัวที่ยังตีได้ในเทิร์นนี้
   const stall = g.n >= 14;                                                  // เกมนิ่งนานแล้ว -> ต้องกดดัน
   const ahead = me.av.length > op.av.length;                                // เรามี Avatar มากกว่า -> แลกได้
@@ -6267,7 +6271,7 @@ Object.assign(ABIL, {
 /* ===== CC01 รอบ 3: Magic (042-047, 049-051) ===== */
 const ccWornBy = (r, a, id) => r.p.some(q => q.mg.some(m => m.at === a.u && m.id === id));
 function ccMustAtk(r, i) {   // 047 ตุ๊กตางูพันคอ: Avatar ที่สวมใส่ถ้าโจมตีได้ ต้องสั่งโจมตี (บล็อกการจบ Battle Phase)
-  const g = r.g; if (g.n === 0) return;
+  const g = r.g; if (g.n === 0 || muayLimit(r)) return;
   const bad = a => ['BT02-024', 'BT04-029', 'CC01-013', 'CC01-018', 'BT07-032', 'BT06-034', 'BT06-038'].includes(a.id) || a.noatk === g.n || bt6Banned(r, i, a) || bt9NoAtk(r, a)
     || (a.id === 'BT03-009' && r.p[i].hand.length) || (['BT02-029', 'SD04-004'].includes(a.id) && !(a.wr && a.wr.length)) || (a.id === 'BT08-043' && (a.wr || []).filter(w => B[w.id].t === 'Avatar').length < 2)
     || (g.onlyBug && g.onlyBug.n === g.n && g.onlyBug.i === i && !isInsect(r, a));
