@@ -592,10 +592,12 @@ const isRat = x => isAv(x) && symOf(x) === 'รัททาทุย';
 const isRat1 = x => isRat(x) && B[x.id].c === 1 && B[x.id].g === 1 && B[x.id].p === 1;
 const guanOn = (r, i) => r.p[i].av.some(a => a.id === 'SD07-001');
 const protectedFrom0 = (r, who, x) => who !== undefined && !x.tk && ((isKP(x) && x.id !== 'SD07-001' && guanOn(r, r.p.findIndex(p => p.av.includes(x))) && r.p.findIndex(p => p.av.includes(x)) !== who) || (x.hero === r.g.n && r.p.findIndex(p => p.av.includes(x)) !== who));
-let MGX = 0, MGWHO = -1;   // MGX>0 = กำลังประมวลผล Magic, MGWHO = ผู้ร่าย Magic นั้น
+let MGX = 0, MGWHO = -1, MGSEL = 0;   // MGSEL>0 = กำลังเลือกเป้าหมายของ Magic (เป้าที่ไม่รับผล Magic ยังเลือกได้ แต่ผลไร้ผลเงียบๆ)   // MGX>0 = กำลังประมวลผล Magic, MGWHO = ผู้ร่าย Magic นั้น
 const is016 = x => !!x && !x.tk && (x.id === 'BT04-016' || x.id === 'CC02-029');   // ริกกี้ คุณตา / คุณตาใจดี
 const mg016 = (r, f) => !!(f && f.z === 'av' && MGX > 0 && (is016(f.c) || f.c.mgProt >= r.g.n || bt8Rg(r, f.c)) && f.i !== MGWHO && !noFx(r, f.c));   // Magic ฝ่ายตรงข้ามกำลังจะมีผลกับ 016
-const protectedFrom = (r, who, x, mg) => protectedFrom0(r, who, x) || bt8Prot(r, who, x, mg) || bt9Prot(r, who, x, mg) || bt10Prot(r, who, x, mg) || bt11Prot(r, who, x, mg) || (who !== undefined && (is016(x) || x.mgProt >= r.g.n) && (MGX > 0 || mg) && r.p.findIndex(q => q.av.includes(x)) !== who && !noFx(r, x));
+const mgQ = (r, f) => { if (is016(f.c) || bt8Rg(r, f.c)) log(r, '🛡 ' + nmOf(f.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); };   // ข้อความเตือนเฉพาะ 016/เณรคู (วีรชนชีวภาพ ฯลฯ ไร้ผลเงียบๆ ไม่บอกฝ่ายตรงข้าม)
+const mgCut = (r, who, cx) => { let cut = 0; if (!cx || !cx.pick) return 0; for (const k of Object.keys(cx.pick)) { const v = cx.pick[k]; if (!Array.isArray(v)) continue; const nv = v.filter(u => { const ff = find(r, u); return !(ff && ff.z === 'av' && ff.c.mgProt >= r.g.n && !is016(ff.c) && ff.i !== who && !noFx(r, ff.c)); }); if (nv.length !== v.length) { cut = 1; cx.pick[k] = nv; } } return cut; };   // ตัดเป้าหมายที่ไม่รับผล Magic ออกเงียบๆ ก่อนทำผล
+const protectedFrom = (r, who, x, mg) => protectedFrom0(r, who, x) || bt8Prot(r, who, x, mg) || bt9Prot(r, who, x, mg) || bt10Prot(r, who, x, mg) || bt11Prot(r, who, x, mg) || (who !== undefined && (is016(x) || (x.mgProt >= r.g.n && !(MGSEL > 0 && !mg))) && (MGX > 0 || mg) && r.p.findIndex(q => q.av.includes(x)) !== who && !noFx(r, x));
 const allAvT = (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x)).map(a => a.x.u);
 const canPlaceAv = (r, i, c) => { if (bt9NoPlace(r, i, c) || cc2NoPlace(r, i, c) || bt11NoPlace(r, i, c)) return false; if (c.id === 'KD02-001' && !c.kdOK) return false; if (r.g.sa5 && r.g.sa5.i === i && r.g.sa5.n === r.g.n && !B[c.id].n.includes('Super Air')) return false; if (c.id === 'BT05-017' && r.p[i].av.some(a => a.id === 'BT05-017')) return false; if (c.id === 'BT08-011' && r.p[i].av.some(a => a.id === 'BT08-011')) return false; if (c.id === 'BT06-006' && r.p[i].av.some(a => a.id === 'BT06-006')) return false; const p = r.p[i], L = r.g.land, cap = ((L && L.o === i && L.c.id === 'SD08-017' && p.av.every(isRat) && isRat(c)) || (L && L.o === i && L.c.id === 'BT04-059' && p.av.every(a => symOf(a) === 'รัททาทุย') && symOf(c) === 'รัททาทุย')) ? 6 : 4; if (c.tk || (B[c.id] && B[c.id].t === 'Token')) return p.av.length < 6; return p.av.filter(x => !x.tk).length < cap && p.av.length < 6; };
 const addHold = (x, v, until) => { (x.hd = x.hd || []).push({ v, until }); if (v > 0) x.bc = (x.bc || 0) + 1; fx({ k: 'buff', u: x.u, v }); };
@@ -747,9 +749,9 @@ function primalSave(r, f0, retry) {
   } });
   return true;
 }
-const sendHell = (r, u) => { const f0 = find(r, u); if (f0 && f0.z === 'hand') (r.g.dh9 = r.g.dh9 || {})[f0.i] = r.g.n; if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => sendHell(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { sendHell(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (f0 && f0.z === 'av' && f0.c.mgImm >= r.g.n && !r.g.inB && r.g.turn !== f0.i) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนามด้วย Magic'); if (primalSave(r, f0, () => sendHell(r, u))) return; const f = take(r, u); f.c.tired = false; if (!f.c.tk) r.p[f.i].hell.push(f.c); };
+const sendHell = (r, u) => { const f0 = find(r, u); if (f0 && f0.z === 'hand') (r.g.dh9 = r.g.dh9 || {})[f0.i] = r.g.n; if (mg016(r, f0)) return mgQ(r, f0); if (w62(r, f0, () => sendHell(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { sendHell(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n && !r.g.inB) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (f0 && f0.z === 'av' && f0.c.mgImm >= r.g.n && !r.g.inB && r.g.turn !== f0.i) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่ถูกนำออกจากสนามด้วย Magic'); if (primalSave(r, f0, () => sendHell(r, u))) return; const f = take(r, u); f.c.tired = false; if (!f.c.tk) r.p[f.i].hell.push(f.c); };
 const destroyAv = (r, u) => { const f = find(r, u); if (f && f.z === 'av') kill(r, f.i, u); };
-const bounce = (r, u) => { const f0 = find(r, u); if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); if (w62(r, f0, () => bounce(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { bounce(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (primalSave(r, f0, () => bounce(r, u))) return; const f = take(r, u); fx({ k: 'bounce', u }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
+const bounce = (r, u) => { const f0 = find(r, u); if (mg016(r, f0)) return mgQ(r, f0); if (w62(r, f0, () => bounce(r, u))) return; if (f0 && f0.z === 'av' && !BYP33 && bt6Sub33(r, f0, () => { BYP33 = 1; try { bounce(r, u); } finally { BYP33 = 0; } })) return; if (f0 && f0.z === 'av' && f0.c.hero === r.g.n) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลความสามารถ'); if (primalSave(r, f0, () => bounce(r, u))) return; const f = take(r, u); fx({ k: 'bounce', u }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; f.c.tired = false; r.p[f.i].hand.push(f.c); } };
 function summonFree(r, i, c) {
   const p = r.p[i]; if (!canPlaceAv(r, i, c)) { log(r, 'Avatar เต็ม อัญเชิญไม่ได้'); return false; }
   const k = p.hell.findIndex(h => h.u === c.u); if (k < 0) return false; p.hell.splice(k, 1);
@@ -1524,7 +1526,7 @@ let DRNO = 0;
 const isDoc = c => !!c && !c.tk && B[c.id] && B[c.id].t === 'Magic' && B[c.id].n.trim() === 'หมอมาแล้วววว';
 const kill = (r, i, u, ns) => {
   const f0 = find(r, u), nf0 = !!(f0 && f0.z === 'av' && noFx(r, f0.c));
-  if (mg016(r, f0)) return log(r, '🛡 ' + nmOf(f0.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม');
+  if (mg016(r, f0)) return mgQ(r, f0);
   if (f0 && f0.z === 'av' && f0.c.id === 'BT06-037' && MGX > 0 && !noFx(r, f0.c)) { vfx(f0.c.u, 'aura', '🛡 ไม่ถูกทำลาย', '#64748b'); return log(r, '🛡 สว นาโนแมชชีน: ไม่ถูกทำลายจากความสามารถของ Magic Card'); }
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && (bt9Save(r, i, u, f0) || bt10Save(r, i, u, f0) || bt11Save(r, i, u, f0))) return;   // BT09-060 Skill : Second Energy
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && f0.c.id === 'BT06-033' && bt6Sub33(r, f0, () => kill(r, i, u, 1))) return;
@@ -3330,7 +3332,7 @@ AB['ODY1-065'] = { z: 'mg', run: (r, i, cx) => {   // ถุงเกราะ�
   (t.c.od65 = t.c.od65 || []).push({ t: r.g.n + 1 }); fx({ k: 'say', id: 'ODY1-065', t: 'ทำลายถุงเกราะ' }); vfx(t.c.u, 'aura', 'POWER +2 (ถึงจบเทิร์นศัตรู)', '#22c55e'); log(r, '🛡 ถุงเกราะโอเดนย่า: ' + nmOf(t.c) + ' POWER +2 จนจบเทิร์นถัดไปของฝ่ายตรงข้าม'); } };
 // ===== กล่องอีเวนต์ (หลังบ้าน ไม่อยู่ในร้านค้า): ซีรีส์ที่ไม่ใช่ SD/KD/CC/BT → ODY1 / PRMO / PRE0 / FPRO / SL01 / SL02 =====
 CARDS.forEach(c => { if (!/^(PRMO|FPRO|ODY1|CC0)/.test(c.id) || CANON[c.id]) return; const t = CARDS.find(o => o.id.startsWith('BT04-') && o.n === c.n && o.e === c.e && o.t === c.t && o.c === c.c && o.p === c.p && o.s === c.s); if (t) CANON[c.id] = CANON[t.id] || t.id; });   // พิมพ์ซ้ำ (PRMO ฯลฯ) ที่ข้อความเหมือน BT04 ทุกตัวอักษร ใช้สกิลเดียวกัน
-{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return f(...a); } finally { MGX--; MGWHO = o; } }; } };   // 016 ริกกี้ คุณตา: ไม่รับผลจาก Magic ฝ่ายตรงข้าม
+{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGSEL++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGSEL--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; const cut = mgCut(a[0], a[1], a[2]); try { return f(...a); } catch (e) { if (cut) return; throw e; } finally { MGX--; MGWHO = o; } }; } };   // 016 ริกกี้ คุณตา: ไม่รับผลจาก Magic ฝ่ายตรงข้าม
   Object.keys(MG).forEach(k => w(MG[k])); }
 
 /* ===== BOT: โหมดเล่นกับบอท (ง่าย/กลาง/ยาก) =====
@@ -3343,7 +3345,7 @@ function bt5Paid(r, i, pc, summoned) {   // 008 / 009 / 019: ถูกจ่า�
   const p = r.p[i];
   if (pc.id === 'BT05-008' && isCol(summoned, 'แดง')) { addTp(summoned, 1); vfx(summoned.u, 'aura', 'POWER +1', '#ef4444'); fx({ k: 'say', id: pc.id, t: 'POWER +1' }); log(r, '✨ โจอี้ นักบอลขาหัก: ' + nmOf(summoned) + ' POWER +1 จนจบเทิร์น'); }
   if (pc.id === 'BT05-009' && symOf(summoned) === 'เปรต') { summoned.mgImm = r.g.n + 1; vfx(summoned.u, 'aura', '🛡 ไม่ถูกนำออกด้วย Magic', '#f472b6'); fx({ k: 'say', id: pc.id, t: 'ไม่ถูกนำออกจากสนาม' }); log(r, '🛡 น้องส้ม ชู้วันชัย: ' + nmOf(summoned) + ' ไม่ถูกนำออกจากสนามด้วย Magic จนจบเทิร์นถัดไปของฝ่ายตรงข้าม'); }
-  if (pc.id === 'BT05-042' && isCol(summoned, 'เขียว')) { summoned.mgProt = r.g.n + 1; vfx(summoned.u, 'aura', '🛡 ไม่รับผล Magic ศัตรู', '#22c55e'); fx({ k: 'say', id: pc.id, t: 'ไม่รับผล Magic' }); log(r, '🛡 วีรชนชีวภาพ: ' + nmOf(summoned) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม จนจบเทิร์นถัดไปของฝ่ายตรงข้าม'); }
+  if (pc.id === 'BT05-042' && isCol(summoned, 'เขียว')) { summoned.mgProt = r.g.n + 1; }   // ไร้ผลเงียบๆ: ไม่โชว์/ไม่ log ให้ฝ่ายตรงข้ามรู้
   if (pc.id === 'BT05-019' && isCol(summoned, 'ฟ้า')) r.g.q.push(() => { const s = bt4Peek(r, i, 1, null), c = s[0]; if (!c) return;
     if (isAv(c) && symOf(c) === symOf(summoned)) { p.deck.splice(p.deck.indexOf(c), 1); p.hand.push(c); vfx(summoned.u, 'aura', 'สอดแนม → ขึ้นมือ', '#22c55e'); log(r, '✨ บอสทุเรียน: ' + B[c.id].n + ' Symbol ตรงกัน ขึ้นมือ'); } else log(r, 'บอสทุเรียน: ' + B[c.id].n + ' ไม่ใช่ Avatar Symbol เดียวกัน วางไว้ที่เดิม'); });
 }
@@ -4048,7 +4050,7 @@ Object.assign(AB, {
 Object.assign(ABIL, {
   'BT07-072': { zone: 'co', once: 1, label: 'ให้ Avatar โล่มนุษย์ จนจบเทิร์นถัดไปของฝ่ายตรงข้าม', run: (r, i, x) => { ask(r, i, { text: 'ยานรายการ: เลือก Avatar 1 ใบ ได้รับ โล่มนุษย์ จนจบเทิร์นถัดไปของฝ่ายตรงข้าม', opts: allAv(r).map(a => a.x.u), cb: us => { const t = find(r, us[0]); if (!t || t.z !== 'av') return; t.c.hs7 = r.g.n + 1; vfx(t.c.u, 'aura', '🛡 โล่มนุษย์', '#a855f7'); log(r, '🛡 ยานรายการ: ' + nmOf(t.c) + ' ได้รับ โล่มนุษย์ จนจบเทิร์นถัดไปของฝ่ายตรงข้าม'); } }); } },
 });
-{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return f(...a); } finally { MGX--; MGWHO = o; } }; } };   // เหมือนกับ BT04: Magic ฝ่ายตรงข้ามไม่มีผลกับ ริกกี้ คุณตา
+{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGSEL++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGSEL--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; const cut = mgCut(a[0], a[1], a[2]); try { return f(...a); } catch (e) { if (cut) return; throw e; } finally { MGX--; MGWHO = o; } }; } };   // เหมือนกับ BT04: Magic ฝ่ายตรงข้ามไม่มีผลกับ ริกกี้ คุณตา
   Object.keys(MG).filter(k => k.startsWith('BT07-')).forEach(k => w(MG[k])); }
 /* ===== BT07 รอบ 3: ที่เหลือ (End Phase / Magic Zone / LIFE / ประกาศประเภท ฯลฯ) ===== */
 const tkt = a => isAv(a) && (nmOf(a).includes('ตั๊กแตน') || (B[a.id].e || '').includes('ตั๊กแตน'));
@@ -4138,7 +4140,7 @@ Object.assign(MG, {
       if (!L.length) return fin(null); ask(r, i, { text: 'เลือก Avatar "ไอดอล" คนละชื่อจาก Deck อัญเชิญ (โอตะที่สวมใส่จะย้ายตาม)', opts: L, cb: us => fin(p.deck.find(k => k.u === us[0])) }); } },
   'BT07-070': {},
 });
-{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return f(...a); } finally { MGX--; MGWHO = o; } }; } };
+{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGSEL++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGSEL--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; const cut = mgCut(a[0], a[1], a[2]); try { return f(...a); } catch (e) { if (cut) return; throw e; } finally { MGX--; MGWHO = o; } }; } };
   ['BT07-052', 'BT07-054', 'BT07-055'].forEach(k => w(MG[k])); }
 /* ===== BT07 รอบ 4: ใบที่เหลือ (012 / 027 / 049 / 062 / 064 + 002 / 022 / 037 / 040 ส่วนที่ขาด) ===== */
 const r049 = (r, i, c) => (c.id === 'BT07-049' && r.g.turn !== i && r.p[i].av.some(isPolice)) || (c.id === 'BT08-051' && (r.g.turn !== i || r.g.phase === 'battle')) || (c.id === 'BT09-057' && (r.g.turn !== i || r.g.phase === 'battle'));   // ใช้เป็น React ถ้ามี "ตำรวจ"
@@ -4179,7 +4181,7 @@ Object.assign(MG, {
   'BT07-062': { mod: 1, tgf: a => isAv(a) && B[a.id].n.includes('ครุฑ') && (symOf(a) === 'สัตว์มหัศจรรย์' || also9(a, 'สัตว์มหัศจรรย์')) },
   'BT07-064': { mod: 1 },
 });
-{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; try { return f(...a); } finally { MGX--; MGWHO = o; } }; } };
+{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGSEL++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGSEL--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; const cut = mgCut(a[0], a[1], a[2]); try { return f(...a); } catch (e) { if (cut) return; throw e; } finally { MGX--; MGWHO = o; } }; } };
   w(MG['BT07-049']); }
 /* ===== BT08 SKILL + ANIMATION (ระดับกลาง) — เฉพาะการ์ดที่ใช้กลไกเดิมของ engine ได้ ===== */
 // ใบที่ทำแล้ว (✅ ครบ / 🟡 บางส่วน) ดูรายการสรุปใน BT08_NOTES.md
