@@ -2223,6 +2223,25 @@ wss.on('connection', ws => {
         await qCh(); qAdd(d, 'cr', 1);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + B[id].n.trim() + ' (' + r + ') สำเร็จ' })); return;
       }
+      if (m.t === 'craftn') {   // คราฟหลายใบในครั้งเดียว (ปุ่ม "คราฟทั้งหมดที่ขาด" ของรหัสเด็ค) — ราคาเท่าเดิม ตัดรวมครั้งเดียว
+        const d = await dbGet(ws.user), L = Array.isArray(m.list) ? m.list.slice(0, 150) : [], seen = {};
+        let gem = 0, du = 0, tot = 0; d.cards = d.cards || {};
+        for (const x of L) {
+          const id = String(x.id), r = String(x.r), n = Math.max(0, Math.min(60, x.n | 0)), k = id + '|' + r; if (!n) continue;
+          if (seen[k]) E('รายการซ้ำ'); seen[k] = 1;
+          if (!B[id] || !(B[id].v || []).includes(r)) E('ไม่พบการ์ด');
+          if (/^(PRMO|FPRO|ODY1|CC0)/.test(id)) E('การ์ดโปรโม/พิเศษ คราฟไม่ได้');
+          if (!CRAFT_R.includes(r)) E('การ์ดระดับ ' + r + ' คราฟไม่ได้');
+          if ((d.cards[k] || 0) > 0) du += n * CRAFT_OWN; else { gem += CRAFT_NEW_GEM; du += CRAFT_NEW_DUST + (n - 1) * CRAFT_OWN; }
+          tot += n;
+        }
+        if (!tot) E('ไม่มีการ์ดให้คราฟ');
+        if ((d.dust || 0) < du) E('ผงไม่พอ (ต้องใช้ ' + du + ')'); if (d.gems < gem) E('Gem ไม่พอ (ต้องใช้ ' + gem + ')');
+        d.gems -= gem; d.dust = (d.dust || 0) - du;
+        for (const x of L) { const n = Math.max(0, Math.min(60, x.n | 0)); for (let q = 0; q < n; q++) add(d, { id: String(x.id), r: String(x.r) }); }
+        await qCh(); qAdd(d, 'cr', tot);
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + tot + ' ใบ สำเร็จ (ใช้ ' + (gem ? gem + ' 💎 + ' : '') + du + ' ผง)' })); return;
+      }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
