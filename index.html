@@ -679,11 +679,14 @@ body.ing #bg::before{animation:none}
 .dc.xgt{filter:grayscale(1) saturate(0)}.dc.xgt .di{opacity:.45;filter:grayscale(1) saturate(0) contrast(.9)}.dc.xgt .di *,.dc.xgt .di::before,.dc.xgt .di::after{filter:grayscale(1)!important;animation:none!important}
 .dc.xgt .ghn{position:absolute;right:4px;bottom:4px;background:#000c;color:#fff;border-radius:6px;padding:1px 6px;font-weight:700}
 .dc.xgt .ghl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:2em}
-#cdg{position:fixed;inset:0;background:#000b;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px}
-#cdg[hidden]{display:none}
-.cdb{background:var(--cb,#1f2937);color:inherit;border:2px solid var(--ce,#475569);border-radius:12px;padding:12px;width:min(480px,100%);display:flex;flex-direction:column;gap:8px}
-.cdb textarea{width:100%;box-sizing:border-box;font-family:monospace;font-size:.95em;background:#0006;color:inherit;border:1px solid var(--ce,#475569);border-radius:8px;padding:8px}
-.cdr{display:flex;gap:8px;flex-wrap:wrap}
+#xdlg{position:fixed;inset:0;background:#000b;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px}
+#xdlg[hidden]{display:none}
+.xdb{background:var(--pn);color:var(--fg);border:2px solid #8888;border-radius:14px;padding:14px;width:min(480px,100%);max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:10px;box-shadow:0 12px 40px #000a}
+.xdb textarea{width:100%;box-sizing:border-box;min-height:150px;height:min(260px,40vh);resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;line-height:1.5;background:var(--bg);color:var(--fg);border:1px solid #8888;border-radius:10px;padding:10px}
+.xdb textarea::placeholder{color:var(--fg);opacity:.45}
+.xdb button{min-height:42px;padding:0 16px;border-radius:10px;font-size:1em}
+.xdb small{opacity:.8;line-height:1.4}
+.xdr{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between}
 
 .xgc{display:flex;gap:6px}.xgc button{flex:1;font-size:.82em;padding:7px 4px;border-radius:8px;min-height:36px}.xgc button:disabled{opacity:.45}
 </style>
@@ -872,13 +875,13 @@ return{out,bad}}
 function bdLoad(ent,nm){bd={n:nm||'',m:{},l:{},q:'',t:'',tab:'deck',art:{},vr:{},gh:{}};let g=0;
 ent.forEach(({id,r,n})=>{const k=id+'|'+r,o=C[id].t=='Life'?bd.l:bd.m;o[id]=(o[id]||0)+n;const own=ME.cards[k]||0,u=bd.vr[k]||0,h=Math.min(n,Math.max(0,own-u));if(h)bd.vr[k]=u+h;if(n>h){bd.gh[k]=(bd.gh[k]||0)+n-h;g+=n-h}});
 decks();toast(g?'โหลดแล้ว — การ์ดที่ยังไม่มี '+g+' ใบ ขึ้นเป็นการ์ดจาง กดคราฟได้เลย':'โหลดเด็คแล้ว — ตรวจดูแล้วกด 💾 บันทึก')}
-function cdDlg(mode,text,title){let e=$('cdg');if(!e){e=document.createElement('div');e.id='cdg';document.body.append(e)}
-e.innerHTML=`<div class="cdb"><b>${title}</b><textarea id="cdt" rows="12" spellcheck="false" ${mode=='share'?'readonly':'placeholder="วางรหัสเด็คที่นี่ เช่น&#10;1x BT01-001-R&#10;3x SD01-005"'}>${esc(text||'')}</textarea><div class="cdr">${mode=='share'?'<button class="pri" onclick="cdCopy()">📋 คัดลอก</button>':'<button class="pri" onclick="cdGo()">📥 สร้างเด็คจากรหัส</button>'}<button onclick="cdX()">ปิด</button></div><small>${mode=='share'?'รูปแบบ: จำนวน x รหัสการ์ด-ความหายาก (1 บรรทัด / 1 รายการ) ส่งให้เพื่อนวางในช่อง “ใส่รหัส”':'ไม่ใส่ -ความหายาก = ถือเป็น C · การ์ดที่ยังไม่มีจะขึ้นเป็นการ์ดจางให้กดคราฟ'}</small></div>`;e.hidden=false;const t=$('cdt');t&&mode!='share'&&t.focus()}
-const cdX=()=>{const e=$('cdg');if(e)e.hidden=true};
-function cdCopy(){const t=$('cdt'),v=t.value;t.select();(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>{try{document.execCommand('copy');toast('คัดลอกรหัสแล้ว')}catch(e){toast('กดค้างที่ข้อความเพื่อคัดลอก')}})}
+function cdDlg(mode,text,title){let e=$('xdlg');if(!e){e=document.createElement('div');e.id='xdlg';document.body.append(e)}
+e.innerHTML=`<div class="xdb"><b>${title}</b><textarea id="xdt" rows="8" spellcheck="false" ${mode=='share'?'readonly':'placeholder="วางรหัสเด็คที่นี่ เช่น&#10;1x BT01-001-R&#10;3x SD01-005"'}>${esc(text||'')}</textarea><div class="xdr">${mode=='share'?'<button class="pri" onclick="cdCopy()">📋 คัดลอก</button>':'<button class="pri" onclick="cdGo()">📥 สร้างเด็คจากรหัส</button>'}<button onclick="cdX()">ปิด</button></div><small>${mode=='share'?'รูปแบบ: จำนวน x รหัสการ์ด-ความหายาก (1 บรรทัด / 1 รายการ) ส่งให้เพื่อนวางในช่อง “ใส่รหัส”':'ไม่ใส่ -ความหายาก = ถือเป็น C · การ์ดที่ยังไม่มีจะขึ้นเป็นการ์ดจางให้กดคราฟ'}</small></div>`;e.hidden=false;const t=$('xdt');t&&mode!='share'&&t.focus()}
+const cdX=()=>{const e=$('xdlg');if(e)e.hidden=true};
+function cdCopy(){const t=$('xdt'),v=t.value;t.select();(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('คัดลอกรหัสแล้ว'),()=>{try{document.execCommand('copy');toast('คัดลอกรหัสแล้ว')}catch(e){toast('กดค้างที่ข้อความเพื่อคัดลอก')}})}
 function cdShare(){if(!bd)return;const ent=bdEnt();if(!ent.length)return toast('ยังไม่มีการ์ดในเด็ค');cdDlg('share',cdText(ent),'📤 รหัสเด็ค (Main '+sm(bd.m)+' · LIFE '+sm(bd.l)+')'+(ghN()?' — รวมการ์ดจาง '+ghN()+' ใบ':''))}
 function cdOpen(){cdDlg('in','','📥 ใส่รหัสเด็ค')}
-function cdGo(){const t=$('cdt').value,{out,bad}=bdParse(t);if(!out.length)return alert(bad.length?'อ่านรหัสไม่ได้: '+bad.slice(0,5).join(', '):'ไม่พบรหัสการ์ดในข้อความ');
+function cdGo(){const t=$('xdt').value,{out,bad}=bdParse(t);if(!out.length)return alert(bad.length?'อ่านรหัสไม่ได้: '+bad.slice(0,5).join(', '):'ไม่พบรหัสการ์ดในข้อความ');
 if(sm(bd.m)+sm(bd.l)>0&&!confirm('แทนที่ลิสต์เด็คปัจจุบันด้วยรหัสนี้?'))return;cdX();bdLoad(out,bd.n);if(bad.length)setTimeout(()=>alert('ข้าม '+bad.length+' รายการที่อ่านไม่ได้:\n'+bad.slice(0,10).join('\n')),50)}
 function ghSum(){let g=0,d=0,n=0,lk=0;Object.entries(bd.gh||{}).forEach(([k,c])=>{const[i,r]=k.split('|');if(crOK(i,r)){const x=crCost(k,c);g+=x.g;d+=x.d;n+=c}else lk+=c});return{g,d,n,lk}}
 function ghTile(k,c){const[i,r]=k.split('|'),cd=C[i],a=art(i,r),can=crOK(i,r),x=can?crCost(k,1):null,aff=can&&ME.gems>=x.g&&(ME.dust||0)>=x.d;
