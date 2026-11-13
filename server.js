@@ -121,9 +121,10 @@ CARDS.forEach(patchGem);
 
 const MT={'.json':'application/json','.html':'text/html;charset=utf-8','.mp4':'video/mp4','.webm':'video/webm','.webp':'image/webp','.jpg':'image/jpeg','.png':'image/png','.mp3':'audio/mpeg'};
 const IMG = path.join(require('os').tmpdir(), 'bot-img');
+const BOXDIR = path.join(require('os').tmpdir(), 'bot-box');   // รูปกล่องจาก imgs_boxes.zip แยกโฟลเดอร์ ไม่ให้ไฟล์อื่นทับ
 (function unzipImgs() {
   try {
-    fs.mkdirSync(IMG, { recursive: true });
+    fs.mkdirSync(IMG, { recursive: true }); fs.mkdirSync(BOXDIR, { recursive: true });
     for (const zf of fs.readdirSync(__dirname).filter(n => /^imgs.*\.zip$/i.test(n))) {
       const b = fs.readFileSync(path.join(__dirname, zf)); let e = b.length - 22;
       while (e >= 0 && b.readUInt32LE(e) !== 0x06054b50) e--;
@@ -134,7 +135,7 @@ const IMG = path.join(require('os').tmpdir(), 'bot-img');
         const name = path.basename(b.toString('utf8', p + 46, p + 46 + nl)); p += 46 + nl + xl + cl;
         if (!/\.(webp|json|png)$/i.test(name)) continue;
         const d = lo + 30 + b.readUInt16LE(lo + 26) + b.readUInt16LE(lo + 28), raw = b.subarray(d, d + cs);
-        fs.writeFileSync(path.join(IMG, name), m === 8 ? require('zlib').inflateRawSync(raw) : raw); ok++;
+        fs.writeFileSync(path.join(/^imgs_boxes/i.test(zf) ? BOXDIR : IMG, name), m === 8 ? require('zlib').inflateRawSync(raw) : raw); ok++;
       }
       console.log('unzip', zf, ok);
     }
@@ -147,13 +148,13 @@ const srv = http.createServer((q, r) => {
   { const u0 = q.url.split('?')[0];
     if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify(CHOV ? { v: CHOV.v, log: CHOV.log } : { v: VERSION, log: CHANGELOG })); }
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: CHOV ? CHOV.v : VERSION, t: Math.round(Math.max(BUILD_AT(), CHOV ? CHOV.t : 0)) })); }
-    if (u0 === '/boxes.json') { let l = []; try { l = fs.readdirSync(IMG).filter(n => BOX_RE.test(n)).sort(); } catch (e) { } r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(l)); }   // รายชื่อรูปกล่องที่มี
+    if (u0 === '/boxes.json') { let l = []; try { l = [...new Set([...fs.readdirSync(BOXDIR), ...fs.readdirSync(IMG)].filter(n => BOX_RE.test(n)))].sort(); } catch (e) { } r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(l)); }   // รายชื่อรูปกล่องที่มี
     if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
     if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
       a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); if (FORCE_ONLY1.includes(c.id)) c.o = 'Only #1'; });
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
-  const isBox = BOX_RE.test(f); if (isBox && fs.existsSync(path.join(IMG, f))) dir = IMG;   // รูปกล่องจาก zip มาก่อนไฟล์เก่าที่ค้างในโฟลเดอร์ราก
+  const isBox = BOX_RE.test(f); if (isBox) { if (fs.existsSync(path.join(BOXDIR, f))) dir = BOXDIR; else if (fs.existsSync(path.join(IMG, f))) dir = IMG; }   // รูปกล่องจาก zip มาก่อนไฟล์เก่าที่ค้างในโฟลเดอร์ราก
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
   if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
   r.writeHead(200, (path.extname(f) === '.webp' || path.extname(f) === '.png') ? { 'Content-Type': MT[path.extname(f)], 'Cache-Control': isBox ? 'no-cache' : 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
