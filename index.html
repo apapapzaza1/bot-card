@@ -865,7 +865,7 @@ function bdEnt(){bgRec();bnorm();const c={};Object.entries(bd.vr).forEach(([k,n]
 const cdText=ent=>ent.map(x=>x.n+'x '+x.id+'-'+x.r).join('\n');
 function bdParse(t){const out=[],bad=[],re=/(?:(\d+)\s*[xX×*]\s*)?([A-Za-z0-9]+-\d+)(?:-([A-Za-z]+))?(?:[ \t]*[xX×*][ \t]*(\d+))?/g;let m;
 while((m=re.exec(t))){const id=m[2].toUpperCase(),c=C[id];if(!c){bad.push(m[2]);continue}const v=c.v&&c.v.length?c.v:['C'];let r=(m[3]||'').toUpperCase();
-if(!r)r=v.includes('C')?'C':v[0];else if(!v.includes(r)){bad.push(id+'-'+r+' (ไม่มีระดับนี้)');continue}
+if(!r)r=v.includes('C')?'C':v[0];else{r=LEG[r]||r;if(!v.includes(r)&&!RO.includes(r)){bad.push(id+'-'+r+' (ไม่รู้จักระดับนี้)');continue}}
 out.push({id,r,n:Math.max(1,Math.min(60,+(m[1]||m[4]||1)))})}
 return{out,bad}}
 function bdLoad(ent,nm){bd={n:nm||'',m:{},l:{},q:'',t:'',tab:'deck',art:{},vr:{},gh:{}};let g=0;
