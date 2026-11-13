@@ -67,6 +67,7 @@ const CHANGELOG = [
     'แถบเวอร์ชันหน้าล็อบบี้: กดเพื่อดูรายการอัปเดตได้'
   ] }
 ];
+const BOX_RE = /^(BT|KD|SD)\d{2}\.(webp|png)$/i;   // รูปกล่อง: อ่านจาก imgs_boxes.zip (หรือ imgs*.zip ใดๆ) ใช้ที่หน้า Event ภายหลัง
 // ===== ระดับการ์ด = ตามชื่อไฟล์รูป (สแกนอัตโนมัติ) =====
 const ART_R = ['C', 'R', 'SR', 'UR', 'SEC', 'PR', 'CBR', 'USEC'];   // ลำดับระดับ ต่ำ→สูง
 const ART_RE = new RegExp('^(.+?)(?:-(' + ART_R.filter(r => r !== 'C').join('|') + '))?\\.(webp|png)$', 'i');   // ID-ระดับ.webp / .png (ไม่มีคำต่อท้าย = C)
@@ -77,7 +78,7 @@ function scanArt() {
   for (const dir of [IMG, __dirname]) {
     let fl = []; try { fl = fs.readdirSync(dir); } catch (e) { continue; }
     for (const f of fl) {
-      const m = ART_RE.exec(f); if (!m) continue;
+      const m = ART_RE.exec(f); if (!m || BOX_RE.test(f)) continue;   // รูปกล่อง (BT01.webp ฯลฯ) ไม่นับเป็นรูปการ์ด
       const nm = f.replace(/\.(webp|png)$/i, ''), have = ART_FILES[nm];
       if (have && /\.webp$/i.test(have)) continue;   // มีทั้ง webp และ png → ใช้ webp
       ART_FILES[nm] = f;
@@ -146,6 +147,7 @@ const srv = http.createServer((q, r) => {
   { const u0 = q.url.split('?')[0];
     if (u0 === '/changelog.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify(CHOV ? { v: CHOV.v, log: CHOV.log } : { v: VERSION, log: CHANGELOG })); }
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: CHOV ? CHOV.v : VERSION, t: Math.round(Math.max(BUILD_AT(), CHOV ? CHOV.t : 0)) })); }
+    if (u0 === '/boxes.json') { let l = []; try { l = fs.readdirSync(IMG).filter(n => BOX_RE.test(n)).sort(); } catch (e) { } r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(l)); }   // รายชื่อรูปกล่องที่มี
     if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
     if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
       a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); if (FORCE_ONLY1.includes(c.id)) c.o = 'Only #1'; });
