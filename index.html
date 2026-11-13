@@ -1,5 +1,5 @@
 <!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>BOT (FANMADE) CARD</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Mali:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0b0b10;--fg:#eee;--pn:#17171f;--cb:#2b2b2e;--ce:#f2f2f2;--fs:16px;--w:62px}
 [data-th=light]{--bg:#e9e6df;--fg:#1a1a1a;--pn:#fff;--cb:#ddd;--ce:#222}
@@ -689,6 +689,45 @@ body.ing #bg::before{animation:none}
 .xdr{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between}
 
 .xgc{display:flex;gap:6px}.xgc button{flex:1;font-size:.82em;padding:7px 4px;border-radius:8px;min-height:36px}.xgc button:disabled{opacity:.45}
+
+/* ===== รอบ 15: ธีมพิเศษ (ซอยตลิ่งชันยามค่ำ / กระดาษสมุดสเก็ตช์) + ระบบเพลง ===== */
+body[data-bg=soi] #bg{background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22520%22 height=%22190%22 viewBox=%220 0 520 190%22%3E%3Cdefs%3E%3CradialGradient id=%22g%22%3E%3Cstop offset=%220%22 stop-color=%22%23ffb347%22 stop-opacity=%22.6%22/%3E%3Cstop offset=%221%22 stop-color=%22%23ffb347%22 stop-opacity=%220%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx=%2295%22 cy=%2270%22 r=%2280%22 fill=%22url%28%23g%29%22/%3E%3Ccircle cx=%22330%22 cy=%2278%22 r=%2270%22 fill=%22url%28%23g%29%22/%3E%3Ccircle cx=%22470%22 cy=%2284%22 r=%2260%22 fill=%22url%28%23g%29%22/%3E%3Cg fill=%22%230c0a18%22%3E%3Crect x=%220%22 y=%22120%22 width=%2270%22 height=%2270%22/%3E%3Cpolygon points=%220%2C120 35%2C92 70%2C120%22/%3E%3Crect x=%22120%22 y=%22100%22 width=%2290%22 height=%2290%22/%3E%3Cpolygon points=%22120%2C100 165%2C70 210%2C100%22/%3E%3Crect x=%22235%22 y=%22125%22 width=%2270%22 height=%2265%22/%3E%3Cpolygon points=%22235%2C125 270%2C98 305%2C125%22/%3E%3Crect x=%22360%22 y=%22105%22 width=%2280%22 height=%2285%22/%3E%3Cpolygon points=%22360%2C105 400%2C76 440%2C105%22/%3E%3Crect x=%22490%22 y=%22130%22 width=%2230%22 height=%2260%22/%3E%3C/g%3E%3Cg fill=%22%23ffb347%22%3E%3Crect x=%2214%22 y=%22136%22 width=%2212%22 height=%2214%22/%3E%3Crect x=%2244%22 y=%22136%22 width=%2212%22 height=%2214%22/%3E%3Crect x=%22136%22 y=%22116%22 width=%2214%22 height=%2216%22/%3E%3Crect x=%22176%22 y=%22146%22 width=%2214%22 height=%2216%22/%3E%3Crect x=%22250%22 y=%22142%22 width=%2212%22 height=%2214%22/%3E%3Crect x=%22376%22 y=%22124%22 width=%2214%22 height=%2216%22/%3E%3Crect x=%22412%22 y=%22150%22 width=%2214%22 height=%2216%22/%3E%3C/g%3E%3Crect x=%22124%22 y=%22150%22 width=%2230%22 height=%2210%22 fill=%22%23e5484d%22/%3E%3Crect x=%22364%22 y=%22152%22 width=%2228%22 height=%229%22 fill=%22%233dd68c%22/%3E%3Cg fill=%22%2307060f%22%3E%3Crect x=%2292%22 y=%2270%22 width=%226%22 height=%22120%22/%3E%3Crect x=%22327%22 y=%2278%22 width=%226%22 height=%22112%22/%3E%3Crect x=%22467%22 y=%2284%22 width=%226%22 height=%22106%22/%3E%3C/g%3E%3Cg fill=%22%23ffd08a%22%3E%3Ccircle cx=%2295%22 cy=%2268%22 r=%227%22/%3E%3Ccircle cx=%22330%22 cy=%2276%22 r=%227%22/%3E%3Ccircle cx=%22470%22 cy=%2282%22 r=%227%22/%3E%3C/g%3E%3Crect x=%220%22 y=%22178%22 width=%22520%22 height=%2212%22 fill=%22%2305040b%22/%3E%3C/svg%3E") repeat-x left bottom/520px 190px,linear-gradient(#070918 0%,#14122b 45%,#2a1a2e 78%,#3a2216 100%);animation:none}
+body[data-bg=sk] #bg{background:linear-gradient(90deg,transparent 54px,#e5484d77 54px,#e5484d77 56px,transparent 56px),repeating-linear-gradient(#0000 0 31px,#7aa7d666 31px 32px),#f6f1e3;animation:none}
+body.tm-fx[data-bg=soi] #bg::before{content:'';position:absolute;inset:0;background:linear-gradient(transparent 55%,#ff9a3c2a);animation:soiflk 3.1s steps(1,end) infinite}
+body.tm-fx[data-bg=soi] #bg::after{content:'\1F47B';position:absolute;left:-10%;top:28%;font-size:46px;opacity:.22;animation:soigh 28s linear infinite}
+@keyframes soiflk{0%{opacity:1}7%{opacity:.45}9%{opacity:1}52%{opacity:.8}54%{opacity:1}81%{opacity:.5}83%{opacity:1}}
+@keyframes soigh{0%{transform:translate(0,0)}25%{transform:translate(30vw,-34px)}50%{transform:translate(60vw,18px)}75%{transform:translate(90vw,-26px)}100%{transform:translate(118vw,8px)}}
+body.tm-fx[data-bg=sk] #bg::before{content:'';position:absolute;left:-300px;top:-300px;right:0;bottom:0;background:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22 viewBox=%220 0 300 300%22%3E%3Cg fill=%22none%22 stroke=%22%233a3a3a%22 stroke-opacity=%22.38%22 stroke-width=%222.2%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M24 60c14-18 28 18 42 0s28 18 42 0%22/%3E%3Cpath d=%22M200 40l6 14 15 2-11 10 3 15-13-8-13 8 3-15-11-10 15-2z%22/%3E%3Ccircle cx=%22240%22 cy=%22170%22 r=%2216%22/%3E%3Crect x=%2240%22 y=%22170%22 width=%2234%22 height=%2248%22 rx=%224%22 transform=%22rotate%28-8 57 194%29%22/%3E%3Cpath d=%22M48 190h18M48 200h14%22 transform=%22rotate%28-8 57 194%29%22/%3E%3Cpath d=%22M130 120c20-12 36 6 56-4%22/%3E%3Cpath d=%22M178 112l10 4-8 9%22/%3E%3Cpath d=%22M110 240c10-16 24 14 34-2s24 12 34-2%22/%3E%3Cpath d=%22M250 250l16-16m0 16l-16-16%22/%3E%3C/g%3E%3C/svg%3E") 0 0/300px 300px;animation:skmv 46s linear infinite;will-change:transform}
+@keyframes skmv{to{transform:translate3d(300px,300px,0)}}
+body.ing #bg::before,body.ing #bg::after{animation:none!important}
+@media(prefers-reduced-motion:reduce){body[data-bg=soi] #bg::before,body[data-bg=soi] #bg::after,body[data-bg=sk] #bg::before,body[data-tm] #tt h1{animation:none!important}}
+/* --- สี/แผง --- */
+body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in){--bg:#120d1a;--fg:#ffe9cc;--pn:#1e1626;--cb:#2b2b2e;--ce:#f2f2f2}
+body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) .cardx,body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) #top,body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) .ac,body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) #end .eb,body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) .ph2{border-color:#ffb34777;box-shadow:0 0 14px #ff9a3c26,0 4px 14px #0007}
+body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) .cardx h3,body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) .ph2 h2,body[data-tm=soi].tm-pn:is(:not(.ing),.tm-in) .ac h2{color:#ffcf8a}
+body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in){--bg:#f6f1e3;--fg:#222;--pn:#fffdf6;--cb:#ddd;--ce:#222}
+body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in) .cardx,body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in) #top,body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in) .ac,body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in) #end .eb{border:2px solid #2b2b2b;border-radius:14px 20px 12px 22px/20px 12px 22px 14px;box-shadow:3px 3px 0 #2b2b2b66}
+body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in) .ph2{border-bottom:2px solid #2b2b2b}
+body[data-tm=sk].tm-pn:is(:not(.ing),.tm-in) .cardx h3{display:inline-block;background:linear-gradient(transparent 55%,#ffd24a99 55%);padding:0 4px}
+/* --- ปุ่ม --- */
+body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) .lgb{background:linear-gradient(135deg,#3a2112,#1d1210);border:2px solid #ffb347;color:#ffe9cc;box-shadow:0 0 14px #ff9a3c55,inset 0 0 12px #ff9a3c22}
+body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) .lgb:active{box-shadow:0 0 6px #ff9a3c66;transform:translateY(2px)}
+body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) .pri,body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) #end .eb button.pri{background:linear-gradient(135deg,#ff9a3c,#e5484d);color:#1a0c05;border:0;box-shadow:0 3px 0 #8a3a14}
+body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) .seg button.on{background:#ff9a3c;color:#1a0c05;box-shadow:0 2px 8px #ff9a3c88}
+body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) .sw.on{background:#ff9a3c}
+body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) #top button,body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) .cardx button:not(.pri):not(.sw),body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) #md .ph2 button,body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) #bar button,body[data-tm=soi].tm-bt:is(:not(.ing),.tm-in) #tb button{border-color:#ffb34799}
+body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) .lgb{background:#fffdf6;color:#222;border:2.5px solid #2b2b2b;border-radius:14px 22px 16px 24px/22px 14px 24px 16px;box-shadow:4px 4px 0 #2b2b2b;backdrop-filter:none;-webkit-backdrop-filter:none}
+body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) .lgb:active{box-shadow:1px 1px 0 #2b2b2b;transform:translate(3px,3px)}
+body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) .pri,body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) #end .eb button.pri{background:#ffd24a;color:#222;border:2.5px solid #2b2b2b;box-shadow:3px 3px 0 #2b2b2b}
+body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) .seg button.on{background:#ffd24a;color:#222;box-shadow:none;outline:2px solid #2b2b2b}
+body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) .sw.on{background:#6dbb5a}
+body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) #top button,body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) .cardx button:not(.pri):not(.sw):not(.on),body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) #bar button,body[data-tm=sk].tm-bt:is(:not(.ing),.tm-in) #tb button{border:2px solid #2b2b2b;border-radius:10px 14px 10px 14px/14px 10px 14px 10px;box-shadow:2px 2px 0 #2b2b2b88}
+/* --- ฟอนต์หัวข้อ --- */
+body[data-tm=soi].tm-tx:is(:not(.ing),.tm-in) #tt h1{color:#ffd08a;text-shadow:0 0 8px #ff9a3c,0 0 22px #e5484d99;letter-spacing:2px}
+body.tm-fx[data-tm=soi].tm-tx #tt h1{animation:soisign 5s infinite}
+@keyframes soisign{0%,19%,21%,60%,62%,100%{opacity:1}20%,61%{opacity:.55}}
+body[data-tm=sk].tm-tx:is(:not(.ing),.tm-in) h1,body[data-tm=sk].tm-tx:is(:not(.ing),.tm-in) h2,body[data-tm=sk].tm-tx:is(:not(.ing),.tm-in) h3,body[data-tm=sk].tm-tx:is(:not(.ing),.tm-in) .lgb .tx b{font-family:'Mali','Noto Sans Thai',cursive}
+body[data-tm=sk].tm-tx:is(:not(.ing),.tm-in) #tt h1{color:#222;text-shadow:3px 3px 0 #ffd24a;font-weight:700}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -701,15 +740,58 @@ body.ing #bg::before{animation:none}
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KC={แดง:'#e5484d',ฟ้า:'#3b9eff',เขียว:'#3dd68c',ม่วง:'#a78bfa'},PH={dice:'ทอยเต๋า',pick:'เลือกลำดับ',mull:'เปลี่ยนมือ',main:'Main Phase',battle:'Battle Phase',end:'End Phase',x:''};
-let RM=null,RMX=0,SHT='box',dcSeen=0,rollEnd=0,dcKey='',ws,S,ME,cur,C={},sel=null,mode=null,atk=null,pay=[],akSel=[],supl=[],lastAk='',prev={},lastEv=0,lastMine=null,lastLog=0,rxSel=null,lastBt=-1,lastDr=0,handSeen=null,NEW=new Set(),endHide=false,GAIN=0,RMQ=0,MYRM=0,lp=null,lpd=0,MYDK=null,VB=null,cfg={img:1,bg:'line',bgv:'',tok:'',th:'dark',cs:'crayon',snd:1,mus:1,fs:16,wl:1};
+let RM=null,RMX=0,SHT='box',dcSeen=0,rollEnd=0,dcKey='',ws,S,ME,cur,C={},sel=null,mode=null,atk=null,pay=[],akSel=[],supl=[],lastAk='',prev={},lastEv=0,lastMine=null,lastLog=0,rxSel=null,lastBt=-1,lastDr=0,handSeen=null,NEW=new Set(),endHide=false,GAIN=0,RMQ=0,MYRM=0,lp=null,lpd=0,MYDK=null,VB=null,cfg={img:1,bg:'line',bgv:'',tok:'',th:'dark',cs:'crayon',snd:1,mus:1,fs:16,wl:1,tm:'off',tb:1,tpn:1,tbt:1,tft:1,tfx:1,tin:1,mt:'classic',mboss:1,mv:'mid'};
 try{Object.assign(cfg,JSON.parse(localStorage.cfg||'{}'))}catch(e){}
 const vid=()=>{const o=$('bg')&&$('bg').querySelector('video');o&&o.remove();if(0)$('bg').insertAdjacentHTML('afterbegin',`<video autoplay muted loop playsinline src="${esc(cfg.bgv)}"></video>`)};
-const ap=()=>{document.documentElement.dataset.th=cfg.th;document.documentElement.dataset.cs=cfg.cs;document.documentElement.style.setProperty('--fs',cfg.fs+'px');document.body.dataset.bg=cfg.bg;vid();try{localStorage.cfg=JSON.stringify(cfg)}catch(e){}};ap();
+const ap=()=>{document.documentElement.dataset.th=cfg.th;document.documentElement.dataset.cs=cfg.cs;document.documentElement.style.setProperty('--fs',cfg.fs+'px');{const T=cfg.tm=='soi'||cfg.tm=='sk',B=document.body,L=B.classList;B.dataset.tm=T?cfg.tm:'';L.toggle('tm-pn',T&&!!cfg.tpn);L.toggle('tm-bt',T&&!!cfg.tbt);L.toggle('tm-tx',T&&!!cfg.tft);L.toggle('tm-fx',T&&!!cfg.tfx);L.toggle('tm-in',T&&!!cfg.tin);B.dataset.bg=(T&&cfg.tb)?cfg.tm:cfg.bg}vid();try{localStorage.cfg=JSON.stringify(cfg)}catch(e){}};ap();
 for(let i=0;i<10;i++){const d=document.createElement('i');d.style.cssText=`left:${i*10}%;animation-delay:${-i*1.4}s;animation-duration:${12+i}s`;$('bg').append(d)}
 $('bg').insertAdjacentHTML('beforeend','<svg viewBox="0 0 100 120"><path d="M50 8c-14 0-22 10-22 24 0 8 3 12 3 12-12 10-20 40-24 76h86c-4-36-12-66-24-76 0 0 3-4 3-12C72 18 64 8 50 8z" fill="#050508"/><ellipse cx="50" cy="36" rx="13" ry="16" fill="#000"/></svg>');
 let AC;const note=(f,d,v,ty)=>{try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=ty||'sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+Math.min(.05,d/3));g.gain.linearRampToValueAtTime(0,t+d);o.connect(g).connect(AC.destination);o.start();o.stop(t+d)}catch(e){}};
 const sfx=k=>{if(cfg.snd)({turn:()=>{note(660,.3,.06);note(880,.4,.05)},hit:()=>note(120,.25,.12,'triangle'),play:()=>note(440,.15,.05),draw:()=>note(520,.08,.04),win:()=>{note(523,.3,.07);note(659,.4,.07);note(784,.7,.07)},lose:()=>{note(220,.5,.07);note(165,.9,.07)}})[k]()};
-let mu;const music=()=>{clearInterval(mu);if(!cfg.mus)return;const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];let k=0;const f=()=>ch[k++%4].forEach(x=>note(x,5,.02));f();mu=setInterval(f,4000)};
+/* ===== ระบบเพลงใหม่ (สังเคราะห์ในโค้ด ไม่ใช้ไฟล์) : เพลงเปลี่ยนตามเหตุการณ์ในเกม =====
+   เพลงพื้นหลัง (เลือกในตั้งค่า): classic / market / ghost   |   เหตุการณ์ "สาหัส" (LIFE ใครก็ได้ที่ยังคว่ำ <= 2) -> boss (ปิดได้ในตั้งค่า) */
+const MU={cur:'',on:0,boss:0,bt:0,tg:null,tm:0,i:0,nt:0,dem:'',dtm:0,nb:null};
+const mT=(f,t,d,ty,v,o)=>{const a=AC,g0=MU.tg;if(!g0)return;o=o||{};const os=a.createOscillator(),g=a.createGain();os.type=ty||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+d);const at=o.at||.01;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.0001,t+d);let n=os;if(o.lp){const fl=a.createBiquadFilter();fl.type='lowpass';fl.frequency.value=o.lp;os.connect(fl);n=fl}n.connect(g);g.connect(g0);os.start(t);os.stop(t+d+.05)};
+const mN=(t,d,v,hp)=>{const a=AC,g0=MU.tg;if(!g0)return;if(!MU.nb){const b=a.createBuffer(1,a.sampleRate>>1,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;MU.nb=b}const sr=a.createBufferSource(),g=a.createGain(),fl=a.createBiquadFilter();sr.buffer=MU.nb;fl.type='highpass';fl.frequency.value=hp||5000;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);sr.connect(fl);fl.connect(g);g.connect(g0);sr.start(t);sr.stop(t+d+.02)};
+const TR={
+classic:{dt:4,f:(i,t)=>{const ch=[[110,277,330],[98,247,294],[87,220,262],[98,247,330]];ch[i%4].forEach(x=>mT(x,t,5,'sine',.03,{at:.2}))}},
+/* ตลาดไทยขำๆ : ระนาดสังเคราะห์ + ฉิ่ง/ฉาบ + กลองเด้งๆ (บันได 5 เสียง) */
+market:{dt:.2273,f:(i,t)=>{const P=[261.63,293.66,329.63,392,440,523.25,587.33,659.25,783.99],A=[4,5,6,5,4,3,4,-1,3,4,5,4,3,2,0,-1],B=[5,6,7,8,7,6,5,-1,6,5,4,3,4,-1,0,-1],bar=(i>>4)&3,s=i&15,n=(bar==2?B:A)[s];
+ if(n>=0){const f=P[n];mT(f,t,.32,'triangle',.08,{at:.004});mT(f*2,t,.12,'sine',.03,{at:.003})}
+ if(s%2)mN(t,.03,.03,7000);if(s%4==2)mN(t,.09,.045,4500);
+ if(s%4==0)mT([65.41,65.41,98,87.31][bar],t,.35,'triangle',.1,{at:.005});
+ if(s%8==0)mT(150,t,.14,'sine',.14,{to:45,at:.003});
+ if(s==7&&bar==1)mT(880,t,.1,'square',.03,{to:1320,at:.004})}},
+/* บอสไฟต์ตึงเครียด : เบสเลื่อยหนัก จังหวะเร็ว 168 bpm โน้ตไมเนอร์ */
+boss:{dt:.0893,f:(i,t)=>{const s=i&15,bar=(i>>4)&3,R=[55,55,58.27,49][bar];
+ if(s%2==0)mT(R*(s%8==6?2:1),t,.16,'sawtooth',.09,{lp:420,at:.004});
+ if(s%4==0)mT(160,t,.2,'sine',.22,{to:38,at:.002});
+ if(s==4||s==12){mN(t,.16,.12,1800);mT(190,t,.08,'triangle',.07,{to:110,at:.002})}
+ if(s%2)mN(t,.025,.02,8000);
+ if((bar&1)==0&&(s==0||s==3||s==6||s==10)){mT(220,t,.12,'square',.04,{lp:1800});mT(311.13,t,.12,'square',.035,{lp:1800})}
+ if(bar&1)mT([220,261.63,311.13,329.63][s&3]*(s>7?2:1),t,.09,'triangle',.045,{at:.003});
+ if(bar==3&&s>=12)mT(440+(s-12)*110,t,.09,'sawtooth',.03,{lp:2400})}},
+/* ผีหลอกชิลล์ : พาดเบาๆ ระฆังห่างๆ เสียงหวีดผี ไม่รำคาญ */
+ghost:{dt:.4167,f:(i,t)=>{const s=i%32,CH=[[220,261.63,329.63],[174.61,220,261.63],[146.83,174.61,220],[164.81,207.65,246.94]],bl=[659.25,783.99,880,1046.5,987.77,1174.66],B={3:0,10:2,14:1,21:3,27:4,30:5};
+ if(s%8==0)CH[s>>3].forEach((x,k)=>mT(x,t+k*.05,3.8,'sine',.035,{at:1}));
+ if(s==0)mT(55,t,13,'sine',.04,{at:2});
+ if(B[s]!==undefined){mT(bl[B[s]],t,2.6,'sine',.04,{at:.005});mT(bl[B[s]]*2.01,t,1.2,'sine',.012,{at:.005})}
+ if(s==18)mT(880,t,1.8,'sine',.014,{to:620,at:.6})}}};
+MU.tick=()=>{const a=AC,T=TR[MU.cur];if(!T||!a||!MU.tg)return;if(MU.nt<a.currentTime-.3)MU.nt=a.currentTime+.05;while(MU.nt<a.currentTime+.2){T.f(MU.i++,MU.nt);MU.nt+=T.dt}};
+MU.play=k=>{if(!k&&!MU.cur)return;try{AC=AC||new AudioContext();const a=AC;if(a.state=='suspended')a.resume();const lv=({low:.5,mid:1,high:1.6})[cfg.mv]||1;
+ if(k===MU.cur){MU.tg&&MU.tg.gain.setTargetAtTime(.9*lv,a.currentTime,.1);return}
+ clearInterval(MU.tm);const old=MU.tg;if(old){old.gain.cancelScheduledValues(a.currentTime);old.gain.setTargetAtTime(0,a.currentTime,.3);setTimeout(()=>{try{old.disconnect()}catch(e){}},2200)}
+ MU.cur=k;MU.tg=null;if(!k)return;
+ const g=a.createGain();g.gain.setValueAtTime(0,a.currentTime);g.gain.setTargetAtTime(.9*lv,a.currentTime,.25);g.connect(a.destination);MU.tg=g;MU.i=0;MU.nt=a.currentTime+.05;MU.tick();MU.tm=setInterval(MU.tick,40)}catch(e){}};
+const musPick=()=>MU.dem||(!cfg.mus?'':(MU.boss&&cfg.mboss)?'boss':TR[cfg.mt]?cfg.mt:'classic');
+const music=()=>{MU.on=1;MU.play(musPick())};
+const musDemo=k=>{MU.dem=k;music();clearTimeout(MU.dtm);MU.dtm=setTimeout(()=>{MU.dem='';music()},14000)};
+/* ตัวตรวจเหตุการณ์: เรียกทุกครั้งที่วาดกระดาน สาหัส = LIFE ที่ยังคว่ำของใครก็ได้ เหลือ 2 ใบหรือน้อยกว่า (ค้างไว้อย่างน้อย 8 วิ กันเพลงสลับถี่) */
+function musEv(){if(!MU.on||!S||!S.me||!S.op)return;if(S.over){MU.boss=0;MU.play('');return}
+ const lf=p=>p.life&&p.life.length?p.life.filter(l=>!l.up).length:9,b=(lf(S.me)<=2||lf(S.op)<=2)?1:0;
+ if(b!==MU.boss){if(!b&&Date.now()-MU.bt<8000)return;MU.boss=b;MU.bt=Date.now()}
+ const k=musPick();if(k!==MU.cur)MU.play(k)}
+document.addEventListener('visibilitychange',()=>{try{AC&&(document.hidden?AC.suspend():AC.resume())}catch(e){}});
 let wl;const wake=async()=>{try{if(cfg.wl&&navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}};
 const info=x=>{if(x.tk)return{n:x.tk.n,t:'Avatar',p:x.tk.p,e:'Token'};if(x.id=='BT05-054A')return{...(C['BT05-054']||{}),t:'Avatar',st:null,s:'หุ่นยนต์',c:5,g:0,p:5,col:null,e:''};let b=C[x.kd||x.id]||C[x.id]||{n:'?',t:'',e:''};if(x.nmo)b={...b,n:x.nmo,s:x.sy||b.s};return x.cc!=null&&b.c!==x.cc?{...b,c:x.cc}:b};
 const stRk=k=>({SD:0,KD:1})[k.slice(0,2)]??2,stCmp=(a,b)=>stRk(a)-stRk(b)||a.localeCompare(b,'en',{numeric:true});   // เรียงเด็ค: SD ก่อน KD แล้วค่อยอื่นๆ ตามเลข
@@ -1050,8 +1132,9 @@ const cs2=(k,v)=>{cfg[k]=isNaN(v)?v:+v;ap();music();const y=$('md').scrollTop;st
 function st(){md.className='';$('md').dataset.pg='';const tg=(k,t)=>`<div class="row2"><span>${t}</span><button class="sw${cfg[k]?' on':''}" onclick="cs2('${k}',${cfg[k]?0:1})"><i></i></button></div>`,sg=(k,t,vv)=>`<div class="row3"><span>${t}</span><div class="seg">${Object.entries(vv).map(([a,b])=>`<button class="${cfg[k]==a?'on':''}" onclick="cs2('${k}','${a}')">${b}</button>`).join('')}</div></div>`;
 $('md').innerHTML=`<div class="in pg"><div class="ph2"><button class="xb" onclick="md.hidden=true">←</button><h2>ตั้งค่า</h2></div>
 <div class="cardx"><h3>🎨 ธีม</h3>${sg('th','โหมดสี',{dark:'🌙 มืด',light:'☀ สว่าง'})}${sg('bg','พื้นหลังล็อบบี้',{line:'✏ ลายเส้น Pasulol',pasulol:'👤 ผู้รู้ความจริง',neon:'🌈 นีออน',stars:'✨ ดวงดาว'})}</div>
+<div class="cardx"><h3>🎭 ธีมพิเศษ</h3>${sg('tm','เลือกธีม',{off:'ปิด (ใช้ธีมปกติด้านบน)',soi:'🏮 ซอยตลิ่งชันยามค่ำ',sk:'📓 กระดาษสมุดสเก็ตช์'})}${cfg.tm=='soi'||cfg.tm=='sk'?tg('tb','พื้นหลังของธีม')+tg('tpn','แผง / กรอบ / สีข้อความ')+tg('tbt','ปุ่มต่างๆ')+tg('tft','ฟอนต์ / ตัวหนังสือหัวข้อพิเศษ')+tg('tfx','เอฟเฟกต์เคลื่อนไหว (ผีลอย · ไฟกระพริบ · ลายเส้นลอย)')+tg('tin','ใช้ธีมในหน้าเล่นเกมด้วย')+'<p><small>ปิดข้อไหน ส่วนนั้นจะกลับไปใช้แบบปกติ · พื้นหลังธีมจะแทนพื้นหลังล็อบบี้ด้านบน</small></p>':''}</div>
 <div class="cardx"><h3>🃏 การ์ด</h3>${tg('img','แสดงรูปการ์ด')}${sg('cs','กรอบการ์ด (เมื่อไม่มีรูป)',{crayon:'สีเทียน',plain:'เรียบ'})}${sg('fs','ขนาดตัวอักษร',{14:'เล็ก',16:'กลาง',19:'ใหญ่'})}</div>
-<div class="cardx"><h3>🔊 เสียง</h3>${tg('snd','เสียงเอฟเฟกต์')}${tg('mus','เพลงพื้นหลัง')}</div>
+<div class="cardx"><h3>🔊 เสียง</h3>${tg('snd','เสียงเอฟเฟกต์')}${tg('mus','เพลงพื้นหลัง')}${cfg.mus?sg('mt','เลือกเพลงพื้นหลัง',{classic:'🎹 เพลงเดิม (นุ่มๆ)',market:'🥁 ตลาดไทยขำๆ',ghost:'👻 ผีหลอกชิลล์'})+tg('mboss','เพลงบอสไฟต์ อัตโนมัติตอนสาหัส (LIFE ใครก็ได้เหลือ ≤ 2)')+sg('mv','ระดับเสียงเพลง',{low:'เบา',mid:'กลาง',high:'ดัง'})+'<div class="row2"><span>ลองฟังเพลงบอสไฟต์ (14 วิ)</span><button onclick="musDemo(\'boss\')">▶ ลองฟัง</button></div>':''}</div>
 <div class="cardx"><h3>📱 ระบบ</h3>${tg('wl','กันจอดับขณะเล่น')}</div></div>`;$('md').hidden=false}
 const SKB={classic:['คลาสสิก (เทา)',0],slate:['สเลทเข้ม',300],wood:['ไม้',300],neon:['นีออน',400],bot1:['BoT #1 การ์ตูนสีสด',2500],dark:['สมุดมิติมืด',3750],chalk:['กระดานดำ',3750],adv:['ผจญภัยสีเขียว',3750],constr:['เขตก่อสร้าง',5000],shrinesky:['ศาลพระภูมิลอยฟ้า',5000],ratinv:['รัททาทุยบุก',5000],hellneon:['นรกนีออน',6250],space:['ห้วงอวกาศ',6250],warb:['ศึกตลิ่งชัน (กระดาน)',6250],hellgate:['ขุนศึกประตูนรก',7500],montb:['มณโท (กระดาน)',7500],bankb:['สภาแบงค์',7500],idolb:['ไอดอลสเตจ (กระดาน)',7500]},SKC={black:['ดำ Pasulol',0],crimson:['แดงเลือด',300],gold:['ทอง',400],ocean:['น้ำเงินลึก',300],blue:['BoT สีน้ำเงิน',2500],purple:['BoT สีม่วง',2500],green:['BoT สีเขียว',2500],red:['BoT สีแดง',2500],sun:['BoT ส้มอาทิตย์',2500],violet:['BoT ม่วงเหลือง',3750],line:['ลายเส้นคลาสสิก',3750],shrine:['ศาลพระภูมิตลิ่งชัน',3750],soi:['ซอยตลิ่งชัน',3750],ghost:['ผีสุสานเรืองแสง',5000],galaxy:['จักรวาลหลุมดำ',5000],holo:['โฮโลแกรมสีรุ้ง',5000],rat:['รัททาทุย',5000],flame:['เปลวไฟสายฟ้า',6250],dino:['ยุคไดโนเสาร์',6250],war:['ศึกตลิ่งชัน',6250],montho:['มณโท',7500],sweeney:['สวีนนีย์',7500],idol:['ไอดอลสเตจ',7500],bank:['แบงค์ผู้พิชิต',7500]};
 function skinTab(k){const L=k=='board'?SKB:SKC,att=k=='board'?'data-board':'data-cback';return Object.entries(L).map(([id,[n,p]])=>{const own=!p||(ME.skins||[]).includes(k+':'+id),on=((ME.eq||{})[k]||(k=='board'?'classic':'black'))==id;return`<div class="sh"><div class="${k=='board'?'bsw':'csw'}" ${att}="${id}"></div><div><b>${n}</b><br>${on?'<span class="tagx">ใช้อยู่</span>':own?`<button onclick="send({t:'eqskin',k:'${k}',id:'${id}'})">ใช้งาน</button>`:`<button class="pri" onclick="send({t:'buyskin',k:'${k}',id:'${id}'})">ซื้อ ${p}💎</button>`}</div></div>`}).join('')+'<small>ดีไซน์สกินตอนนี้เป็นแบบเริ่มต้น เพิ่ม/เปลี่ยนได้ภายหลัง</small>'}
@@ -1168,7 +1251,7 @@ const piles=(p,o)=>{const t=p.hell[p.hell.length-1],d=(p.dk||[])[(p.dk||[]).leng
 return{H:`<div class="pl mz z-hl" data-h="${o?1:0}">${pc(t,'นรก')}<b>${p.hell.length}</b></div>`,K:`<div class="pl mz z-dk" data-dk="${o?1:0}">${pc(d,'มิติมืด')}${(p.dk||[]).length?`<b>${p.dk.length}</b>`:''}</div>`,D:`<div class="pl mz z-dp" data-dp="${o?1:0}">${p.dt?`<div class="c im" title="การ์ดบนสุด (ฮามดัล)" style="${art(p.dt,p.dta)}">${art(p.dt,p.dta)?'':esc((C[p.dt]||{}).n||'')}</div>`:'<div class="c bk"></div>'}<b>${p.deck}</b></div>`,L:`<div class="pl mz z-ld" data-ld="${o?1:0}">${own?cd(LD.c,'land',o):'<small>Land</small>'}</div>`}};
 const side=(p,o)=>{const P=piles(p,o);return`<div class="sd ${o?'op':'me'}" data-board="${(p.eq||{}).board||'classic'}" data-cback="${(p.eq||{}).card||'black'}">${row(p.co,'co',o)}${P.L}${P.K}${life(p,o)}${row(p.av,'av',o)}${row(p.mg,'mg',o,p)}${P.H}${P.D}</div>`};
 const pi=(p,o)=>`<div class="pi">${pav(p.pic,/^บอท/.test(p.name),"")}${esc(p.name)}<span id="ck${o?1-S.i:S.i}"></span> · ${p.deck<=5?'<b style="color:#f55">⚠ เด็ค '+p.deck+'</b>':'เด็ค '+p.deck} · มือ ${p.hn??p.hand.length} · <a data-h="${o?1:0}">นรก ${p.hell.length}</a></div>`;
-function render(){const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u);NEW=new Set(handSeen?hs.filter(u=>!handSeen.has(u)):[]);handSeen=new Set(hs)}
+function render(){try{musEv()}catch(e){}const m=S.me,o=S.op;{const hs=m.hand.map(x=>x.u);NEW=new Set(handSeen?hs.filter(u=>!handSeen.has(u)):[]);handSeen=new Set(hs)}
 $('mid').innerHTML=ophand(o)+pi(o,1)+side(o,1)+side(m,0)+pi(m,0);ODC=S.odc>0?Date.now()+S.odc:0;tbUI();
 $('hand').innerHTML=m.hand.map(x=>cd(x,'hand',0)).join('');ptrUI();if(dg&&dg.on&&dg.z=='hand'){const he=$('hand').querySelector('[data-u="'+dg.u+'"]');if(he){he.style.visibility='hidden';dg.hid=he}}
 feedUpd();
