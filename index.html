@@ -676,15 +676,16 @@ body.ing #bg::before{animation:none}
 .ghp{margin:8px 0;padding:8px;border:2px dashed #f59e0b99;border-radius:10px}
 .ghh{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
 .ghh .bad,.bad{color:#f87171}
-.dc.gh .di{opacity:.42;filter:grayscale(.85)}
-.dc.gh .ghn{position:absolute;right:4px;bottom:4px;background:#000c;color:#fff;border-radius:6px;padding:1px 6px;font-weight:700}
-.dc.gh .ghl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:2em}
+.dc.xgt .di{opacity:.42;filter:grayscale(.85)}
+.dc.xgt .ghn{position:absolute;right:4px;bottom:4px;background:#000c;color:#fff;border-radius:6px;padding:1px 6px;font-weight:700}
+.dc.xgt .ghl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:2em}
 #cdg{position:fixed;inset:0;background:#000b;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px}
 #cdg[hidden]{display:none}
 .cdb{background:var(--cb,#1f2937);color:inherit;border:2px solid var(--ce,#475569);border-radius:12px;padding:12px;width:min(480px,100%);display:flex;flex-direction:column;gap:8px}
 .cdb textarea{width:100%;box-sizing:border-box;font-family:monospace;font-size:.95em;background:#0006;color:inherit;border:1px solid var(--ce,#475569);border-radius:8px;padding:8px}
 .cdr{display:flex;gap:8px;flex-wrap:wrap}
 
+.xgc{display:flex;gap:6px}.xgc button{flex:1;font-size:.82em;padding:7px 4px;border-radius:8px;min-height:36px}.xgc button:disabled{opacity:.45}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -881,7 +882,7 @@ function cdGo(){const t=$('cdt').value,{out,bad}=bdParse(t);if(!out.length)retur
 if(sm(bd.m)+sm(bd.l)>0&&!confirm('แทนที่ลิสต์เด็คปัจจุบันด้วยรหัสนี้?'))return;cdX();bdLoad(out,bd.n);if(bad.length)setTimeout(()=>alert('ข้าม '+bad.length+' รายการที่อ่านไม่ได้:\n'+bad.slice(0,10).join('\n')),50)}
 function ghSum(){let g=0,d=0,n=0,lk=0;Object.entries(bd.gh||{}).forEach(([k,c])=>{const[i,r]=k.split('|');if(crOK(i,r)){const x=crCost(k,c);g+=x.g;d+=x.d;n+=c}else lk+=c});return{g,d,n,lk}}
 function ghTile(k,c){const[i,r]=k.split('|'),cd=C[i],a=art(i,r),can=crOK(i,r),x=can?crCost(k,1):null,aff=can&&ME.gems>=x.g&&(ME.dust||0)>=x.d;
-return`<div class="dc gh"><div class="di${a?'':' nt'}" onclick="zoom('${i}',0,'${r}')" style="${a}">${a?'':esc(cd.n)}<span class="rb r${r}">${r}</span><span class="ghn">ขาด ×${c}</span>${can?'':'<span class="ghl">🔒</span>'}</div><b>${esc(cd.n)}</b><small>${can?crTx(x)+' / ใบ':'คราฟไม่ได้ — ต้องเอาออก'}</small><div class="ct">${can?`<button ${aff?'':'disabled'} onclick="ghMake('${k}')">🔮 คราฟ</button>`:''}<button onclick="ghDel('${k}')">✕ เอาออก</button></div></div>`}
+return`<div class="dc xgt"><div class="di${a?'':' nt'}" onclick="zoom('${i}',0,'${r}')" style="${a}">${a?'':esc(cd.n)}<span class="rb r${r}">${r}</span><span class="ghn">ขาด ×${c}</span>${can?'':'<span class="ghl">🔒</span>'}</div><b>${esc(cd.n)}</b><small>${can?crTx(x)+' / ใบ':'คราฟไม่ได้ — ต้องเอาออก'}</small><div class="xgc">${can?`<button ${aff?'':'disabled'} onclick="ghMake('${k}')">🔮 คราฟ</button>`:''}<button onclick="ghDel('${k}')">✕ เอาออก</button></div></div>`}
 function ghPanel(){const e=Object.entries(bd.gh||{}).filter(([k])=>C[k.split('|')[0]]).sort((a,b)=>a[0]<b[0]?-1:1);if(!e.length)return'';const S=ghSum(),ok=ME.gems>=S.g&&(ME.dust||0)>=S.d,inl=bd.tab=='deck';
 return`<div class="ghp"><div class="ghh"><b>👻 การ์ดที่ยังขาด ${ghN()} ใบ</b>${S.lk?`<small class="bad">🔒 คราฟไม่ได้ ${S.lk} ใบ (ต้องเอาออกก่อนบันทึก)</small>`:''}${S.n?`<small>คราฟได้ ${S.n} ใบ รวม ${crTx(S)}</small><button class="pri" ${ok?'':'disabled'} onclick="ghAll()">🔮 คราฟทั้งหมดที่ขาด · ${crTx(S)}</button>${ok?'':'<small class="bad">💎/ผง ไม่พอ</small>'}`:''}${inl?'<small>การ์ดจางอยู่ในลิสต์ด้านล่าง (ถัดจากใบที่มี)</small>':''}</div>${inl?'':`<div class="dg">${e.map(([k,c])=>ghTile(k,c)).join('')}</div>`}</div>`}
 function ghMake(k){const[i,r]=k.split('|');crMake(i,r)}
