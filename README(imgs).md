@@ -10,4 +10,4 @@ imgs_cards_Promo.zip  ODY1, PRE0, PRMO, FPRO
 imgs_cards_Other.zip  RM01, SL01, SL02
 imgs_skins.zip        สลีฟ (sl_*) + กระดาน (bd_*)
 imgs_ui.zip           back.webp, playmat.webp
-boxes/                รูปกล่อง BT/KD/SD (เกมยังไม่ใช้ ห้ามใส่เข้า zip)
+imgs_boxes.zip                 รูปกล่อง BT/KD/SD
