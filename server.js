@@ -6337,9 +6337,10 @@ Object.assign(MG, {
     const o1 = () => { const n = 5 - p.hand.length; if (n > 0) { draw(r, p, n); log(r, '✨ พรของอิศวร: จั่ว ' + n + ' ใบ ให้มือครบ 5 ใบ'); } };
     const o2 = () => ask(r, i, { text: 'พรของอิศวร: เลือก Avatar ฝ่ายตรงข้ามไม่เกิน 2 ใบ ทำลาย', opts: T(), n: Math.min(2, T().length), min: 1, cb: us => us.forEach(u => { vfx(u, 'burst', '💥 พรอิศวร', '#ef4444'); destroyAv(r, u); }) });
     const o3 = () => ask(r, i, { text: 'พรของอิศวร: เลือกการ์ดจากนรก 2 ใบ ขึ้นมือ', opts: H(), n: Math.min(2, H().length), min: Math.min(2, H().length), cb: us => us.forEach(u => { const c = fromZone(r, i, 'hell', u); if (c) { p.hand.push(c); vfx(c.u, 'aura', '✨ ขึ้นมือ', '#f59e0b'); } }) });
-    const ch = [], fn = []; if (p.hand.length < 5) { ch.push('1) จั่วให้การ์ดบนมือครบ 5 ใบ'); fn.push(o1); } if (T().length) { ch.push('2) ทำลาย Avatar ฝ่ายตรงข้ามไม่เกิน 2 ตัว'); fn.push(o2); } if (H().length) { ch.push('3) นำการ์ดจากนรกขึ้นมือ 2 ใบ'); fn.push(o3); }
-    if (!ch.length) return log(r, 'พรของอิศวร: ไม่มีตัวเลือกที่ทำได้'); if (ch.length === 1) return fn[0]();
-    ask(r, i, { choices: ch, text: 'พรของอิศวร: เลือกปฏิบัติ', cb: k => fn[k]() });
+    const L3 = ['1) จั่วให้การ์ดบนมือครบ 5 ใบ', '2) ทำลาย Avatar ฝ่ายตรงข้ามไม่เกิน 2 ตัว', '3) นำการ์ดจากนรกขึ้นมือ 2 ใบ'], FN = [o1, o2, o3], okf = () => [p.hand.length < 5, T().length > 0, H().length > 0];
+    if (!okf().some(Boolean)) return log(r, 'พรของอิศวร: ไม่มีตัวเลือกที่ทำได้');
+    const pickIt = () => { const ok = okf(); ask(r, i, { choices: L3.map((t, k) => ok[k] ? t : t + ' (ตอนนี้ทำไม่ได้)'), text: 'พรของอิศวร: เลือกปฏิบัติ 1 ใน 3', cb: k => { if (!ok[k]) { log(r, '⚠ พรของอิศวร: ข้อนี้ทำไม่ได้ตอนนี้ เลือกใหม่'); return pickIt(); } FN[k](); } }); };
+    pickIt();
   } },
   'CC01-043': { cond: r => r.p.some((q, qi) => q.av.some(a => (a.ctl && a.ctl.from !== qi) || (a.oo != null && a.oo !== qi))),
     run: r => { let n = 0;   // รู้สึกเหมือนโดนแย่งเมีย: Avatar ที่ถูกเปลี่ยนการควบคุม → กลับเจ้าของเดิม
