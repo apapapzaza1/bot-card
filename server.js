@@ -153,9 +153,10 @@ const srv = http.createServer((q, r) => {
       a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); if (FORCE_ONLY1.includes(c.id)) c.o = 'Only #1'; });
       r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(a)); } catch (e) { } } }
   let f = path.basename(q.url.split('?')[0]) || 'index.html', dir = __dirname;
+  const isBox = BOX_RE.test(f); if (isBox && fs.existsSync(path.join(IMG, f))) dir = IMG;   // รูปกล่องจาก zip มาก่อนไฟล์เก่าที่ค้างในโฟลเดอร์ราก
   if (!fs.existsSync(path.join(dir, f)) && fs.existsSync(path.join(IMG, f))) dir = IMG;
   if (!MT[path.extname(f)] || f === 'package.json' || !fs.existsSync(path.join(dir, f))) { f = 'index.html'; dir = __dirname; }
-  r.writeHead(200, (path.extname(f) === '.webp' || path.extname(f) === '.png') ? { 'Content-Type': MT[path.extname(f)], 'Cache-Control': 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
+  r.writeHead(200, (path.extname(f) === '.webp' || path.extname(f) === '.png') ? { 'Content-Type': MT[path.extname(f)], 'Cache-Control': isBox ? 'no-cache' : 'public, max-age=86400' } : { 'Content-Type': MT[path.extname(f)] });
   fs.createReadStream(path.join(dir, f)).pipe(r);
 });
 const crypto = require('crypto');
