@@ -208,7 +208,7 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, tokens: tkPub, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','CC01','CC02'];
@@ -556,7 +556,14 @@ function deckInsts(d) { const left = {}; Object.entries(d.vr || {}).forEach(([k,
   return { deck: shuf(d.main.map(mk)), life: shuf(d.life.map(id => ({ ...mk(id), up: 0 }))) }; }
 function preDeck(s) { const x = ST[s], vr = {}; [...x.main, ...x.life].forEach(([id, n, r]) => { if (r) vr[id + '|' + r] = (vr[id + '|' + r] || 0) + n; }); return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id), vr }; }
 async function pickDeck(m, user, ban) {
-  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return { ...mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban), art: k.art || {}, vr: k.vr || null }; }
+  if (m.mine) {
+    const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค');
+    const base = mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban);
+    const sn = m.sd != null ? String(m.sd) : (k.sd || ''), sc = sn && u.sides && u.sides[sn] ? u.sides[sn].cards.filter(i => B[i]) : [];
+    let side = sc, sideErr = null;
+    if (side.length) { const V = sideViol(base.main, base.life, side, ban); if (V.length) { sideErr = 'Side Deck "' + sn + '" ใช้ไม่ได้ จึงข้ามไป: ' + sumV(V); side = []; } }
+    return { ...base, art: k.art || {}, vr: k.vr || null, tk: Array.isArray(k.tk) ? tkClean(k.tk) : null, side, sideErr, sdName: side.length ? sn : '' };
+  }
   if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return preDeck(m.pre); }
   if (!process.env.BOT_TEST) E('ปิดใช้งานเด็ควางลิสต์/เด็คทดสอบแล้ว');
   return mkDeck(m.text || '', m.rand, m.skip, ban);
@@ -1485,6 +1492,32 @@ function banViol(main) {
   return V;
 }
 function checkBan(main) { const V = banViol(main); if (V.length) E(sumV(V)); }
+/* ===== Token ประจำเด็ค + Side Deck =====
+   • Token: เด็คเลือกรายการ Token ที่ "ใส่มา" (deck.tk) = พูลที่เอฟเฟกต์ดึงไปใช้จริง ; เด็คเก่าที่ไม่ได้เลือกไว้ → ตรวจจากข้อความการ์ดในเด็คอัตโนมัติ
+   • Side Deck: ≤10 ใบ + Only #1 อีก 1 ใบ (รวม ≤11) · ห้าม LIFE · ชื่อเดียวกัน Main+Side รวมไม่เกินโควตา · กฎการ์ดบาป/เงื่อนไขพิเศษนับรวม Side ด้วย */
+const TOKENS = { 'SD09-026': { id: 'SD09-026', n: 'วานร', s: 'สัตว์', c: 1, p: 1, g: 0, col: 'เขียว', rx: 'Token\\s*วานร' } };
+const tkPub = Object.values(TOKENS).map(t => ({ ...t }));
+const autoTk = ids => Object.values(TOKENS).filter(t => { const re = new RegExp(t.rx); return ids.some(i => B[i] && re.test(B[i].e || '')); }).map(t => t.id);
+const tkClean = a => [...new Set((Array.isArray(a) ? a : []).map(String).filter(t => TOKENS[t]))];
+const SIDE_MAX = 10;   // ยังไม่ล็อกสลับ Side ตามเกม (เปลี่ยนได้ทุกเกม) — ถ้ามีอีเวนต์ tournament ให้เช็ก r.gn (เลขเกมในห้อง) ตรงจุด 'sidesw'
+const isO1 = c => c.o === 'Only #1' && !(c.lim > 1);
+function sideSelfViol(side) {   // กฎของ Side Deck ล้วนๆ
+  const V = [];
+  if (side.some(i => B[i].t === 'Life')) V.push('ห้ามใส่ LIFE Card ใน Side Deck');
+  const o1 = side.filter(i => isO1(B[i])).length, rest = side.length - o1;
+  if (side.length) { if (o1 !== 1) V.push(o1 ? 'Side Deck ใส่ Only #1 ได้แค่ 1 ใบ (มี ' + o1 + ')' : 'Side Deck ต้องมี Only #1 อีก 1 ใบ'); if (rest > SIDE_MAX) V.push('Side Deck ใส่ได้สูงสุด ' + SIDE_MAX + ' ใบ ไม่นับ Only #1 (ตอนนี้ ' + rest + ')'); }
+  const cnt = countNames(side), seen = new Set();
+  side.forEach(i => { const n = nk(B[i].n); if (seen.has(n)) return; if (cnt[n] > limOf(B[i])) { seen.add(n); V.push('ซ้ำเกิน ' + limOf(B[i]) + ' ใบ: ' + n); } });
+  return V;
+}
+function sideViol(main, life, side, ban) {   // กฎร่วม Main+Side
+  const V = sideSelfViol(side); if (!side.length) return V;
+  const all = main.concat(side), cnt = countNames(all), seen = new Set();
+  all.forEach(i => namesOf(B[i]).forEach((n, k) => { if (seen.has(n)) return; const l = k ? (LIMNAME[n] || 4) : limOf(B[i]); if (cnt[n] > l) { seen.add(n); V.push('Main+Side ซ้ำเกิน ' + l + ' ใบ: ' + n); } }));
+  if (ban) banViol(all).forEach(v => { if (!V.includes(v)) V.push(v); });
+  return V;
+}
+const sdSend = p => { if (p && p.ws && p.ws.readyState === 1 && p.dd) p.ws.send(JSON.stringify({ t: 'sd', main: p.dd.main, side: p.dd.side, life: p.dd.life, sd: p.dd.sd || '', n: p.sw || 0, tk: p.dd.tk || null })); };
 function mkDeck(text, rand, skip, ban) {
   let main = [], life = [];
   if (rand) {
@@ -1520,7 +1553,7 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
-  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
+  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, tkp: p.tkp || [], av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
   return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, show: g.ask.show, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
@@ -1990,6 +2023,8 @@ function resolveAtk(r, p) {
 }
 function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') { resolveAtk(r, p); if (r.g.noReact && r.g.noReact.b5) r.g.noReact = null; } runQ(r); }
 function begin(r) {
+  r.gn = (r.gn || 0) + 1;   // เลขเกมในห้อง (ไว้ล็อกสลับ Side ตามกติกา tournament ในอนาคต)
+  r.p.forEach(x => { x.tkp = (x.dd && Array.isArray(x.dd.tk)) ? x.dd.tk.slice() : autoTk([...(x.deck || []), ...(x.life || [])].map(c => c.id)); });
   r.p.forEach(x => { hookHand(x); hookDeck(x); });
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; x.fd = 0; x.ban = null; });
   r.g = { turn: 0, phase: 'dice', pend: null, ask: null, q: [], n: 0, used: [{}, {}], land: null, log: ['เริ่มเกม!'], over: null };
@@ -1999,7 +2034,7 @@ function begin(r) {
 async function rematch(r, i) {
   r.p[i].rm = 1; r.p.forEach(x => x.bot && (x.rm = 1)); if (!r.rmT) r.rmT = Date.now();
   if (r.p.every(x => x.rm)) {
-    for (const x of r.p) { const d = x.bot ? botDeck() : await pickDeck(x.last, x.name, r.cfg.ban); { const y = deckInsts(d); x.deck = y.deck; x.life = y.life; } x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
+    for (const x of r.p) { const d = x.bot ? botDeck() : (x.dd || await pickDeck(x.last, x.name, r.cfg.ban)); { const y = deckInsts(d); x.deck = y.deck; x.life = y.life; } x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
     r.rmT = 0; if (r.bot) { r.bot.tn = -1; r.bot.fail = 0; } begin(r);
   } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
   bc(r);
@@ -2216,7 +2251,36 @@ wss.on('connection', ws => {
         if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); const art = {}; Object.entries(m.art || {}).forEach(([i, r]) => { if (cnt[i] && B[i] && (d.cards[i + '|' + r] || 0) > 0) art[i] = String(r); }); const vr = {}, vs = {}; Object.entries(m.vr || {}).forEach(([k, n]) => { const [i, r] = String(k).split('|'); n = n | 0; if (n > 0 && cnt[i] && (d.cards[i + '|' + r] || 0) >= n) { vr[i + '|' + r] = n; vs[i] = (vs[i] || 0) + n; } });
         for (const i in vs) if (vs[i] > cnt[i]) E('จำนวนระดับเกิน');
         for (const i in cnt) if ((vs[i] || 0) < cnt[i]) { const r = art[i] || (B[i].v || ['C'])[0], k = i + '|' + r; vr[k] = (vr[k] || 0) + cnt[i] - (vs[i] || 0); }
-        d.decks[nm] = { main, life, art, vr };
+        const tk = Array.isArray(m.tk) ? tkClean(m.tk) : null; let sdn = m.sd ? String(m.sd) : '';
+        if (sdn) { const sc = d.sides && d.sides[sdn]; if (!sc) sdn = ''; else { const cc = { ...cnt }; sc.cards.forEach(i => { cc[i] = (cc[i] || 0) + 1; }); for (const i in cc) if (cc[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Main+Side: ' + B[i].n); const V = sideViol(main, life, sc.cards, false); if (V.length) E('Side Deck "' + sdn + '" ใช้ร่วมกับเด็คนี้ไม่ได้: ' + sumV(V)); } }
+        d.decks[nm] = { main, life, art, vr, ...(tk ? { tk } : {}), ...(sdn ? { sd: sdn } : {}) };
+        await dbPut(ws.user, d); me_(d); return;
+      }
+      if (m.t === 'savesd') {   // บันทึก Side Deck (แยกจากเด็ค ตั้งชื่อได้)
+        const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
+        const cards = (m.cards || []).map(String), cnt = {};
+        cards.forEach(i => { if (!B[i]) E('ไม่พบ ' + i); cnt[i] = (cnt[i] || 0) + 1; });
+        for (const i in cnt) if (cnt[i] > (own[i] || 0)) E('การ์ดไม่พอ: ' + B[i].n);
+        const V = sideSelfViol(cards); if (V.length) E(sumV(V));
+        const nm = String(m.name || '').trim().slice(0, 20) || 'Side ใหม่'; d.sides = d.sides || {};
+        if (!d.sides[nm] && Object.keys(d.sides).length >= 20) E('Side Deck เต็ม 20');
+        d.sides[nm] = { cards }; await dbPut(ws.user, d); me_(d); return;
+      }
+      if (m.t === 'delsd') {
+        const d = await dbGet(ws.user), nm = String(m.name || ''); if (d.sides) delete d.sides[nm];
+        Object.values(d.decks || {}).forEach(k => { if (k && k.sd === nm) delete k.sd; });
+        await dbPut(ws.user, d); me_(d); return;
+      }
+      if (m.t === 'linksd') {   // ลิงก์ Side Deck เข้ากับเด็ค ('' = ยกเลิกลิงก์)
+        const d = await dbGet(ws.user), k = d.decks && d.decks[String(m.deck || '')]; if (!k) E('ไม่พบเด็ค');
+        const sn = String(m.sd || '');
+        if (!sn) { delete k.sd; } else {
+          const sc = d.sides && d.sides[sn]; if (!sc) E('ไม่พบ Side Deck');
+          const own = {}; Object.entries(d.cards).forEach(([kk, v]) => { const i = kk.split('|')[0]; own[i] = (own[i] || 0) + v; });
+          const cc = {}; [...k.main, ...k.life, ...sc.cards].forEach(i => { cc[i] = (cc[i] || 0) + 1; }); for (const i in cc) if (cc[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Main+Side: ' + B[i].n);
+          const V = sideViol(k.main, k.life, sc.cards, false); if (V.length) E('ลิงก์ไม่ได้: ' + sumV(V));
+          k.sd = sn;
+        }
         await dbPut(ws.user, d); me_(d); return;
       }
       if (m.t === 'fadd') {
@@ -2302,12 +2366,25 @@ wss.on('connection', ws => {
         if (!r) { if (!m.create) E('ไม่พบห้อง'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5,10,20].includes(+m.clock) ? +m.clock : 0, react: [10,20,30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] }); }
-        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
+        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r); sdSend(r.p[i]);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
-        p.last = m; { const y = deckInsts(d); p.deck = y.deck; p.life = y.life; } p.hand = [];
-        bc(r);
+        p.last = m; p.sw = 0; p.dd = { main: d.main.slice(), life: d.life.slice(), side: (d.side || []).slice(), tk: Array.isArray(d.tk) ? d.tk.slice() : null, art: d.art || {}, vr: d.vr || null, sd: d.sdName || '' };
+        { const y = deckInsts(d); p.deck = y.deck; p.life = y.life; } p.hand = [];
+        bc(r); sdSend(p); if (d.sideErr && ws.readyState === 1) ws.send(JSON.stringify({ note: d.sideErr }));
+      } else if (m.t === 'sidesw') {   // สลับการ์ด Main ↔ Side (ก่อนเริ่มเกม / หลังจบเกมก่อนกดเล่นซ้ำ)
+        if (!r || (r.g && !r.g.over)) E('สลับ Side ได้ก่อนเริ่มเกมหรือหลังจบเกมเท่านั้น');
+        const p = r.p[i]; if (!p || !p.dd) E('เลือกเด็คก่อน'); if (p.rm) E('กดเล่นซ้ำไปแล้ว สลับ Side ไม่ได้');
+        const out = (m.out || []).map(String), inn = (m.inn || []).map(String);
+        if (out.length !== inn.length) E('จำนวนที่สลับออกและเข้าต้องเท่ากัน');
+        const mainA = p.dd.main.slice(), sideA = p.dd.side.slice();
+        const takeOut = (a, ids) => ids.forEach(x => { const k = a.indexOf(x); if (k < 0) E('ไม่มีการ์ด ' + (B[x] ? B[x].n : x)); a.splice(k, 1); });
+        takeOut(mainA, out); takeOut(sideA, inn); mainA.push(...inn); sideA.push(...out);
+        const V = [...deckViol(mainA, p.dd.life), ...(r.cfg.ban ? banViol(mainA.concat(sideA)) : [])]; if (V.length) E(sumV(V));
+        p.dd.main = mainA; p.dd.side = sideA; p.sw = (p.sw || 0) + 1;
+        if (!r.g) { const y = deckInsts(p.dd); p.deck = y.deck; p.life = y.life; p.hand = []; }
+        sdSend(p); bc(r);
       } else if (m.t === 'rcfg') {
         if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องตั้งกติกาได้');
         if (m.clock != null) r.cfg.clock = [5, 10, 20].includes(+m.clock) ? +m.clock : 0;
@@ -6712,6 +6789,7 @@ const sdWanHell9 = (r, i) => r.p[i].hell.filter(sdWanC9);
 const sdTokN9 = (r, i) => r.p[i].av.filter(a => a.tk && a.tk.n === 'วานร').length;
 const sdMyWan9 = (r, i) => r.p[i].av.filter(sdIsWan9);
 function sdMkTk9(r, i, why) {
+  if (r.p[i].tkp && !r.p[i].tkp.includes('SD09-026')) { log(r, '🐒 เด็คของ ' + r.p[i].name + ' ไม่ได้ใส่ Token วานรมา อัญเชิญไม่ได้'); return null; }
   const p = r.p[i], t = { u: UID++, id: 'SD09-026', pw: 0, tired: false, tk: { n: 'วานร', s: 'สัตว์', p: 1, c: 1, col: 'เขียว' } };
   if (!canPlaceAv(r, i, t)) { log(r, '🐒 Avatar เต็ม อัญเชิญ Token วานรไม่ได้'); return null; }
   p.av.push(t); fx({ k: 'summon', u: t.u }); vfx(t.u, 'rise', '🐒 Token วานร', '#22c55e'); vfx(t.u, 'ring', '', '#86efac');
