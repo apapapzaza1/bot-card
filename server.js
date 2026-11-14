@@ -5874,8 +5874,8 @@ const botCv = (r, x) => { if (x.tk) return (x.tk.p || 0) + 1; const d = B[x.id];
 const botSync = r => { bc(r); settle(r).catch(() => { }); };
 function botAct(r, k, m) {
   const bt = r.bot;
-  try { act(r, k, m); bt.fail = 0; botSync(r); return true; }
-  catch (e) { bt.fail++; if (typeof e !== 'string') console.error('bot', e); botSync(r); return false; }
+  try { act(r, k, m); bt.fail = 0; bt.esc = 0; botSync(r); return true; }
+  catch (e) { bt.fail++; bt.le = (typeof e === 'string' ? e : (e && e.message) || String(e)) + ' [' + (m && m.t) + ']'; if (typeof e !== 'string') console.error('bot', e); botSync(r); return false; }
 }
 // เลือกการ์ดบนมือจ่ายเป็น Cost: ชุดที่ Gem พอและ "เสียของน้อยที่สุด"
 function botPay(r, k, card, hand) {
@@ -6136,8 +6136,18 @@ function botTick() {
     if (!hu.ws || hu.ws.readyState !== 1 || hu.dc || now < bt.at) continue;
     bt.at = now + (bt.lv >= 3 ? 500 : 800) + Math.random() * 500;
     CR = r; if (bt.tn !== g.n) { bt.tn = g.n; bt.tried = new Set(); bt.played = []; }
-    try { botStep(r, k); } catch (e) { console.error('bot', e); bt.fail++; }
-    if (bt.fail >= 10 && !g.over) { bt.fail = 0; console.error('bot stuck -> surrender', c); botAct(r, k, { t: 'surrender' }); }
+    try { botStep(r, k); } catch (e) { console.error('bot', e); bt.fail++; bt.le = (e && e.message) || String(e); }
+    if (bt.fail >= 10 && !g.over) {   // ติดขัด: ไม่ยอมแพ้ทันที — พยายามไถลไปต่อ (ตอบ/Pass/ข้าม Phase) ยอมแพ้เฉพาะเมื่อติดซ้ำหลายรอบจริงๆ
+      bt.fail = 0; bt.esc = (bt.esc || 0) + 1; bt.tried = new Set();
+      console.error('bot stuck', c, 'esc', bt.esc, 'last error:', bt.le);
+      try { r.g.log.push('🤖 บอทติดขัด (' + bt.esc + '): ' + bt.le); } catch (e) { }
+      if (bt.esc >= 5) { botAct(r, k, { t: 'surrender' }); continue; }
+      const a = g.ask;
+      if (a) { if (a.who === k) { if (a.cancel) botAct(r, k, { t: 'pick', cancel: 1 }) || (a.yn ? botAct(r, k, { t: 'pick', yes: 0 }) : botAct(r, k, { t: 'pick', us: a.opts.slice(0, a.min) })); } }
+      else if (g.pend) { if (g.pend.who === k) botAct(r, k, { t: 'pass' }); }
+      else if (g.turn === k && ['main', 'battle'].includes(g.phase)) botAct(r, k, { t: 'next' });
+      else if (g.turn === k && g.phase === 'end') botEnd(r, k);
+    }
   }
 }
 setInterval(botTick, 300);
