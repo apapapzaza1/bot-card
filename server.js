@@ -712,8 +712,8 @@ function ask(r, who, o) {
   const opts = (o.yn || o.choices) ? [] : o.opts;
   if (!o.yn && !o.choices && !opts.length) { o.none && o.none(); return false; }
   const n = Math.min(o.n || 1, opts.length), min = Math.min(o.min == null ? n : o.min, n);
-  r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, rps: !!o.rps, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
-    cards: opts.map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z } : { u }; }) };
+  r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, rps: !!o.rps, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, show: !!o.show, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
+    cards: (o.show || opts).map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z, sh: o.show ? 1 : 0 } : { u }; }) };
   return true;
 }
 // ===== ไพรมอล รัททาทุย (SD08-001) สกิล 2: อัตโนมัติ เทิร์นละครั้ง เมื่อจะออกจากสนาม เนรเทศ {รัททาทุย} ในนรก 5 ใบ → ไม่ออกจากสนาม =====
@@ -1521,7 +1521,7 @@ function rjStatus(ws) {
 const view = (r, i) => {
   r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
   CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
+  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, show: g.ask.show, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -2779,10 +2779,15 @@ function futChain(r, actor, what, done) {
   const counter = (card, key) => futChain(r, w, { text: 'ใช้ React Magic "' + B[card.id].n + '"', name: B[card.id].n, react: true }, c => done(!c));   // ฝ่าย actor ตอบโต้กลับได้
   const f = futCard(r, w), k = what.react ? kd17Card(r, w) : null;
   if (!f && !k) return done(false);
-  const opts = [f, k].filter(Boolean).map(c => c.u);   // หน้าต่างเลือกการ์ด: ชายจากอนาคต / อย่าให้มีครั้งที่ 2 (ถ้ามีในมือ)
-  ask(r, w, { text: FUTQ + ' ฝ่ายตรงข้าม' + what.text + ' — เลือกการ์ดที่จะใช้ยกเลิก (' + (f ? 'ชายจากอนาคต' : '') + (f && k ? ' / ' : '') + (k ? 'อย่าให้มีครั้งที่ 2 ยกเลิกผล React ได้ แม้ใช้ React ไปแล้วในเทิร์นนี้ · ใบละ 1 ต่อเทิร์น' : '') + ') หรือกด ยกเลิก เพื่อไม่ใช้', opts, n: 1, min: 1, cancel: true,
-    onCancel: () => done(false),
-    cb: us => { const c = me.hand.find(h => h.u === us[0]); if (!c) return done(false); const key = isFut(c) ? 'fut' : 'kd17'; if (!spend(c, key)) return done(false); counter(c, key); } });
+  // หน้าต่างตอบโต้: โชว์รูปการ์ด + ปุ่ม ใช้ / ไม่ใช้ (ถามชายจากอนาคตก่อน ถ้ากดไม่ใช้ ค่อยถามอย่าให้มีครั้งที่ 2)
+  const step = list => {
+    if (!list.length) return done(false);
+    const [card, key] = list[0], nm = B[card.id].n;
+    ask(r, w, { yn: true, show: [card.u],
+      text: nm + ': ฝ่ายตรงข้าม' + what.text + ' — ใช้ ' + nm + ' ยกเลิก' + (key === 'fut' ? '' : 'ผล React (แม้ใช้ React ไปแล้วในเทิร์นนี้ · ใบละ 1 ต่อเทิร์น)') + '?',
+      cb: y => { if (!y) return step(list.slice(1)); if (!me.hand.includes(card) || !spend(card, key)) return done(false); counter(card, key); } });
+  };
+  step([f && [f, 'fut'], k && [k, 'kd17']].filter(Boolean).map(x => x));
 }
 // ทางเข้าเดิม: React Magic ที่ร่ายแล้ว — go(cancelled)
 function kdReactGate(r, i, c, go) {
@@ -5996,6 +6001,10 @@ function botMain(r, k) {
   });
   if (bt.lv === 3) botLook(r, k, ops, W);   // ยาก: มองล่วงหน้า 2 ใบ (ท้าทายใช้ chPlanPick วางทั้งชุดอยู่แล้ว)
   if (botBait(r, k, false)) { const n0 = ops.length; for (let j = ops.length - 1; j >= 0; j--) if (ops[j].d.t === 'Avatar') ops.splice(j, 1); if (ops.length < n0 || me.hand.some(h => B[h.id] && B[h.id].t === 'Avatar')) bt.baitN = g.n; }   // ล่อให้ตี LIFE
+  if (ops.some(q => isPayerAv(q.d))) {   // ตัวจ่าย: ไม่ลงสนาม ยกเว้นมือเต็ม หรือสนามเราว่างจนถูกบีบ/ไม่มีใบอื่นให้ลง
+    const squeezed = me.hand.length >= 7 || (me.av.length === 0 && r.p[1 - k].av.length > 0 && ops.every(q => isPayerAv(q.d)));
+    if (!squeezed) for (let j = ops.length - 1; j >= 0; j--) if (isPayerAv(ops[j].d)) ops.splice(j, 1);
+  }
   ops.forEach(o => { o.rv = ops.some(q => q !== o && q.pay.us.includes(o.h.u) && q.gain > -1.5); });   // ใบนี้เป็น "ตัวจ่าย" ของใบที่คุ้มกว่า → อย่าเอาลงสนามเสียเอง
   ops.forEach(o => { if (o.rv) o.gain -= 5; else if (ops.length > 1 && o.d.t === 'Avatar') o.gain -= (B[o.h.id].g || 0) * .5; });   // ใบที่มี Gem ใช้จ่ายได้ → เก็บไว้จ่ายก่อน ถ้ายังมีใบอื่นให้ลง
   ops.sort((a, b) => b.gain - a.gain);
@@ -6016,6 +6025,8 @@ function botMain(r, k) {
   }
   return botAct(r, k, { t: 'next' });
 }
+// ตัวจ่าย Cost: Avatar ที่ Cost ต่ำ POWER ต่ำ แต่ GEM สูง (≥3) และไม่มีสกิลบนสนาม — บอทเก็บไว้ในมือจ่ายให้ใบอื่น ไม่ลงสนามเอง
+const isPayerAv = d => !!d && d.t === 'Avatar' && (d.g || 0) >= 3 && (d.c || 0) <= 1 && (d.p || 0) <= 1 && !/สั่งใช้|ต่อเนื่อง|เทิร์นละครั้ง|แทงหลัง/.test(d.e || '');
 function botBattle(r, k) {
   const g = r.g, me = r.p[k], op = r.p[1 - k], bt = r.bot, lv = Math.min(bt.lv, 3), W = bt.w || CHW0, T = bt.tried, opts = [];
   if (muayLimit(r)) { me.av.forEach(a => T.add('a' + a.u)); return false; }   // มวยทะเล: ตีครบ 1 ใบแล้ว

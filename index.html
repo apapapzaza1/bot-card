@@ -1315,7 +1315,7 @@ const g=pay.reduce((a,u)=>{const d=info(find(u).x);return a+(gvF(c,d)||d.g||0)},
 e.innerHTML=`<div class="pdb"><h3>${verb} ${esc(c.n)}</h3><div class="pds">Cost ${c.c} · ${esc(c.t)}${c.col?' สี'+esc(c.col):''} → จ่ายด้วย GEM ไร้สี${c.col?' หรือ GEM สี'+esc(c.col):' (ทุกสี)'}</div><div class="pdg">${S.me.hand.filter(x=>x.u!=sel).map(q=>{const d=info(q),can=pdOK(q,c.col,c);return`<div class="pdw${pay.includes(q.u)?' on':''}${can?'':' dis'}">${cd(q,'pdc',0)}${d.g?`<span class="gbd" style="${d.gc&&KC[d.gc]?'background:'+KC[d.gc]+';color:#fff':''}">◆${d.g}</span>`:''}</div>`}).join('')}</div><div class="pdt">รวม GEM: <b class="${ok?'ok':''}">${g}</b> / ต้องการ ${c.c} · <span class="${ok?'ok':'no'}">${ok?'ครบ Cost แล้ว':'ยังไม่ถึง Cost'}</span></div><div class="pdn">*ต้องจ่ายให้ถึง Cost (จ่ายเกินได้) · GEM ไร้สีใช้จ่ายได้ทุกสี</div><div class="pdf"><button onclick="pdCancel()">ยกเลิก</button><button class="go" ${ok?'':'disabled'} onclick="pdGo()">${verb}</button></div></div>`;e.hidden=false;e.firstChild.scrollTop=sc}
 function akUI(){const e=$('akp'),a=S&&S.ask;const key=a&&a.mine?a.text+a.opts.join():'';if(key!==lastAk){lastAk=key;akSel=[]}
 if(!a||!a.mine){e.hidden=true;return}
-const off=(a.cards||[]).filter(c=>!['av','co','mg','hand'].includes(c.z));
+const off=(a.cards||[]).filter(c=>c.sh||!['av','co','mg','hand'].includes(c.z));
 e.innerHTML=`<h4>🎯 ${esc(a.text)}</h4>`+(off.length?`<div class="akr">${off.map(c=>{const ar=c.id&&c.id!='TK'?art(c.id,c.ar):'';return`<div class="akc${akSel.includes(c.u)?' sel':''}" data-ak="${c.u}"${c.id&&c.id!='TK'?' data-cid="'+c.id+'"':''}><div class="c im" style="${ar}">${ar?'':esc(c.tk||(C[c.id]||{}).n||'')}</div>${c.i==null?'':(c.i==S.i?'เรา':'ศัตรู')+' · '+(ZNm[c.z]||c.z||'')}</div>`}).join('')}</div>`:'')+(a.choices?'<div class="chs'+(a.rps?' rps':'')+'">'+a.choices.map((t,k)=>`<button onclick="send({t:'pick',i:${k}})">${esc(t)}</button>`).join('')+'</div>':'');e.hidden=false}
 function zoom(id,ms,r){const c=C[id];if(!c)return;const a=art(id,r);$('zm').innerHTML=a?`<div class="zw"><div class="zi" style="${a}"></div><div class="zt">${bigHtml(c)}</div></div>`:`<div class="big">${bigHtml(c)}</div>`;$('zm').hidden=false;clearTimeout(zoom.t);if(ms)zoom.t=setTimeout(()=>$('zm').hidden=true,ms)}
 $('zm').onclick=()=>{if(zoom.g)return;if(S&&S.evw&&!S.evw.me&&!S.over){evOk();return}$('zm').hidden=true};
@@ -1361,7 +1361,7 @@ if(S.spec){A('👁 กำลังรับชม — กดเพื่ออ�
 if(S.over){A('📊 ผลการแข่ง',()=>{endHide=false;endUI()});A(MYRM?'⏳ รออีกฝ่าย…':'เล่นซ้ำ',()=>{if(!MYRM){MYRM=1;send({t:'rm'});endUI()}});return A('กลับหน้าหลัก',()=>location.reload())}
 if(S.phase=='dice'||S.phase=='pick')return;
 if(S.ask){const a=S.ask;if(!a.mine)return A('⏳ รอฝ่ายตรงข้ามเลือก…',()=>{});if(a.choices)return;
-if(a.yn){A('✔ ใช่',()=>send({t:'pick',yes:1}));return A('✖ ไม่',()=>send({t:'pick',yes:0}))}
+if(a.yn){A(a.show?'✔ ใช้':'✔ ใช่',()=>send({t:'pick',yes:1}));return A(a.show?'✖ ไม่ใช้':'✖ ไม่',()=>send({t:'pick',yes:0}))}
 const ok=akSel.length>=a.min&&akSel.length<=a.n;const bt=A('ยืนยัน ('+akSel.length+'/'+(a.min==a.n?a.n:a.min+'-'+a.n)+')',()=>send({t:'pick',us:akSel}));bt.disabled=!ok;bt.className='atkb';
 return a.cancel?A('ยกเลิก',()=>send({t:'pick',cancel:1})):bt}
 if(S.pend&&!S.pend.mine)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});if(S.pend&&S.pend.can&&!S.pend.can.length)return A('⏳ รอฝ่ายตรงข้ามตอบโต้ (React)…',()=>{});
