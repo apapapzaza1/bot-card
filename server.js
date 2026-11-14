@@ -707,7 +707,7 @@ function P(r, x) {
 }
 const kick = (r, a) => a.kk === r.g.n || (!a.tk && a.hero === r.g.n) || a.k31 === r.g.n || (a.id === 'BT04-032' && r.p.some(q => q.av.includes(a) && q.av.some(x => nmOf(x).includes('พระเจ้านิโคไล')))) || /เตะไข่/.test(a.tk || a.id === 'BT04-032' || B7NK[a.id] ? '' : B[a.id].e) || (a.id === 'BT07-025' && !noFx(r, a) && hasHn(r, r.p.findIndex(q => q.av.includes(a)))) || (a.id === 'BT09-038' && !a.tk && hasKw(r, a, 'เตะไข่')) || r.p.some(q => q.mg.some(m => m.at === a.u && B[m.id].e.includes('เตะไข่') && (m.id !== 'BT08-059' || B[a.id].n.includes('มอเดรด'))));
 const allCards = (r, u) => { for (let i = 0; i < 2; i++) for (const z of [...ZN, 'deck']) { const c = r.p[i][z].find(x => x.u === u); if (c) return { i, z, c }; } return null; };
-function runQ(r) { CR = r; const g = r.g; let n = 0; if (g && g.pendAfter && !g.ask && !g.pend) { const f = g.pendAfter; g.pendAfter = null; try { f(); } catch (e) { console.error('fx', e); } } while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } try { bt6Own(r); bt6Cage(r); } catch (e) { console.error('bt6', e); } try { bt5Sand(r); } catch (e) { console.error('sand', e); } sweep(r); }
+function runQ(r) { CR = r; const g = r.g; let n = 0; if (g && g.pendAfter && !g.ask && !g.pend) { const f = g.pendAfter; g.pendAfter = null; try { f(); } catch (e) { console.error('fx', e); } } while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } try { bt6Own(r); bt6Cage(r); } catch (e) { console.error('bt6', e); } try { bt5Sand(r); } catch (e) { console.error('sand', e); } if (g && !g.pend && !g.ask && !g.q.length) r.p.forEach(q => q.av.forEach(a => { if (a.docW) delete a.docW; })); sweep(r); }
 function ask(r, who, o) {
   const opts = (o.yn || o.choices) ? [] : o.opts;
   if (!o.yn && !o.choices && !opts.length) { o.none && o.none(); return false; }
@@ -1184,22 +1184,31 @@ function destroyCo(r, u) {
   if (bt6ConGuard(r, i, f.c, done)) return;
   done();
 }
-function shieldStep(r, p) {
+function shieldList(r, p) {   // Avatar ที่ใช้ โล่มนุษย์ ได้กับการโจมตีนี้
   const d = r.p[p.who], atkF = find(r, p.u);
-  const lipo = atkF && atkF.c.id === 'SD07-007';
   const lipoSide = r.p[p.ai] && r.p[p.ai].av.some(x => x.id === 'SD07-007');
-  const L = (p.tk === 'co' || (atkF && atkF.c.hero === r.g.n) || (atkF && r.p.some(q => q.mg.some(m => m.at === atkF.c.u && m.id === 'BT05-064')))) ? [] : d.av.filter(a => !a.tired && a.u !== p.tg && (hasKw(r, a, 'โล่มนุษย์') || lipoSide)).map(a => a.u);
+  if (p.tk === 'co' || (atkF && atkF.c.hero === r.g.n) || (atkF && r.p.some(q => q.mg.some(m => m.at === atkF.c.u && m.id === 'BT05-064')))) return [];
+  return d.av.filter(a => !a.tired && a.u !== p.tg && (hasKw(r, a, 'โล่มนุษย์') || lipoSide)).map(a => a.u);
+}
+function applyShield(r, p, s, inWin) {   // ใช้โล่มนุษย์ (ใช้ทั้งตอนถามก่อน React และในหน้าต่าง React)
+  const d = r.p[p.who], lipoSide = r.p[p.ai] && r.p[p.ai].av.some(x => x.id === 'SD07-007');
+  s.c.tired = true; bt10Tank(r, p.who, s.c); p.tg = s.c.u; p.tk = 'av'; p.sd = 1;
+  if (s.c.id === 'SD05-004') { s.c.bp = (s.c.bp || 0) + 2; p.sh = s.c.u; }
+  log(r, '🛡 โล่มนุษย์: ' + nmOf(s.c) + ' รับการโจมตีแทน');
+  if (lipoSide) { const L2 = d.av.filter(x => !protectedFrom(r, p.ai, x)).map(x => x.u);
+    const lp = () => ask(r, p.ai, { text: 'ลิโป้: ทำลาย Avatar ศัตรู 1 ใบ (ไม่ทำก็ได้)', opts: L2, n: 1, min: 0, cb: u2 => u2.length && destroyAv(r, u2[0]) });
+    if (inWin) lp(); else r.g.q.unshift(lp); }
+}
+function shieldStep(r, p) {
+  const lipo = (() => { const f = find(r, p.u); return !!(f && f.c.id === 'SD07-007'); })();
+  const L = shieldList(r, p);
   if (!L.length) return open1(r, p);
   const go = () => r.g.q.unshift(() => open1(r, p));
-  ask(r, p.who, { text: 'โล่มนุษย์: เลือก Avatar โล่มนุษย์ (สภาพตื่น) เพื่อรับการโจมตีแทน' + (lipo ? ' — ลิโป้โจมตี ต้องใช้!' : ' — ยกเลิก = ไม่ใช้'), opts: L, n: 1, min: lipo ? 1 : 0, cancel: !lipo, onCancel: go,
+  ask(r, p.who, { text: 'โล่มนุษย์: เลือก Avatar โล่มนุษย์ (สภาพตื่น) เพื่อรับการโจมตีแทน' + (lipo ? ' — ลิโป้โจมตี ต้องใช้!' : ' — ยกเลิก = ไม่ใช้ (ยังใช้ได้อีกในช่วงตอบโต้)'), opts: L, n: 1, min: lipo ? 1 : 0, cancel: !lipo, onCancel: go,
     cb: us => {
       if (!us.length) return go();
       const s = find(r, us[0]); if (!s || s.c.tired) return go();
-      s.c.tired = true; bt10Tank(r, p.who, s.c); p.tg = s.c.u; p.tk = 'av';
-      if (s.c.id === 'SD05-004') { s.c.bp = (s.c.bp || 0) + 2; p.sh = s.c.u; }
-      log(r, '🛡 โล่มนุษย์: ' + nmOf(s.c) + ' รับการโจมตีแทน');
-      if (lipoSide) { const L2 = d.av.filter(x => !protectedFrom(r, p.ai, x)).map(x => x.u);
-        r.g.q.unshift(() => ask(r, p.ai, { text: 'ลิโป้: ทำลาย Avatar ศัตรู 1 ใบ (ไม่ทำก็ได้)', opts: L2, n: 1, min: 0, cb: u2 => u2.length && destroyAv(r, u2[0]) })); }
+      applyShield(r, p, s, false);
       go();
     } });
 }
@@ -1512,7 +1521,7 @@ function rjStatus(ws) {
 const view = (r, i) => {
   r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
   CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai } : null };
+  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -1534,6 +1543,8 @@ const isDoc = c => !!c && !c.tk && B[c.id] && B[c.id].t === 'Magic' && B[c.id].n
 const kill = (r, i, u, ns) => {
   const f0 = find(r, u), nf0 = !!(f0 && f0.z === 'av' && noFx(r, f0.c));
   if (mg016(r, f0)) return mgQ(r, f0);
+  if (f0 && f0.z === 'av' && !ns && f0.c.docW) { delete f0.c.docW; vfx(f0.c.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); return log(r, '🩺 หมอมาแล้วววว: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); }
+  if (f0 && f0.z === 'av' && !ns && r.g.ask && DRNO !== u && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) { r.g.q.push(() => kill(r, i, u, ns)); return; }   // มีหน้าต่างอื่นเปิดอยู่ → รอถามหมอทีหลัง ไม่ข้ามเงียบๆ
   if (f0 && f0.z === 'av' && f0.c.id === 'BT06-037' && MGX > 0 && !noFx(r, f0.c)) { vfx(f0.c.u, 'aura', '🛡 ไม่ถูกทำลาย', '#64748b'); return log(r, '🛡 สว นาโนแมชชีน: ไม่ถูกทำลายจากความสามารถของ Magic Card'); }
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && (bt9Save(r, i, u, f0) || bt10Save(r, i, u, f0) || bt11Save(r, i, u, f0))) return;   // BT09-060 Skill : Second Energy
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && f0.c.id === 'BT06-033' && bt6Sub33(r, f0, () => kill(r, i, u, 1))) return;
@@ -1845,6 +1856,13 @@ function act(r, i, m) {
       if (f.z !== 'av' || f.c.id !== 'BT05-044' || noFx(r, f.c)) E('ใช้ไม่ได้'); if (f.c.ou === g.n) E('ใช้ได้เทิร์นละครั้ง'); if (p0.tg === f.c.u) E('การโจมตีเล็งการ์ดนี้อยู่แล้ว');
       f.c.ou = g.n; p0.tg = f.c.u; p0.tk = 'av'; vfx(f.c.u, 'burst', '🛡 ย้ายเป้ามาที่นี่', '#22c55e'); fx({ k: 'say', id: f.c.kd || f.c.id, t: 'ย้ายเป้าหมาย' }); log(r, '🛡 อาจารย์หลี: ย้ายเป้าหมายการโจมตีมาที่ตัวเอง'); break;
     }
+    case 'shield': { const p0 = g.pend; if (!p0 || p0.k !== 'atk' || p0.who !== i || g.ask || p0.sd) E('ใช้ โล่มนุษย์ ตอนนี้ไม่ได้'); const su = Number(m.u); if (!shieldList(r, p0).includes(su)) E('Avatar นี้ใช้ โล่มนุษย์ ไม่ได้'); const sf = find(r, su); applyShield(r, p0, sf, true); p0.until = Math.max(p0.until || 0, Date.now() + (r.cfg.react || 15) * 1000); p0.fk = 0; break; }
+    case 'doc': { const p0 = g.pend, dc = docWin(r, i); if (!dc || !p0 || p0.who !== i || g.ask || dc.u !== Number(m.u)) E('ใช้ หมอมาแล้วววว ตอนนี้ไม่ได้');
+      const L = me.av.map(a => a.u), du = dc.u;
+      const go = tu => { const t = me.av.find(a => a.u === tu), h = me.hand.find(x => x.u === du); if (!t || !h || g.used[i].React) return; take(r, h.u); me.hell.push(h); g.used[i].React = 1; ev(r, h.kd || h.id, h.ar);
+        kdReactGate(r, i, B[h.id], canc => { if (canc) return; t.docW = 1; vfx(t.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); log(r, '🩺 หมอมาแล้วววว: ' + nmOf(t) + ' ไม่ถูกทำลายในการตอบโต้นี้'); }); };
+      if (L.length === 1) go(L[0]); else ask(r, i, { text: 'หมอมาแล้วววว: เลือก Avatar ที่จะไม่ถูกทำลาย (ในการตอบโต้นี้)', opts: L, cancel: true, cb: us => go(us[0]) });
+      break; }
     case 'pass': { if (!g.pend || g.pend.who !== i) E('ไม่มี React'); passReact(r); break; }
     case 'token': case 'move': case 'pw': case 'tire': case 'drawn': E('คำสั่งนี้ถูกปิด'); break;
     case 'discardm': { const us = [...new Set((m.us || []).map(Number))].slice(0, 20); if (!us.length) E('ยังไม่เลือก'); us.forEach(u => { const f = own(u); if (f.z !== 'hand') E('ทิ้งได้เฉพาะมือ'); }); us.forEach(u => { const f = take(r, u); me.hell.push(f.c); }); log(r, me.name + ' ทิ้ง ' + us.length + ' ใบ'); if (mine && g.phase === 'end' && me.hand.length <= 7) passTurn(r, i); break; }
@@ -1865,8 +1883,10 @@ const atkRespList = (r, w) => { const p = r.g.pend; if (!p || (p.k !== 'atk' && 
   d.av.forEach(a => { if (bt6KayOK(r, w, a)) L.push(a.u); });   // BT06-007 เคย์
   d.av.forEach(a => { if (bt8ChoOK(r, w, a)) L.push(a.u); });   // BT08-018 โจโฉ
   d.hand.forEach(c => { if (c.id === 'BT11-024' && bt11PengOK(r, w)) L.push(c.u); if (c.id === 'BT11-041' && bt11Mode41OK(r, w, c)) L.push(c.u); });   // BT11-024 / 041
+  if (!p.sd && !r.g.ask) shieldList(r, w).forEach(u => L.push(u));   // โล่มนุษย์ ใช้ได้ในช่วงตอบโต้
   return L; };
-const reactList = (r, w) => ((!r.g.pend || (r.g.noReact && r.g.noReact.who === w) || r.g.used[w].React) ? [] : r.p[w].hand.filter(c => canReact(r, w, c)).map(c => c.u)).concat(atkRespList(r, w));
+const docWin = (r, w) => { const g = r.g, p = g.pend; if (!p || p.who !== w || g.used[w].React || (g.noReact && g.noReact.who === w) || cc2ODLock(r, w) || r.p[w].bot || !r.p[w].av.length) return null; return r.p[w].hand.find(isDoc) || null; };   // หมอมาแล้วววว ในช่วงตอบโต้
+const reactList = (r, w) => ((!r.g.pend || (r.g.noReact && r.g.noReact.who === w) || r.g.used[w].React) ? [] : r.p[w].hand.filter(c => canReact(r, w, c)).map(c => c.u)).concat(atkRespList(r, w), docWin(r, w) ? [docWin(r, w).u] : []);
 const hasReact = (r, w) => reactList(r, w).length > 0;
 const open = (r, p) => { if (r.g.over) return; p.until = Date.now() + (r.cfg.react || 15) * 1000; r.g.pend = p; };
 const setBt = (r, o) => { r.g.bt = { n: ++BTN, ...o }; };
