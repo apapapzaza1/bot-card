@@ -5994,6 +5994,8 @@ function botMain(r, k) {
   });
   if (bt.lv === 3) botLook(r, k, ops, W);   // ยาก: มองล่วงหน้า 2 ใบ (ท้าทายใช้ chPlanPick วางทั้งชุดอยู่แล้ว)
   if (botBait(r, k, false)) { const n0 = ops.length; for (let j = ops.length - 1; j >= 0; j--) if (ops[j].d.t === 'Avatar') ops.splice(j, 1); if (ops.length < n0 || me.hand.some(h => B[h.id] && B[h.id].t === 'Avatar')) bt.baitN = g.n; }   // ล่อให้ตี LIFE
+  ops.forEach(o => { o.rv = ops.some(q => q !== o && q.pay.us.includes(o.h.u) && q.gain > o.gain - .5); });   // ใบนี้เป็น "ตัวจ่าย" ของใบที่คุ้มกว่า → อย่าเอาลงสนามเสียเอง
+  ops.forEach(o => { if (o.rv) o.gain -= 4; });
   ops.sort((a, b) => b.gain - a.gain);
   bt.rsv = null;
   const o = bt.lv === 4 ? chPlanPick(r, k, ops.filter(x => x.gain > -1.5 + W.th)) : lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 + W.th : -2.5));
@@ -6059,6 +6061,8 @@ function botSel(r, k, a) {
   const val = u => { const f = allCards(r, u); if (!f) return 0; return botCv(r, f.c) + (r.bot && r.bot.lv === 4 ? chSelAdj(r, k, f, a.text || '', cost, harm) : 0); };
   const t = a.text || '', n = a.n, min = a.min;
   const cost = /ฝ่ายเรา|ทิ้ง|ส่ง.*ลงนรก|เซ่นไหว้|เป็น Cost|ให้อีกฝ่าย/.test(t), harm = !cost && /ทำลาย|POWER -|ยึด|ศัตรู|กลับขึ้นมือ/.test(t);
+  { const sd = a.src && B[a.src.id], dbf = sd && /POWER\s*-|ลด\s*POWER|POWER\s*ลด/.test(sd.e || '');   // สวมใส่อาวุธ/Modification ที่ให้ผลดี → ให้ Avatar ฝ่ายเราเสมอ (ห้ามให้ศัตรู)
+    if (/สวมใส่/.test(t) && !dbf && !/^(จุติ|คำสั่งเสีย)/.test(t)) { const mine = a.opts.filter(own); if (mine.length >= Math.max(1, min)) return mine.sort((x, y) => val(y) - val(x)).slice(0, Math.max(min, Math.min(n, 1))); } }
   let pool = a.opts.slice(), cnt;
   if (cost) { const o = pool.filter(own); if (o.length >= min) pool = o; pool.sort((x, y) => val(x) - val(y)); cnt = min; }
   else if (harm) { const e = pool.filter(u => !own(u)); if (e.length) { pool = e.sort((x, y) => val(y) - val(x)); cnt = n; } else { pool.sort((x, y) => val(x) - val(y)); cnt = min; } }
@@ -6138,10 +6142,10 @@ function botTick() {
     CR = r; if (bt.tn !== g.n) { bt.tn = g.n; bt.tried = new Set(); bt.played = []; }
     try { botStep(r, k); } catch (e) { console.error('bot', e); bt.fail++; bt.le = (e && e.message) || String(e); }
     if (bt.fail >= 10 && !g.over) {   // ติดขัด: ไม่ยอมแพ้ทันที — พยายามไถลไปต่อ (ตอบ/Pass/ข้าม Phase) ยอมแพ้เฉพาะเมื่อติดซ้ำหลายรอบจริงๆ
-      bt.fail = 0; bt.esc = (bt.esc || 0) + 1; bt.tried = new Set();
+      bt.fail = 0; bt.esc = (bt.esc || 0) + 1;
       console.error('bot stuck', c, 'esc', bt.esc, 'last error:', bt.le);
       try { r.g.log.push('🤖 บอทติดขัด (' + bt.esc + '): ' + bt.le); } catch (e) { }
-      if (bt.esc >= 5) { botAct(r, k, { t: 'surrender' }); continue; }
+      if (bt.esc >= 5) { g.botStuck = 1; botAct(r, k, { t: 'surrender' }); continue; }   // เกมที่บอทค้างเอง ไม่ใช้เรียนรู้
       const a = g.ask;
       if (a) { if (a.who === k) { if (a.cancel) botAct(r, k, { t: 'pick', cancel: 1 }) || (a.yn ? botAct(r, k, { t: 'pick', yes: 0 }) : botAct(r, k, { t: 'pick', us: a.opts.slice(0, a.min) })); } }
       else if (g.pend) { if (g.pend.who === k) botAct(r, k, { t: 'pass' }); }
@@ -7375,7 +7379,7 @@ const CHW0 = { life: 1, dv: 1, tr: 0, keep: 1, def: 1, th: 0, hold: 1 };
 const CHKEYS = Object.keys(CHW0);
 const CHCOL = ['แดง', 'ฟ้า', 'เขียว', 'ม่วง'];
 let CH = { v: 1, n: 0, bn: 0, bw: 0, cs: {}, col: {}, only: {}, mu: {}, opp: { g: 0, la: 0, aa: 0, sm: 0, cs: 0, us: 0, tn: 0, da: 0, ra: 0, os: 0, og: 0 }, tk: { at: {}, rc: {}, op: {}, cb: {} }, pl: {}, arms: [], gen: 0, upd: 0 };
-(async () => { try { const s = await dbGet('sys:botlearn'); if (s && s.v) { CH = { ...CH, ...s, opp: { ...CH.opp, ...(s.opp || {}) }, tk: { at: {}, rc: {}, op: {}, cb: {}, ...(s.tk || {}) } }; console.log('botlearn: โหลดข้อมูล', CH.n, 'เกม'); } } catch (e) { console.log('botlearn load error', e); } })();
+(async () => { try { const s = process.env.RESET_BOTLEARN ? null : await dbGet('sys:botlearn'); if (process.env.RESET_BOTLEARN) { console.log('botlearn: RESET (RESET_BOTLEARN)'); await dbPut('sys:botlearn', CH); } if (s && s.v) { CH = { ...CH, ...s, opp: { ...CH.opp, ...(s.opp || {}) }, tk: { at: {}, rc: {}, op: {}, cb: {}, ...(s.tk || {}) } }; console.log('botlearn: โหลดข้อมูล', CH.n, 'เกม'); } } catch (e) { console.log('botlearn load error', e); } })();
 const chSave = async () => { CH.upd = Date.now(); try { await dbPut('sys:botlearn', CH); } catch (e) { console.log('botlearn save error', e); } };
 const chUp = (o, k, win) => { const x = o[k] || (o[k] = { g: 0, w: 0 }); x.g++; if (win) x.w++; };
 const chWr = (x, pri, k) => ((x ? x.w : 0) + (pri || 2) * .5) / ((x ? x.g : 0) + (pri || 2));   // winrate แบบถ่วง prior
@@ -7679,6 +7683,7 @@ function chReactTune(r, p, id, go) {
 }
 async function chLearn(r) {
   const g = r.g; if (!g || g.win == null || (g.n | 0) < 4 || !r.snap) return;
+  if (g.botStuck || (r.bot && g.over && g.win !== r.p.findIndex(p => p.bot) && /ยอมแพ้/.test(String(g.over)) && String(g.over).startsWith(r.p.find(p => p.bot).name))) return;   // บอทยอมแพ้เอง (ค้าง/บัค) = ไม่ใช่ผลแพ้ชนะจริง ไม่เอาไปสอนบอท
   const w = g.win, hs = g.hs || [{}, {}], info = r.snap.map(chDeckInfo);
   r.p.forEach((p, k) => {
     const win = k === w, s = r.snap[k], inf = info[k];
