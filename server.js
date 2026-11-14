@@ -1883,7 +1883,7 @@ const atkRespList = (r, w) => { const p = r.g.pend; if (!p || (p.k !== 'atk' && 
   d.av.forEach(a => { if (bt6KayOK(r, w, a)) L.push(a.u); });   // BT06-007 เคย์
   d.av.forEach(a => { if (bt8ChoOK(r, w, a)) L.push(a.u); });   // BT08-018 โจโฉ
   d.hand.forEach(c => { if (c.id === 'BT11-024' && bt11PengOK(r, w)) L.push(c.u); if (c.id === 'BT11-041' && bt11Mode41OK(r, w, c)) L.push(c.u); });   // BT11-024 / 041
-  if (!p.sd && !r.g.ask) shieldList(r, w).forEach(u => L.push(u));   // โล่มนุษย์ ใช้ได้ในช่วงตอบโต้
+  if (!p.sd && !r.g.ask) shieldList(r, p).forEach(u => L.push(u));   // โล่มนุษย์ ใช้ได้ในช่วงตอบโต้
   return L; };
 const docWin = (r, w) => { const g = r.g, p = g.pend; if (!p || p.who !== w || g.used[w].React || (g.noReact && g.noReact.who === w) || cc2ODLock(r, w) || r.p[w].bot || !r.p[w].av.length) return null; return r.p[w].hand.find(isDoc) || null; };   // หมอมาแล้วววว ในช่วงตอบโต้
 const reactList = (r, w) => ((!r.g.pend || (r.g.noReact && r.g.noReact.who === w) || r.g.used[w].React) ? [] : r.p[w].hand.filter(c => canReact(r, w, c)).map(c => c.u)).concat(atkRespList(r, w), docWin(r, w) ? [docWin(r, w).u] : []);
@@ -5927,7 +5927,8 @@ function botPlanAtk(r, k, opts, W) {
   const mvs = att.map(a => {
     const byTg = new Map(); opts.filter(o => o.a === a).forEach(o => { const c = byTg.get(o.tg); if (!c || o.sc > c.o.sc) byTg.set(o.tg, { tg: o.tg, o }); });
     if (!byTg.has('life') && !a.nolife && P(r, a) > 0) byTg.set('life', { tg: 'life', o: null });
-    return [null, ...byTg.values()];
+    const vs = [...byTg.values()], lf = vs.find(x => x.tg === 'life'), rest = vs.filter(x => x !== lf).sort((x, y) => (y.o ? y.o.sc : 0) - (x.o ? x.o.sc : 0)).slice(0, lf ? 3 : 4);   // จำกัดจำนวนเป้าที่คิด (กันคำนวณบวมจนค้าง)
+    return [null, ...rest, ...(lf ? [lf] : [])];
   });
   const evalSeq = (order, pick) => {
     const dead = new Set(), deadCo = new Set(), deadMine = new Set(); let val = 0, hits = 0, mine = me.av.length, first = null, nat = 0;
@@ -5955,10 +5956,11 @@ function botPlanAtk(r, k, opts, W) {
   };
   const perms = a => a.length <= 1 ? [a] : a.flatMap((x, i) => perms([...a.slice(0, i), ...a.slice(i + 1)]).map(p => [x, ...p]));
   const orders = att.length <= 3 ? perms(att) : (om ? [att, att.slice().reverse(), att.slice().sort((x, y) => botCv(r, x) - botCv(r, y))] : [att]);
-  let best = null;
+  let best = null; const t0 = Date.now(), LIM = r.bot && r.bot.lv === 4 ? 250 : 120;   // งบเวลาคิด (ms) ต่อการโจมตี 1 ครั้ง
   for (const order of orders) {
+    if (Date.now() - t0 > LIM) break;
     const lists = order.map(a => mvs[att.indexOf(a)]), pick = new Array(order.length).fill(null);
-    const rec = n => { if (n === order.length) { const e = evalSeq(order, pick); if (e && (!best || e.val > best.val)) best = e; return; } for (const ch of lists[n]) { pick[n] = ch; rec(n + 1); } pick[n] = null; };
+    const rec = n => { if (Date.now() - t0 > LIM) return; if (n === order.length) { const e = evalSeq(order, pick); if (e && (!best || e.val > best.val)) best = e; return; } for (const ch of lists[n]) { pick[n] = ch; rec(n + 1); } pick[n] = null; };
     rec(0);
   }
   if (!best) return null;
@@ -5994,8 +5996,8 @@ function botMain(r, k) {
   });
   if (bt.lv === 3) botLook(r, k, ops, W);   // ยาก: มองล่วงหน้า 2 ใบ (ท้าทายใช้ chPlanPick วางทั้งชุดอยู่แล้ว)
   if (botBait(r, k, false)) { const n0 = ops.length; for (let j = ops.length - 1; j >= 0; j--) if (ops[j].d.t === 'Avatar') ops.splice(j, 1); if (ops.length < n0 || me.hand.some(h => B[h.id] && B[h.id].t === 'Avatar')) bt.baitN = g.n; }   // ล่อให้ตี LIFE
-  ops.forEach(o => { o.rv = ops.some(q => q !== o && q.pay.us.includes(o.h.u) && q.gain > o.gain - .5); });   // ใบนี้เป็น "ตัวจ่าย" ของใบที่คุ้มกว่า → อย่าเอาลงสนามเสียเอง
-  ops.forEach(o => { if (o.rv) o.gain -= 4; });
+  ops.forEach(o => { o.rv = ops.some(q => q !== o && q.pay.us.includes(o.h.u) && q.gain > -1.5); });   // ใบนี้เป็น "ตัวจ่าย" ของใบที่คุ้มกว่า → อย่าเอาลงสนามเสียเอง
+  ops.forEach(o => { if (o.rv) o.gain -= 5; else if (ops.length > 1 && o.d.t === 'Avatar') o.gain -= (B[o.h.id].g || 0) * .5; });   // ใบที่มี Gem ใช้จ่ายได้ → เก็บไว้จ่ายก่อน ถ้ายังมีใบอื่นให้ลง
   ops.sort((a, b) => b.gain - a.gain);
   bt.rsv = null;
   const o = bt.lv === 4 ? chPlanPick(r, k, ops.filter(x => x.gain > -1.5 + W.th)) : lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 + W.th : -2.5));
@@ -6110,7 +6112,9 @@ function botStep(r, k) {
 }
 const BOT_REACT = new Set(['BT03-047', 'SD01-017', 'BT01-039', 'BT02-049', 'SD06-014', 'BT02-054', 'SD07-016', 'SD05-020', 'BT01-041']);
 function botReact(r, k) {
-  const g = r.g, p = g.pend, me = r.p[k], T = r.bot.tried; if (g.used[k].React) return false;
+  const g = r.g, p = g.pend, me = r.p[k], T = r.bot.tried;
+  if (p && p.k === 'atk' && p.who === k && !T.has('peng' + p.u)) { try { if (bt11PengOK(r, k)) { const h = me.hand.find(c => c.id === 'BT11-024'); T.add('peng' + p.u); if (h && botAct(r, k, { t: 'atkresp', u: h.u })) return true; } } catch (e) { } }   // เพนกวิ้น ฮัท: สาหัสแล้วโดนตี LIFE → ใช้ (บอทใช้ไม่เป็นมาก่อน)
+  if (g.used[k].React) return false;
   const atF = p.k === 'atk' ? find(r, p.u) : null, tgF = p.k === 'atk' && p.tk === 'av' ? find(r, p.tg) : null;
   if (p.k === 'atk' && p.tk === 'life' && botBait(r, k, true)) return false;   // ปล่อยให้ตี LIFE เพื่อรับผล LIFE
   for (const h of me.hand) {
