@@ -559,9 +559,9 @@ async function pickDeck(m, user, ban) {
   if (m.mine) {
     const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค');
     const base = mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban);
-    const sn = m.sd != null ? String(m.sd) : (k.sd || ''), sc = sn && u.sides && u.sides[sn] ? u.sides[sn].cards.filter(i => B[i]) : [];
+    const sn = m.sd != null ? String(m.sd) : (k.sd || ''), inl = m.sd == null && Array.isArray(k.side) && k.side.length, sc = inl ? k.side.filter(i => B[i]) : (sn && u.sides && u.sides[sn] ? u.sides[sn].cards.filter(i => B[i]) : []);
     let side = sc, sideErr = null;
-    if (side.length) { const V = sideViol(base.main, base.life, side, ban); if (V.length) { sideErr = 'Side Deck "' + sn + '" ใช้ไม่ได้ จึงข้ามไป: ' + sumV(V); side = []; } }
+    if (side.length) { const V = sideViol(base.main, base.life, side, ban); if (V.length) { sideErr = 'Side ' + (inl ? '' : '"' + sn + '" ') + 'ใช้ไม่ได้ จึงข้ามไป: ' + sumV(V); side = []; } }
     return { ...base, art: k.art || {}, vr: k.vr || null, tk: Array.isArray(k.tk) ? tkClean(k.tk) : null, side, sideErr, sdName: side.length ? sn : '' };
   }
   if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return preDeck(m.pre); }
@@ -2251,9 +2251,10 @@ wss.on('connection', ws => {
         if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); const art = {}; Object.entries(m.art || {}).forEach(([i, r]) => { if (cnt[i] && B[i] && (d.cards[i + '|' + r] || 0) > 0) art[i] = String(r); }); const vr = {}, vs = {}; Object.entries(m.vr || {}).forEach(([k, n]) => { const [i, r] = String(k).split('|'); n = n | 0; if (n > 0 && cnt[i] && (d.cards[i + '|' + r] || 0) >= n) { vr[i + '|' + r] = n; vs[i] = (vs[i] || 0) + n; } });
         for (const i in vs) if (vs[i] > cnt[i]) E('จำนวนระดับเกิน');
         for (const i in cnt) if ((vs[i] || 0) < cnt[i]) { const r = art[i] || (B[i].v || ['C'])[0], k = i + '|' + r; vr[k] = (vr[k] || 0) + cnt[i] - (vs[i] || 0); }
-        const tk = Array.isArray(m.tk) ? tkClean(m.tk) : null; let sdn = m.sd ? String(m.sd) : '';
-        if (sdn) { const sc = d.sides && d.sides[sdn]; if (!sc) sdn = ''; else { const cc = { ...cnt }; sc.cards.forEach(i => { cc[i] = (cc[i] || 0) + 1; }); for (const i in cc) if (cc[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Main+Side: ' + B[i].n); const V = sideViol(main, life, sc.cards, false); if (V.length) E('Side Deck "' + sdn + '" ใช้ร่วมกับเด็คนี้ไม่ได้: ' + sumV(V)); } }
-        d.decks[nm] = { main, life, art, vr, ...(tk ? { tk } : {}), ...(sdn ? { sd: sdn } : {}) };
+        const tk = Array.isArray(m.tk) ? tkClean(m.tk) : null, side = (m.side || []).map(String);
+        side.forEach(i => { if (!B[i]) E('ไม่พบ ' + i); });
+        if (side.length) { const cc = { ...cnt }; side.forEach(i => { cc[i] = (cc[i] || 0) + 1; }); for (const i in cc) if (cc[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Main+Side: ' + B[i].n); const V = sideViol(main, life, side, false); if (V.length) E('Side ผิดกฎ: ' + sumV(V)); }   // Side ติดตัวเด็คนี้
+        d.decks[nm] = { main, life, art, vr, ...(tk ? { tk } : {}), ...(side.length ? { side } : {}) };
         await dbPut(ws.user, d); me_(d); return;
       }
       if (m.t === 'savesd') {   // บันทึก Side Deck (แยกจากเด็ค ตั้งชื่อได้)
