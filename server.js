@@ -212,7 +212,7 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, tokens: tkPub, tkc: d.tkc || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, tokens: tkPub, tkc: d.tkc || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), mailn: (d.mail || []).length, pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => { ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); }); if (TKBOX[k]) { tkGive(d, k); (d.tkg = d.tkg || []).includes(k) || d.tkg.push(k); } };
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','CC01','CC02'];
@@ -221,6 +221,65 @@ const isCC = set => /^CC/.test(set), CC_PITY = 20;
 const CCW = { SR: 82.97, UR: 10, SEC: 7, PR: .03 }, CCG = { UR: 74.9, SEC: 25, PR: .1 };   // v1.9.2: เรทยากขึ้น · PR ต่อใบยากกว่า SEC ต่อใบเสมอ (ดู capPC)
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
+// ===== จดหมาย (d.mail): ของจากแอดมิน / โค้ด / รางวัลเควสที่ลืมรับก่อนรีเซ็ต — ผู้เล่นกดรับเองที่ปุ่ม ✉️ หน้าล็อบบี้ =====
+const MAIL_MAX = 300;
+function mailAdd(d, o) {
+  d.mail = d.mail || [];
+  const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ts: Date.now(), ti: String(o.ti || '🎁 ของรางวัล').slice(0, 60), tx: String(o.tx || '').slice(0, 300), gems: Math.max(0, o.gems | 0), dust: Math.max(0, o.dust | 0), art: Math.max(0, Math.min(50, o.art | 0)) };
+  if (o.artm) e.artm = o.artm;
+  if (o.eb && o.eb.n > 0) e.eb = { set: o.eb.set, n: o.eb.n | 0 };
+  const cs = (o.cards || []).filter(c => c && B[c.id] && c.n > 0).map(c => ({ id: c.id, r: c.r, n: Math.min(999, c.n | 0) })); if (cs.length) e.cards = cs;
+  const bx = (o.boxes || []).filter(b => b && b.set && b.n > 0).map(b => ({ set: String(b.set), n: Math.min(100, b.n | 0) })); if (bx.length) e.boxes = bx;
+  if (!e.gems && !e.dust && !e.art && !e.eb && !e.cards && !e.boxes) return null;
+  d.mail.unshift(e); if (d.mail.length > MAIL_MAX) d.mail.length = MAIL_MAX;
+  return e;
+}
+function mailBox(d, set, n, out) {   // กล่อง = ซอง (ซองละ 5 ใบ) ของชุดนั้น · 'ANY' = สุ่มกล่องอีเวนต์
+  if (set === 'ANY') set = pick(EVENT_BOX_SETS);
+  if (SETS.includes(set)) { const K = {}; for (let k = 0; k < n; k++) pack(set, false, K).forEach(x => { add(d, x); out.push(x); }); }
+  else if (EVENT_BOX_SETS.includes(set)) grantEventBox(d, set, n).forEach(x => out.push(x));
+}
+function mailClaim(d, id) {   // id = รหัสจดหมาย หรือ 'all' → คืน { gems, dust, cards, n }
+  const tot = { gems: 0, dust: 0, cards: [], n: 0 }, keep = [];
+  for (const e of (d.mail || [])) {
+    if (id !== 'all' && e.id !== id) { keep.push(e); continue; }
+    qGive(d, e.artm ? { ...e, art: 0 } : e, tot.cards); tot.gems += e.gems | 0; tot.dust += e.dust | 0; tot.n++;
+    if (e.artm) { const A = []; CARDS.forEach(x => (x.v || []).forEach(r => ['PR', 'CBR', 'SEC'].includes(r) && A.push({ id: x.id, r }))); for (let k = 0; k < (e.art | 0) && A.length; k++) { const x = pick(A); add(d, x); tot.cards.push(x); } }
+    (e.cards || []).forEach(c => { for (let k = 0; k < (c.n | 0); k++) { const x = { id: c.id, r: c.r }; add(d, x); tot.cards.push(x); } });
+    (e.boxes || []).forEach(b => mailBox(d, b.set, b.n | 0, tot.cards));
+  }
+  d.mail = keep; return tot;
+}
+const mailView = d => (d.mail || []).map(e => ({ id: e.id, ts: e.ts, ti: e.ti, tx: e.tx, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0, eb: e.eb || null, cards: (e.cards || []).map(c => ({ id: c.id, r: c.r, n: c.n, nm: (B[c.id] && B[c.id].n) || c.id })), boxes: e.boxes || [] }));
+function pruneDecks(d, ids) {   // หักการ์ดแล้วเด็คที่ใช้การ์ดนั้นเกินจำนวนที่เหลือ → ตัดส่วนเกินออกจากเด็ค
+  const own = id => Object.entries(d.cards).reduce((a, [k, v]) => a + (k.split('|')[0] === id ? v : 0), 0);
+  Object.values(d.decks || {}).forEach(k => {
+    if (!k || !k.main) return;
+    ids.forEach(id => {
+      const o = own(id); k.life = k.life || []; let cnt = [...k.main, ...k.life, ...(k.side || [])].filter(x => x === id).length;
+      const rm = arr => { while (cnt > o) { const j = arr.lastIndexOf(id); if (j < 0) break; arr.splice(j, 1); cnt--; } };
+      rm(k.side || []); rm(k.main); rm(k.life);
+      if (k.art && k.art[id] && !(d.cards[id + '|' + k.art[id]] > 0)) delete k.art[id];
+      if (k.vr) {
+        let tot = [...k.main, ...k.life].filter(x => x === id).length;
+        Object.keys(k.vr).filter(kk => kk.split('|')[0] === id).forEach(kk => { const v = Math.min(k.vr[kk], d.cards[kk] | 0, tot); if (v > 0) { k.vr[kk] = v; tot -= v; } else delete k.vr[kk]; });
+        if (tot > 0) for (const [kk, v] of Object.entries(d.cards)) { if (tot <= 0) break; if (kk.split('|')[0] !== id) continue; const used = k.vr[kk] | 0, can = Math.min(tot, v - used); if (can > 0) { k.vr[kk] = used + can; tot -= can; } }
+      }
+    });
+  });
+}
+function cardFileWrite(id, o) {   // เขียนค่าที่แก้ลงไฟล์ cards.json จริง (best effort — ถ้าเครื่องเซิร์ฟเวอร์เขียนไฟล์ไม่ได้ ค่ายังเก็บใน DB และมีผลอยู่)
+  const f = [__dirname, IMG].map(d => path.join(d, 'cards.json')).find(x => fs.existsSync(x)); if (!f) return false;
+  const raw = fs.readFileSync(f, 'utf8'), a = JSON.parse(raw), c = a.find(x => x.id === id); if (!c) return false;
+  Object.assign(c, o); const tmp = f + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(a, null, (raw.match(/\n/g) || []).length > 20 ? 2 : 0)); fs.renameSync(tmp, f); return true;
+}
+function qMailOld(d, q, kind) {   // เควสรายวัน/สัปดาห์ที่ทำเสร็จแต่ยังไม่กดรับ ก่อนรีเซ็ต → ส่งรางวัลเข้าจดหมาย
+  const day = kind === 'd', A = day ? QD : QW, P = (day ? q.dp : q.wp) || {}, C = (day ? q.dc : q.wc) || [], X = (day ? QEX.d : QEX.w) || [];
+  const o = { gems: 0, dust: 0, art: 0, boxes: [] }; let n = 0;
+  qPick(A.length, day ? 10 : 30, day ? 'D' + q.day : 'W' + q.wk).forEach(i => { const t = A[i]; if (!C.includes(i) && (P[t[0] + ':' + t[1]] | 0) >= t[2]) { o.gems += t[3] | 0; o.dust += t[4] | 0; o.art += t[5] | 0; n++; } });
+  X.forEach(t => { if (t.off || C.includes(t.id) || (P[t.m + ':' + t.md] | 0) < t.need) return; o.gems += t.gems | 0; o.dust += t.dust | 0; o.art += t.art | 0; if (t.eb && t.eb.n > 0) o.boxes.push({ set: t.eb.set, n: t.eb.n | 0 }); n++; });
+  if (n) mailAdd(d, { ti: day ? '📅 รางวัลเควสรายวันที่ลืมรับ' : '🗓 รางวัลเควสรายสัปดาห์ที่ลืมรับ', tx: 'เควสที่ทำสำเร็จแล้วแต่ยังไม่ได้กดรับ (' + n + ' เควส) ก่อนเควสรีเซ็ต', ...o });
+}
 const RT = ART_R;   // ลำดับระดับ ต่ำ→สูง (ใช้ชุดเดียวกับการสแกนชื่อไฟล์)
 // ระบบคราฟ/ย่อย: ผงวิเศษ
 const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, CBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
@@ -316,9 +375,10 @@ async function qCh() {   // รายการชาเลนจ์ (เก็�
 function qInit(d) {   // เตรียม/รีเซ็ตข้อมูลเควสของผู้เล่น (รีเซ็ตเมื่อข้ามวัน/สัปดาห์)
   const T = qTH(), q = d.qs = d.qs || {};
   if (!q.lt) { const st = (d.pf && d.pf.st) || {}; q.lt = { 'g:any': st.g | 0, 'w:any': st.w | 0 }; }
-  if (q.day !== T.day) { q.day = T.day; q.dp = {}; q.dc = []; }
-  if (q.wk !== T.wk) { q.wk = T.wk; q.wp = {}; q.wc = []; }
+  if (q.day !== T.day) { if (q.day != null) { try { qMailOld(d, q, 'd'); } catch (e) { console.error('mail d', e); } } q.day = T.day; q.dp = {}; q.dc = []; }
+  if (q.wk !== T.wk) { if (q.wk != null) { try { qMailOld(d, q, 'w'); } catch (e) { console.error('mail w', e); } } q.wk = T.wk; q.wp = {}; q.wc = []; }
   q.cp = q.cp || {}; q.ch = q.ch || []; q.ac = q.ac || {}; q.ev = q.ev || {};
+  (QEV || []).forEach(e => { const v = q.ev[e.id]; if (v && e.rep && v.day !== T.day) { if (!v.cl && !e.off && (v.p | 0) >= e.need) { try { mailAdd(d, { ti: '🎉 รางวัลเควส Event ที่ลืมรับ', tx: (e.name || 'เควส Event') + ' (ทำสำเร็จแต่ไม่ได้กดรับก่อนรีเซ็ต)', gems: e.gems, dust: e.dust, art: e.art, eb: e.eb && e.eb.set ? e.eb : null, cards: e.cards }); } catch (x) { console.error('mail ev', x); } } delete q.ev[e.id]; } });
   return q;
 }
 function qAdd(d, m, n, modes) {
@@ -2157,23 +2217,38 @@ wss.on('connection', ws => {
         console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
         pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
       }
-      if (m.t === 'admcardget' || m.t === 'admcard' || m.t === 'admgrant' || m.t === 'admnotice') {   // เมนูแอดมิน: แก้การ์ด / แจกของ / ประกาศอัปเดต
+      if (m.t === 'admcardget' || m.t === 'admcard' || m.t === 'admgrant' || m.t === 'admnotice') {   // เมนูแอดมิน: แก้การ์ด / แจกหักของ / ประกาศอัปเดต
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
-        if (m.t === 'admcardget') { const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); ws.send(JSON.stringify({ t: 'admcard', c: { id: c.id, n: c.n, c: c.c, g: c.g, p: c.p, e: c.e || '' } })); return; }
-        if (m.t === 'admcard') {
+        if (m.t === 'admcardget') { const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); const o = { id: c.id, v: c.v || [] }; ['n', 't', 'st', 's', 'col', 'gc', 'o', 'c', 'g', 'p', 'e'].forEach(k => { o[k] = c[k] == null ? '' : c[k]; }); ws.send(JSON.stringify({ t: 'admcard', c: o })); return; }
+        if (m.t === 'admcard') {   // แก้ข้อมูลการ์ดจริง: มีผลทันทีในเกม + เก็บถาวรใน DB + เขียนลงไฟล์ cards.json
           const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); const f = m.f || {}, o = {};
-          if (typeof f.n === 'string' && f.n.trim() && f.n.length <= 80) o.n = f.n.trim();
-          if (typeof f.e === 'string' && f.e.length <= 3000) o.e = f.e;
-          ['c', 'g', 'p'].forEach(k => { if (f[k] !== '' && f[k] != null && c[k] != null || (f[k] !== '' && f[k] != null && c.t === 'Avatar')) { const v = +f[k]; if (!Number.isInteger(v) || v < 0 || v > 99) E('ค่า ' + k + ' ต้องเป็นเลข 0-99'); o[k] = v; } });
+          const LIM = { n: 80, t: 20, st: 40, s: 80, col: 20, gc: 20, o: 40, e: 3000 };
+          Object.keys(LIM).forEach(k => { if (typeof f[k] !== 'string') return; const v = k === 'e' ? f[k] : f[k].trim(); if (v.length > LIM[k]) E('ช่อง ' + k + ' ยาวเกิน ' + LIM[k] + ' ตัวอักษร'); if ((k === 'n' || k === 't') && !v) return; if (v !== String(c[k] == null ? '' : c[k])) o[k] = v; });
+          ['c', 'g', 'p'].forEach(k => { if (f[k] === '' || f[k] == null) return; const v = +f[k]; if (!Number.isInteger(v) || v < 0 || v > 99) E('ค่า ' + k + ' ต้องเป็นเลข 0-99'); if (v !== c[k]) o[k] = v; });
+          if (!Object.keys(o).length) E('ไม่มีช่องไหนเปลี่ยน');
           Object.assign(c, o); CEDIT[c.id] = { ...(CEDIT[c.id] || {}), ...o }; await dbPut('sys:cardedit', { m: CEDIT, upd: Date.now() });
-          console.log('admin แก้การ์ด', ws.user, c.id, JSON.stringify(o).slice(0, 120)); ws.send(JSON.stringify({ note: 'บันทึกการ์ด ' + c.id + ' แล้ว (ผู้เล่นรีเฟรชหน้าเกมเพื่อรับค่าใหม่)' })); return;
+          let fw = false; try { fw = cardFileWrite(c.id, o); } catch (e) { console.error('เขียน cards.json ไม่ได้', e.message); }
+          console.log('admin แก้การ์ด', ws.user, c.id, JSON.stringify(o).slice(0, 160)); ws.send(JSON.stringify({ note: 'บันทึกการ์ด ' + c.id + ' แล้ว (' + Object.keys(o).join(', ') + ') · ' + (fw ? 'เขียนลงไฟล์ cards.json แล้ว' : 'เก็บใน DB แล้ว (เขียนไฟล์ cards.json ไม่ได้)') + ' · ผู้เล่นรีเฟรชหน้าเกมเพื่อรับค่าใหม่' })); return;
         }
-        if (m.t === 'admgrant') {
-          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น'); if (!gems && !dust) E('ใส่จำนวน Gem หรือผง');
+        if (m.t === 'admgrant') {   // แจก/หัก Gem · ผง · การ์ด · Box (ซอง) — ของที่ "แจก" ส่งเข้าจดหมายผู้เล่น · ของที่ "หัก" หักทันที
+          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น');
+          const cards = (Array.isArray(m.cards) ? m.cards : []).slice(0, 60).map(x => ({ id: String((x && x.id) || '').trim(), r: String((x && x.r) || ''), n: Math.max(-999, Math.min(999, (x && x.n) | 0)) })).filter(x => x.n);
+          const boxes = (Array.isArray(m.boxes) ? m.boxes : []).slice(0, 20).map(x => ({ set: String((x && x.set) || '').trim().toUpperCase(), n: Math.max(0, Math.min(100, (x && x.n) | 0)) })).filter(x => x.n > 0);
+          cards.forEach(x => { const cd = B[x.id]; if (!cd) E('ไม่พบการ์ด ' + x.id); const vs = cd.v || ['C']; if (!x.r) x.r = vs[0]; else if (!vs.includes(x.r)) E(x.id + ' ไม่มีระดับ ' + x.r + ' (มี: ' + vs.join(', ') + ')'); });
+          boxes.forEach(x => { if (!SETS.includes(x.set) && !EVENT_BOX_SETS.includes(x.set)) E('ไม่มีกล่อง ' + x.set); });
+          if (!gems && !dust && !cards.length && !boxes.length) E('ใส่ Gem / ผง / การ์ด / Box อย่างน้อย 1 อย่าง');
           const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex) E('ไม่พบผู้เล่น ' + n);
-          const d = await dbGet(n); d.gems = Math.max(0, (d.gems || 0) + gems); d.dust = Math.max(0, (d.dust || 0) + dust); await dbPut(n, d);
-          userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: '🎁 แอดมินส่งของให้: ' + (gems ? gems + ' Gem ' : '') + (dust ? dust + ' ผง' : '') })); } catch (e) { } });
-          ws.send(JSON.stringify({ note: 'ให้ ' + n + ' แล้ว: ' + gems + ' Gem, ' + dust + ' ผง' })); return;
+          const d = await dbGet(n), sum = [], send_ = { cards: [], boxes };
+          if (gems < 0) { d.gems = Math.max(0, (d.gems || 0) + gems); sum.push('หัก ' + (-gems) + ' Gem'); }
+          if (dust < 0) { d.dust = Math.max(0, (d.dust || 0) + dust); sum.push('หัก ' + (-dust) + ' ผง'); }
+          const cut = [];
+          cards.forEach(x => { if (x.n > 0) { send_.cards.push(x); return; } const k = x.id + '|' + x.r, have = d.cards[k] | 0, t = Math.min(have, -x.n); if (t > 0) { d.cards[k] = have - t; if (!d.cards[k]) delete d.cards[k]; cut.push(x.id); } sum.push('หักการ์ด ' + x.id + ' (' + x.r + ') ' + t + '/' + (-x.n) + ' ใบ'); });
+          if (cut.length) pruneDecks(d, [...new Set(cut)]);
+          const addG = Math.max(0, gems), addD = Math.max(0, dust), ml = mailAdd(d, { ti: '🎁 ของจากแอดมิน', tx: String(m.msg || '').trim().slice(0, 300), gems: addG, dust: addD, cards: send_.cards, boxes: send_.boxes });
+          if (ml) sum.push('ส่งเข้าจดหมาย:' + [addG ? ' ' + addG + ' Gem' : '', addD ? ' ' + addD + ' ผง' : '', send_.cards.length ? ' การ์ด ' + send_.cards.map(x => x.id + '|' + x.r + ' x' + x.n).join(', ') : '', boxes.length ? ' Box ' + boxes.map(x => x.set + ' x' + x.n).join(', ') : ''].join(''));
+          await dbPut(n, d);
+          pushMe(n, ml ? '🎁 แอดมินส่งของให้ — ไปรับที่ ✉️ จดหมาย' : '⚠️ แอดมินปรับของในบัญชีของคุณ');
+          ws.send(JSON.stringify({ note: 'ทำกับ ' + n + ' แล้ว: ' + sum.join(' · ') })); return;
         }
         if (m.t === 'admnotice') { const t = String(m.text || '').trim().slice(0, 300); if (!t) E('ใส่ข้อความ'); wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ note: '📢 ' + t })); }); ws.send(JSON.stringify({ note: 'ประกาศแล้ว' })); return; }
       }
@@ -2249,6 +2324,18 @@ wss.on('connection', ws => {
           }
           await dbPut('sys:pubdecks', T); PUBD.list = T.list || []; PUBD.t = Date.now(); ws.send(pdMsg(T, note));
         }); return;
+      }
+      if (m.t === 'deldeck') {   // ลบเด็คของตัวเอง
+        const d = await dbGet(ws.user), nm = String(m.name || ''); if (!d.decks || !d.decks[nm]) E('ไม่พบเด็ค ' + nm);
+        delete d.decks[nm]; await dbPut(ws.user, d); me_(d); return;
+      }
+      if (m.t === 'mailget') { const d = await dbGet(ws.user); ws.send(JSON.stringify({ t: 'mail', list: mailView(d) })); return; }
+      if (m.t === 'mailclaim') {
+        const d = await dbGet(ws.user), tot = mailClaim(d, m.all ? 'all' : String(m.id || '')); if (!tot.n) E('ไม่พบจดหมาย');
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'mail', list: mailView(d) }));
+        const note = '✉️ รับของจากจดหมาย' + (tot.gems ? ' 💎 ' + tot.gems.toLocaleString('en-US') : '') + (tot.dust ? ' ✨ ' + tot.dust.toLocaleString('en-US') : '') + (tot.cards.length ? ' 🃏 ' + tot.cards.length + ' ใบ' : '');
+        if (tot.cards.length) { const ps = []; for (let i = 0; i < tot.cards.length; i += 5) ps.push(tot.cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note })); } else ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note }));
+        return;
       }
       if (m.t === 'savedeck') {
         const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
@@ -2354,9 +2441,8 @@ wss.on('connection', ws => {
       if (m.t === 'code') { await codeLock(async () => { let SC;
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, WUPDATE: { gems: 1000 }, DUST: { dust: 555 }, QUEST: { gems: 500, dust: 150 }, PROFILE: { art: 1 }, ...(SC = (await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); if (SC[c]) { if (X.exp && Date.now() > X.exp) E('โค้ดนี้หมดอายุแล้ว'); if (X.max > 0 && (X.u | 0) >= X.max) E('โค้ดนี้มีผู้รับครบจำนวนแล้ว'); X.u = (X.u | 0) + 1; await dbPut('sys:codes', SC); } d.codes.push(c);
-        let ps = []; d.gems += X.gems || 0; d.dust = (d.dust || 0) + (X.dust || 0);
-        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','CBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: [X.gems ? 'ได้ ' + X.gems + ' Gem' : '', X.dust ? 'ได้ ' + X.dust + ' ผง' : ''].filter(Boolean).join(' · ') })); return;
+        mailAdd(d, { ti: '🎟 โค้ด ' + c, tx: 'รางวัลจากการใช้โค้ด ' + c, gems: X.gems, dust: X.dust, art: X.art, artm: 'code' });   // รางวัลโค้ดเข้าจดหมาย → กดรับเองที่ ✉️
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🎟 ใช้โค้ดสำเร็จ — รางวัลส่งไปที่ ✉️ จดหมายแล้ว กดรับได้เลย' })); return;
       }); return;
       }
       if (m.t === 'chinfo') { ws.send(JSON.stringify(chInfo())); return; }
