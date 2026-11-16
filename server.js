@@ -1001,7 +1001,7 @@ const MG = {
   'SD03-020': { react: 'summon', steps: [{ key: 'c', pay: 1, text: 'ส่ง Avatar นรก จากมือ ที่ Cost ≥ Avatar ที่อัญเชิญ ลงนรก', opts: (r, i, cx) => handAv(c => symOf(c) === 'นรก' && B[c.id].c >= (cx.ev.cost || 0))(r, i) }],
     run: (r, i, cx) => { mill(r, i, 2); destroyAv(r, cx.ev.u); } },
 };
-function hell33OK(r, i, c) { const p = r.p[i], g = r.g; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && p.hand.length > 0 && p.av.filter(a => !a.tk && B[a.id].n.includes('วานร')).length >= 3 && canPlaceAv(r, i, c) && !r.p.some(q => q.av.some(a => a.id === 'BT05-012' && !noFx(r, a))); }
+function hell33OK(r, i, c) { const p = r.p[i], g = r.g; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && p.hand.length > 0 && p.av.filter(a => nmOf(a).includes('วานร')).length >= 3 && canPlaceAv(r, i, c) && !r.p.some(q => q.av.some(a => a.id === 'BT05-012' && !noFx(r, a))); }
 function handCost(r, i, c) {   // Cost ปัจจุบันบนมือ (null = ใช้ค่าปกติ)
   const b = B[c.id]; if (c.id === 'BT10-074' && new Set(r.p[i].av.filter(a => !a.tk && B[a.id].n.includes('แก๊งขยะ')).map(a => nm9(a))).size >= 2) return 0; if (b && c.id === 'BT07-072' && hasHn(r, i)) return 0; if (!b || b.t !== 'Avatar') return null; const p = r.p[i];
   if (c.id === 'BT05-002') return Math.max(0, b.c - p.hell.filter(h => !h.tk && B[h.id].t === 'Avatar' && B[h.id].n.includes('แมลงปอ')).length);
@@ -4724,7 +4724,7 @@ function bt8Weapon(r, c) {   // อีวิลไมเกรน: เมื่�
 }
 
 /* ===== BT08 รอบ 2: ใบที่ใช้กลไกเดิม (Land/สวมใส่/untarget/mill/kill) ===== */
-const isArthur8 = a => isAv(a) && nm8(a).startsWith('อาเธอร์');
+const isArthur8 = a => isAv(a) && /อาเธอร์|อาร์เธอร์|Arthur/i.test(nm8(a));
 function bt8Prot(r, who, x, mg) {   // 035 เล่าปี่: ไม่ถูกเลือกเป็นเป้า Magic ฝ่ายตรงข้าม ตราบที่มี ขุนพลเขียว {ต่างชาติ} ใบอื่น
   if (who === undefined || x.tk || x.id !== 'BT08-035' || !(MGX > 0 || mg)) return false;
   const oi = r.p.findIndex(q => q.av.includes(x)); if (oi < 0 || oi === who || noFx(r, x)) return false;
@@ -4744,7 +4744,7 @@ function wearFromHell8(r, i, c, pred, ml) {   // 059/060: สั่งใช้�
     const k = p.hell.indexOf(c); if (k < 0) return; p.hell.splice(k, 1); p.mg.push(c); c.at = t.c.u; r.g.used[i].Modification = 1; vfx(t.c.u, 'aura', '🗡 สวมใส่ ' + B[c.id].n, '#f97316'); log(r, '🗡 ' + B[c.id].n + ' จากนรก → สวมใส่ ' + nmOf(t.c)); bt8Wear(r, i, c, t.c); } });
 }
 ABIL['BT08-059'] = { zone: 'hell', label: 'ธรณีสูบ 1 ใบ สวมใส่ คาเรนต์ จากนรกให้ อัศวินโต๊ะกลม', cond: (r, i) => !r.g.used[i].Modification && r.p[i].av.some(isKnight) && r.p[i].deck.length > 1, run: (r, i, c) => wearFromHell8(r, i, c, isKnight, 1) };
-ABIL['BT08-060'] = { zone: 'hell', label: 'สวมใส่ เอกซ์คาลิเบอร์ จากนรกให้ อาเธอร์', cond: (r, i) => r.p[i].av.some(isArthur8), run: (r, i, c) => wearFromHell8(r, i, c, isArthur8, 0) };
+ABIL['BT08-060'] = { zone: 'hell', label: 'สวมใส่ เอกซ์คาลิเบอร์ จากนรกให้ อาเธอร์', hint: 'ต้องมี Avatar "อาเธอร์" บนสนามที่ยังไม่ได้สวมใส่ เอกซ์คาลิเบอร์', cond: (r, i, c) => r.p[i].av.some(a => isArthur8(a) && canWear(a, c)), run: (r, i, c) => wearFromHell8(r, i, c, isArthur8, 0) };
 Object.assign(SUM, {
   'BT08-010': (r, i, x) => {   // เซอร์นัท — จุติ: นำ ไอ้นัท จากนรกมาสวมใส่ (🟡 รับสกิลของไอ้นัท ยังไม่ทำ)
     const p = r.p[i], L = p.hell.filter(h => isAv(h) && B[h.id].n.startsWith('ไอ้นัท')).map(h => h.u); if (!L.length) return log(r, 'จุติ เซอร์นัท: ไม่พบ ไอ้นัท ในนรก');
