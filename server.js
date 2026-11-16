@@ -212,7 +212,7 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, tokens: tkPub, tkc: d.tkc || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), mailn: (d.mail || []).length, pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, tokens: tkPub, tkc: d.tkc || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), mailn: (d.mail || []).length, rk: d.rk || '', rkv: rkPub(d.rk), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => { ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); }); if (TKBOX[k]) { tkGive(d, k); (d.tkg = d.tkg || []).includes(k) || d.tkg.push(k); } };
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','CC01','CC02'];
@@ -222,6 +222,88 @@ const CCW = { SR: 82.97, UR: 10, SEC: 7, PR: .03 }, CCG = { UR: 74.9, SEC: 25, P
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
 // ===== จดหมาย (d.mail): ของจากแอดมิน / โค้ด / รางวัลเควสที่ลืมรับก่อนรีเซ็ต — ผู้เล่นกดรับเองที่ปุ่ม ✉️ หน้าล็อบบี้ =====
+
+// ===== ยศ (Rank): แอดมินสร้าง/แก้ได้ · ผู้เล่นได้ยศเมื่อผ่านเงื่อนไข (ได้แล้วถาวร) · ใส่ได้ครั้งละ 1 ยศ =====
+const RK_RAR = ['C', 'R', 'SR', 'UR', 'SEC', 'PR', 'CBR', 'USEC'], RK_KINDS = ['lt', 'st', 'lv', 'own', 'ownn', 'rar', 'set', 'gems', 'dl', 'dk'];
+const RK_DEF = [
+  { id: 'rk_newbie', name: 'หน้าใหม่ริมคลอง', ic: '🌱', c1: '#9ca3af', c2: '#6b7280', desc: 'ยศเริ่มต้นของทุกคน', mode: 'all', ord: 1, conds: [{ k: 'lv', n: 1 }] },
+  { id: 'rk_soi', name: 'เด็กซอยตลิ่งชัน', ic: '🛵', c1: '#22c55e', c2: '#15803d', desc: 'ลงสนามจนคุ้นซอย', mode: 'all', ord: 2, conds: [{ k: 'lt', m: 'g', md: 'any', n: 10 }] },
+  { id: 'rk_canal', name: 'นักสู้ริมคลอง', ic: '🛶', c1: '#38bdf8', c2: '#0369a1', desc: 'เริ่มมีชื่อในย่าน', mode: 'all', ord: 3, conds: [{ k: 'lt', m: 'w', md: 'any', n: 25 }] },
+  { id: 'rk_craft', name: 'ช่างคราฟแห่งตลาดน้ำ', ic: '🔮', c1: '#c084fc', c2: '#7e22ce', desc: 'คราฟการ์ดจนมือเก๋า', mode: 'all', ord: 4, conds: [{ k: 'lt', m: 'cr', md: 'any', n: 50 }] },
+  { id: 'rk_market', name: 'นักสะสมตลาดนัด', ic: '🎴', c1: '#f472b6', c2: '#be185d', desc: 'สะสมการ์ดหลากหลายแบบ', mode: 'all', ord: 5, conds: [{ k: 'own', n: 100 }] },
+  { id: 'rk_pack', name: 'เซียนเปิดซอง', ic: '📦', c1: '#fbbf24', c2: '#d97706', desc: 'ฉีกซองมาแล้วนับไม่ถ้วน', mode: 'all', ord: 6, conds: [{ k: 'lt', m: 'op', md: 'any', n: 1000 }] },
+  { id: 'rk_art', name: 'ผู้ล่าการ์ดอาร์ต', ic: '🌟', c1: '#fb7185', c2: '#e11d48', desc: 'มีการ์ด PR หลายแบบในครอบครอง', mode: 'all', ord: 7, conds: [{ k: 'rar', r: 'PR', n: 5 }] },
+  { id: 'rk_bot', name: 'ผู้พิชิตบอทท้าทาย', ic: '🤖', c1: '#22d3ee', c2: '#0e7490', desc: 'ชนะบอทท้าทายซ้ำแล้วซ้ำเล่า', mode: 'all', ord: 8, conds: [{ k: 'lt', m: 'w', md: 'chal', n: 10 }] },
+  { id: 'rk_warrior', name: 'จอมยุทธ์ตลิ่งชัน', ic: '⚔️', c1: '#fb923c', c2: '#c2410c', desc: 'ชนะครบ 100 เกม', mode: 'all', ord: 9, conds: [{ k: 'lt', m: 'w', md: 'any', n: 100 }] },
+  { id: 'rk_streak', name: 'ราชาไร้พ่าย', ic: '🔥', c1: '#f87171', c2: '#b91c1c', desc: 'ชนะติดต่อกันยาวมาก', mode: 'all', ord: 10, conds: [{ k: 'st', n: 10 }] },
+  { id: 'rk_tycoon', name: 'เจ้าสัวการ์ด', ic: '💰', c1: '#fde047', c2: '#ea580c', desc: 'คลังการ์ดอู้ฟู่ระดับเจ้าสัว', mode: 'all', ord: 11, conds: [{ k: 'own', n: 500 }] },
+  { id: 'rk_gacha', name: 'ตำนานนักเปิดซอง', ic: '🎰', c1: '#facc15', c2: '#dc2626', desc: 'เปิดซองครบหนึ่งหมื่นซอง', mode: 'all', ord: 12, conds: [{ k: 'lt', m: 'op', md: 'any', n: 10000 }] },
+  { id: 'rk_god', name: 'เทพเจ้าแห่งตลิ่งชัน', ic: '👑', c1: '#a78bfa', c2: '#f59e0b', desc: 'ชนะ 1,000 เกม · สะสม 500 แบบ · เปิดซอง 10,000 ซอง', mode: 'all', ord: 13, conds: [{ k: 'lt', m: 'w', md: 'any', n: 1000 }, { k: 'own', n: 500 }, { k: 'lt', m: 'op', md: 'any', n: 10000 }] },
+  { id: 'rk_staff', name: 'ทีมงานตลิ่งชัน', ic: '🛡️', c1: '#ef4444', c2: '#7f1d1d', desc: 'ยศพิเศษ แอดมินมอบให้เท่านั้น', mode: 'all', ord: 99, conds: [] }
+];
+let RANKS = null, RKM = {};
+const rkIdx = () => { RKM = {}; (RANKS || []).forEach(r => { RKM[r.id] = r; }); };
+async function rkAll() { if (RANKS) return RANKS; const o = await dbGet('sys:ranks'); if (o && Array.isArray(o.list)) RANKS = o.list; else { RANKS = RK_DEF.map(x => JSON.parse(JSON.stringify(x))); await dbPut('sys:ranks', { list: RANKS }); } rkIdx(); return RANKS; }
+const rkSave = async () => { rkIdx(); await dbPut('sys:ranks', { list: RANKS }); };
+setTimeout(() => rkAll().catch(e => console.error('rank load', e)), 3500);
+const rkPub = id => { const r = id && RKM[id]; return r && !r.off ? { id: r.id, n: r.name, c: r.c1, c2: r.c2 || r.c1, ic: r.ic || '' } : null; };
+const rkHave = (d, r) => (d.rkh || []).includes(r.id) || (d.rkg || []).includes(r.id);
+const rkNeed = c => c.k === 'set' && !(c.n > 0) ? CARDS.filter(x => x.id.startsWith(c.s + '-')).length : (c.n | 0);
+function rkCur(d, c) {
+  const lt = (d.qs && d.qs.lt) || {}, st = (d.pf && d.pf.st) || {}, ks = Object.entries(d.cards || {}).filter(([, v]) => v > 0);
+  switch (c.k) {
+    case 'lt': { let v = lt[c.m + ':' + c.md] | 0; if (c.md === 'any' && c.m === 'g') v = Math.max(v, st.g | 0); if (c.md === 'any' && c.m === 'w') v = Math.max(v, st.w | 0); return v; }
+    case 'st': return st.b | 0;
+    case 'lv': return pfLv(d.pf && d.pf.xp).lv;
+    case 'own': return new Set(ks.map(([k]) => k.split('|')[0])).size;
+    case 'ownn': return ks.reduce((a, [, v]) => a + v, 0);
+    case 'rar': return ks.filter(([k]) => k.split('|')[1] === c.r).length;
+    case 'set': return new Set(ks.map(([k]) => k.split('|')[0]).filter(i => i.startsWith(c.s + '-'))).size;
+    case 'gems': return d.gems | 0;
+    case 'dl': return (d.dl && d.dl.s) | 0;
+    case 'dk': return Object.keys(d.decks || {}).length;
+  }
+  return 0;
+}
+function rkText(c) {
+  const n = rkNeed(c), f = x => x.toLocaleString('en-US');
+  switch (c.k) {
+    case 'lt': return QT[c.m] ? qText(c.m, c.md, n) : '-';
+    case 'st': return 'ชนะติดต่อกันสูงสุด ' + f(n) + ' เกม';
+    case 'lv': return 'เลเวลโปรไฟล์ ' + f(n);
+    case 'own': return 'มีการ์ดสะสม ' + f(n) + ' แบบ';
+    case 'ownn': return 'มีการ์ดรวม ' + f(n) + ' ใบ';
+    case 'rar': return 'มีการ์ดระดับ ' + c.r + ' ' + f(n) + ' แบบ';
+    case 'set': return c.n > 0 ? 'สะสมการ์ดชุด ' + c.s + ' ให้ได้ ' + f(n) + ' แบบ' : 'สะสมการ์ดชุด ' + c.s + ' ให้ครบทั้งชุด (' + f(n) + ' แบบ)';
+    case 'gems': return 'มี Gem ' + f(n);
+    case 'dl': return 'เช็คอินรายวันต่อเนื่อง ' + f(n) + ' วัน';
+    case 'dk': return 'บันทึกเด็คไว้ ' + f(n) + ' เด็ค';
+  }
+  return '-';
+}
+const rkOK = (d, r) => { if (!r.conds || !r.conds.length) return false; const t = c => rkCur(d, c) >= rkNeed(c); return r.mode === 'any' ? r.conds.some(t) : r.conds.every(t); };
+function rkEval(d) {   // ตรวจยศที่ผ่านเงื่อนไขแล้ว เก็บถาวรใน d.rkh · คืนชื่อยศที่ได้ใหม่
+  if (!RANKS) return []; d.rkh = d.rkh || []; const nw = [];
+  RANKS.forEach(r => { if (!r.off && !rkHave(d, r) && rkOK(d, r)) { d.rkh.push(r.id); nw.push(r.name); } });
+  return nw;
+}
+function rkView(d) {
+  return (RANKS || []).filter(r => !r.off).slice().sort((a, b) => (a.ord | 0) - (b.ord | 0)).map(r => ({ id: r.id, n: r.name, c: r.c1, c2: r.c2 || r.c1, ic: r.ic || '', d: r.desc || '', mode: r.mode, have: rkHave(d, r), cs: (r.conds || []).map(c => { const cur = rkCur(d, c), nd = rkNeed(c); return { tx: rkText(c), cur: Math.min(cur, nd), n: nd, ok: cur >= nd }; }) }));
+}
+function rkClean(x) {   // ตรวจ/ล้างข้อมูลยศที่แอดมินส่งมา
+  const col = v => /^#[0-9a-fA-F]{6}$/.test(String(v || '')) ? String(v) : null;
+  const name = String(x.name || '').trim().slice(0, 28); if (!name) E('ใส่ชื่อยศ');
+  const c1 = col(x.c1); if (!c1) E('สีหลักต้องเป็น #RRGGBB'); const c2 = col(x.c2) || c1;
+  const conds = (Array.isArray(x.conds) ? x.conds : []).slice(0, 8).map(c => {
+    const k = String((c && c.k) || ''); if (!RK_KINDS.includes(k)) E('เงื่อนไขไม่ถูกต้อง'); const o = { k, n: Math.max(0, Math.min(1e9, (c.n | 0))) };
+    if (k === 'lt') { o.m = String(c.m || ''); o.md = String(c.md || 'any'); if (!QT[o.m] || o.m === 'st' || !QMN[o.md]) E('เงื่อนไขเกม/โหมดไม่ถูกต้อง'); }
+    if (k === 'rar') { o.r = String(c.r || ''); if (!RK_RAR.includes(o.r)) E('ระดับการ์ดไม่ถูกต้อง'); }
+    if (k === 'set') { o.s = String(c.s || '').trim().toUpperCase(); if (!/^[A-Z0-9]{2,8}$/.test(o.s)) E('รหัสชุดการ์ดไม่ถูกต้อง (เช่น BT01)'); }
+    if (k !== 'set' && o.n < 1) E('จำนวนในเงื่อนไขต้อง≥ 1');
+    return o;
+  });
+  return { name, ic: String(x.ic || '').trim().slice(0, 4), c1, c2, desc: String(x.desc || '').trim().slice(0, 120), mode: x.mode === 'any' ? 'any' : 'all', ord: Math.max(0, Math.min(999, x.ord | 0)), off: x.off ? 1 : 0, conds };
+}
 const MAIL_MAX = 300;
 function mailAdd(d, o) {
   d.mail = d.mail || [];
@@ -634,7 +716,7 @@ async function pickDeck(m, user, ban) {
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
   await qCh().catch(() => { });
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } let rkn = []; try { rkn = rkEval(d); } catch (e) { } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx, rkn })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -1620,7 +1702,7 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
-  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, tkp: tkAvail(p), av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
+  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, rk: rkPub(p.rk), dn: p.bot ? ((r.bot && r.bot.dname) || 'เด็คของบอท') : (p.dn || ''), eq: p.eq || {}, tkp: tkAvail(p), av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
   return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, show: g.ask.show, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
@@ -2179,7 +2261,7 @@ wss.on('connection', ws => {
         const t = String(m.name || '').toLowerCase(), d = await dbGet(ws.user);
         if (!(d.fr || []).includes(t)) E('ดูโปรไฟล์ได้เฉพาะเพื่อนของคุณ');
         const o = await dbGet(t); if (!o) E('ไม่พบผู้ใช้'); const f = pfView(o);
-        ws.send(JSON.stringify({ t: 'fprof', name: t, pic: o.pic || null, on: userWs(t).length > 0, lv: f.lv, cur: f.cur, need: f.need, st: f.st, hist: (f.hist || []).slice(0, 30) })); return;
+        ws.send(JSON.stringify({ t: 'fprof', name: t, rkv: rkPub(o.rk), pic: o.pic || null, on: userWs(t).length > 0, lv: f.lv, cur: f.cur, need: f.need, st: f.st, hist: (f.hist || []).slice(0, 30) })); return;
       }
       if (m.t === 'finv') {
         const t = String(m.name || '').toLowerCase(), code = String(m.room || '').toUpperCase(), d = await dbGet(ws.user), q = rooms[code];
@@ -2329,6 +2411,35 @@ wss.on('connection', ws => {
         const d = await dbGet(ws.user), nm = String(m.name || ''); if (!d.decks || !d.decks[nm]) E('ไม่พบเด็ค ' + nm);
         delete d.decks[nm]; await dbPut(ws.user, d); me_(d); return;
       }
+      if (m.t === 'rkget') {   // ผู้เล่น: ดูยศทั้งหมด + ความคืบหน้า
+        await rkAll(); const d = await dbGet(ws.user), nw = rkEval(d); if (nw.length) await dbPut(ws.user, d);
+        ws.send(JSON.stringify({ t: 'rk', list: rkView(d), sel: d.rk || '' })); if (nw.length) ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), rkn: nw })); return;
+      }
+      if (m.t === 'rkpick') {   // เลือกใส่ยศ (ครั้งละ 1) · '' = ไม่ใช้
+        await rkAll(); const d = await dbGet(ws.user); rkEval(d); const id = String(m.id || '');
+        if (id) { const r = RKM[id]; if (!r || r.off || !rkHave(d, r)) E('ยังไม่ได้ยศนี้'); }
+        d.rk = id; await dbPut(ws.user, d); Object.values(rooms).forEach(q => q.p.forEach(p => { if (p.name === ws.user) p.rk = id; }));
+        ws.send(JSON.stringify({ t: 'rk', list: rkView(d), sel: d.rk || '' })); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: id ? 'เปลี่ยนยศแล้ว' : 'ถอดยศแล้ว' })); return;
+      }
+      if (m.t === 'rkadmget' || m.t === 'rkset' || m.t === 'rkdel' || m.t === 'rkgive') {   // แอดมิน: จัดการยศ
+        if (ws.user !== ADMIN) E('เฉพาะแอดมิน'); await rkAll();
+        const out = () => ws.send(JSON.stringify({ t: 'rkadm', list: RANKS, QT, QMN, RAR: RK_RAR }));
+        if (m.t === 'rkadmget') { out(); return; }
+        if (m.t === 'rkset') {
+          const x = m.r || {}, o = rkClean(x), id = String(x.id || ''), i = id ? RANKS.findIndex(r => r.id === id) : -1;
+          if (i >= 0) RANKS[i] = { ...RANKS[i], ...o }; else { if (RANKS.length >= 80) E('ยศเยอะเกินไป (สูงสุด 80)'); RANKS.push({ id: 'rk' + Date.now().toString(36), ...o }); }
+          await rkSave(); out(); ws.send(JSON.stringify({ note: 'บันทึกยศ "' + o.name + '" แล้ว' })); return;
+        }
+        if (m.t === 'rkdel') { const id = String(m.id || ''), i = RANKS.findIndex(r => r.id === id); if (i < 0) E('ไม่พบยศ'); const nm = RANKS[i].name; RANKS.splice(i, 1); await rkSave(); out(); ws.send(JSON.stringify({ note: 'ลบยศ "' + nm + '" แล้ว (ผู้เล่นที่ใส่ยศนี้จะไม่แสดงยศ)' })); return; }
+        if (m.t === 'rkgive') {   // มอบ/ริบยศให้ผู้เล่น (ใช้กับยศพิเศษที่ไม่มีเงื่อนไข หรือมอบข้ามเงื่อนไข)
+          const n = String(m.u || '').trim(), r = RKM[String(m.id || '')]; if (!n) E('ใส่ชื่อผู้เล่น'); if (!r) E('ไม่พบยศ');
+          const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex) E('ไม่พบผู้เล่น ' + n);
+          const d = await dbGet(n); d.rkg = d.rkg || [];
+          if (m.on) { if (!d.rkg.includes(r.id)) d.rkg.push(r.id); } else { d.rkg = d.rkg.filter(x => x !== r.id); if (d.rk === r.id && !rkHave(d, r)) d.rk = ''; }
+          await dbPut(n, d); pushMe(n, m.on ? '🏅 แอดมินมอบยศ "' + r.name + '" ให้คุณ' : '⚠️ ยศ "' + r.name + '" ถูกเพิกถอน');
+          ws.send(JSON.stringify({ note: (m.on ? 'มอบยศ' : 'ริบยศ') + ' "' + r.name + '" ' + (m.on ? 'ให้ ' : 'จาก ') + n + ' แล้ว' })); return;
+        }
+      }
       if (m.t === 'mailget') { const d = await dbGet(ws.user); ws.send(JSON.stringify({ t: 'mail', list: mailView(d) })); return; }
       if (m.t === 'mailclaim') {
         const d = await dbGet(ws.user), tot = mailClaim(d, m.all ? 'all' : String(m.id || '')); if (!tot.n) E('ไม่พบจดหมาย');
@@ -2453,7 +2564,7 @@ wss.on('connection', ws => {
         const mkP = name => ({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] });
         r = rooms[code] = { p: [mkP(ws.user), mkP('บอท (' + BOT_LV[lv].n + ')')], g: null, code, exp: Date.now() + 18e5, cfg: { clock: 0, react: 0, ban: true }, bot: { lv, tried: new Set(), at: 0, fail: 0, tn: -1, w: null, arm: null } };
         i = 0; const bp = r.p[1], bd = botDeck(); bp.bot = 1; bp.eq = {}; bp.deck = shuf(bd.main.map(inst)); bp.life = shuf(bd.life.map(id => ({ ...inst(id), up: 0 })));
-        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; r.p[0].sv = ud && ud.decks ? Object.values(ud.decks).filter(x => x && x.main && x.main.length >= 30).map(x => x.main.slice()) : null; r.p[0].pic = (ud && ud.pic) || null; r.p[0].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; }
+        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; r.p[0].sv = ud && ud.decks ? Object.values(ud.decks).filter(x => x && x.main && x.main.length >= 30).map(x => x.main.slice()) : null; r.p[0].pic = (ud && ud.pic) || null; r.p[0].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; r.p[0].rk = (ud && ud.rk) || ''; }
         bc(r); return;
       }
       if (m.t === 'join') {
@@ -2463,11 +2574,11 @@ wss.on('connection', ws => {
         if (!r) { if (!m.create) E('ไม่พบห้อง'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5,10,20].includes(+m.clock) ? +m.clock : 0, react: [10,20,30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] }); }
-        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r); sdSend(r.p[i]);
+        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; r.p[i].rk = (ud && ud.rk) || ''; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r); sdSend(r.p[i]);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
-        p.last = m; p.sw = 0; p.dd = { main: d.main.slice(), life: d.life.slice(), side: (d.side || []).slice(), tk: d.tk && typeof d.tk === 'object' && !Array.isArray(d.tk) ? { ...d.tk } : null, art: d.art || {}, vr: d.vr || null, sd: d.sdName || '' };
+        p.dn = m.mine ? String(m.mine).slice(0, 40) : ((ST[m.pre] && ST[m.pre].name) || 'เด็คสำเร็จรูป'); p.last = m; p.sw = 0; p.dd = { main: d.main.slice(), life: d.life.slice(), side: (d.side || []).slice(), tk: d.tk && typeof d.tk === 'object' && !Array.isArray(d.tk) ? { ...d.tk } : null, art: d.art || {}, vr: d.vr || null, sd: d.sdName || '' };
         { const y = deckInsts(d); p.deck = y.deck; p.life = y.life; } p.hand = [];
         bc(r); sdSend(p); if (d.sideErr && ws.readyState === 1) ws.send(JSON.stringify({ note: d.sideErr }));
       } else if (m.t === 'sidesw') {   // สลับการ์ด Main ↔ Side (ก่อนเริ่มเกม / หลังจบเกมก่อนกดเล่นซ้ำ)
