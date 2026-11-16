@@ -67,7 +67,7 @@ const CHANGELOG = [
     'แถบเวอร์ชันหน้าล็อบบี้: กดเพื่อดูรายการอัปเดตได้'
   ] }
 ];
-const BOX_RE = /^(BT|KD|SD)\d{2}\.(webp|png)$/i;   // รูปกล่อง: อ่านจาก imgs_boxes.zip (หรือ imgs*.zip ใดๆ) ใช้ที่หน้า Event ภายหลัง
+const BOX_RE = /^(BT|CC|KD|SD)\d{2}\.(webp|png)$/i;   // รูปกล่อง: อ่านจาก imgs_boxes.zip (หรือ imgs*.zip ใดๆ) ใช้ที่หน้า Event ภายหลัง
 // ===== ระดับการ์ด = ตามชื่อไฟล์รูป (สแกนอัตโนมัติ) =====
 const ART_R = ['C', 'R', 'SR', 'UR', 'SEC', 'PR', 'CBR', 'USEC'];   // ลำดับระดับ ต่ำ→สูง
 const ART_RE = new RegExp('^(.+?)(?:-(' + ART_R.filter(r => r !== 'C').join('|') + '))?\\.(webp|png)$', 'i');   // ID-ระดับ.webp / .png (ไม่มีคำต่อท้าย = C)
