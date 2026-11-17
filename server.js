@@ -705,7 +705,7 @@ function P(r, x) {
   v -= neg053(r, x);
   return Math.max(0, v);
 }
-const kick = (r, a) => a.kk === r.g.n || (!a.tk && a.hero === r.g.n) || a.k31 === r.g.n || (a.id === 'BT04-032' && r.p.some(q => q.av.includes(a) && q.av.some(x => nmOf(x).includes('พระเจ้านิโคไล')))) || /เตะไข่/.test(a.tk || a.id === 'BT04-032' || B7NK[a.id] ? '' : B[a.id].e) || (a.id === 'BT07-025' && !noFx(r, a) && hasHn(r, r.p.findIndex(q => q.av.includes(a)))) || (a.id === 'BT09-038' && !a.tk && hasKw(r, a, 'เตะไข่')) || r.p.some(q => q.mg.some(m => m.at === a.u && B[m.id].e.includes('เตะไข่') && (m.id !== 'BT08-059' || B[a.id].n.includes('มอเดรด'))));
+const kick = (r, a) => !noFx(r, a) && (a.kk === r.g.n || (!a.tk && a.hero === r.g.n) || a.k31 === r.g.n || (a.id === 'BT04-032' && r.p.some(q => q.av.includes(a) && q.av.some(x => nmOf(x).includes('พระเจ้านิโคไล')))) || /เตะไข่/.test(a.tk || a.id === 'BT04-032' || B7NK[a.id] ? '' : B[a.id].e) || (a.id === 'BT07-025' && !noFx(r, a) && hasHn(r, r.p.findIndex(q => q.av.includes(a)))) || (a.id === 'BT09-038' && !a.tk && hasKw(r, a, 'เตะไข่')) || r.p.some(q => q.mg.some(m => m.at === a.u && B[m.id].e.includes('เตะไข่') && (m.id !== 'BT08-059' || B[a.id].n.includes('มอเดรด')))));
 const allCards = (r, u) => { for (let i = 0; i < 2; i++) for (const z of [...ZN, 'deck']) { const c = r.p[i][z].find(x => x.u === u); if (c) return { i, z, c }; } return null; };
 function runQ(r) { CR = r; const g = r.g; let n = 0; if (g && g.pendAfter && !g.ask && !g.pend) { const f = g.pendAfter; g.pendAfter = null; try { f(); } catch (e) { console.error('fx', e); } } while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } try { bt6Own(r); bt6Cage(r); } catch (e) { console.error('bt6', e); } try { bt5Sand(r); } catch (e) { console.error('sand', e); } if (g && !g.pend && !g.ask && !g.q.length) r.p.forEach(q => q.av.forEach(a => { if (a.docW) delete a.docW; })); sweep(r); }
 function ask(r, who, o) {
@@ -1777,6 +1777,7 @@ function act(r, i, m) {
         if (!/สามัคคี|แทงหลัง/.test(e) && !hasKw(r, q.c, 'สามัคคี')) E('สามัคคี/แทงหลังไม่ได้: ' + nmOf(q.c)); if (bt9SupBlock(r, q.c, a.c)) E('โลกิ ใช้สามัคคีได้เฉพาะให้ "ธอร์"');
         if (!/แทงหลัง/.test(e) && op.co.some(x => x.id === 'SD07-020')) E('ด่านเฮาโลก๋วน: ฝ่ายตรงข้ามใช้สามัคคีไม่ได้');
         return q.c; });
+      if (!m.mk && m.tg === 'life' && op.av.length && !a.c.tk && kick(r, a.c) && monkeyGate(r, i, a.c, 'เตะไข่', () => act(r, i, { ...m, mk: 1 }))) break;   // เชาว์ปัญญาลิง: ยกเลิก เตะไข่ ตอนประกาศโจมตี LIFE
       if (!m.fj && futAtkGuard(r, i, a.c, m)) break;   // ชายจากอนาคต: ยกเลิกผลอัตโนมัติของ Magic ตอนประกาศโจมตี
       sup.forEach(q => {
         const e = B[q.id].e || '', bs = /แทงหลัง/.test(e);
@@ -2341,6 +2342,34 @@ function autoGuard(r, o, card, kind, fn) {
   } });
   return true;
 }
+
+// เชาว์ปัญญาลิง (KD03-017 / BT04-050): ฝ่ายตรงข้ามใช้ความสามารถของ Avatar บนสนาม (จุติ / อัตโนมัติ / เตะไข่ / สั่งใช้) → Avatar ใบนั้นสูญเสียความสามารถทั้งหมด จนจบเทิร์น
+// ยกเว้น ต่อเนื่อง และ คำสั่งเสีย (ไม่ผ่านประตูนี้)
+const monkeyCard = (r, w) => { const g = r.g; if (!g || g.over || !g.used || !g.used[w] || g.used[w].React || (g.noReact && g.noReact.who === w) || cc2ODLock(r, w)) return null; return r.p[w].hand.find(h => !h.tk && h.id === 'KD03-017') || null; };
+function monkeyGate(r, o, card, why, fn, nofn) {   // o = เจ้าของ Avatar ที่จะใช้ความสามารถ; fn = ทำต่อ (ถ้าไม่ใช้/ถูกยกเลิก); nofn = ทำถ้าไม่มีลิง (คืน true ถ้าจัดการเอง)
+  const g = r.g, w = 1 - o; if (!card || card.tk || g.ask || g.over || noFx(r, card) || card.hero === g.n) return false;
+  const f = find(r, card.u); if (!f || f.z !== 'av') return false;
+  const m = monkeyCard(r, w); if (!m) return false;
+  ask(r, w, { yn: true, text: 'เชาว์ปัญญาลิง: ฝ่ายตรงข้ามจะใช้ความสามารถ ' + why + ' ของ ' + nmOf(card) + ' — ใช้ React ให้ Avatar ใบนั้นสูญเสียความสามารถทั้งหมด จนจบเทิร์นไหม?', cb: y => {
+    if (!y) return fn();
+    const h = r.p[w].hand.find(x => x.u === m.u); if (!h || g.used[w].React) return fn();
+    kdReactGate(r, w, B[h.id], canc => {
+      if (canc) return fn();
+      const h2 = r.p[w].hand.find(x => x.u === m.u); if (!h2) return fn();
+      take(r, h2.u); r.p[w].hell.push(h2); g.used[w].React = 1; ev(r, h2.kd || h2.id, h2.ar);
+      card.nf = g.n; fx({ k: 'say', id: 'KD03-017', t: 'สูญเสียความสามารถ!' }); vfx(card.u, 'burst', 'สูญเสียความสามารถ', '#a3e635');
+      log(r, '🐒 ' + r.p[w].name + ' ใช้ เชาว์ปัญญาลิง: ' + nmOf(card) + ' สูญเสียความสามารถทั้งหมด จนจบเทิร์น (' + why + ' ถูกยกเลิก)');
+    }); } });
+  return true;
+}
+const _autoGuardBase = autoGuard;
+autoGuard = function (r, o, card, kind, fn) {
+  if (card && !card.tk && B[card.id] && !(kind instanceof RegExp && /คำสั่งเสีย/.test(kind.source)) && (kind instanceof RegExp ? kind.test(B[card.id].e || '') : kind(card))) {
+    const why = kind instanceof RegExp && /จุติ/.test(kind.source) ? 'จุติ' : 'อัตโนมัติ';
+    if (monkeyGate(r, o, card, why, () => { if (!_autoGuardBase(r, o, card, kind, fn)) fn(); })) return true;
+  }
+  return _autoGuardBase(r, o, card, kind, fn);
+};
 
 /* ===== BT03 ชุด 1 (001-020) ===== */
 const vfx = (u, t, txt, c) => fx({ k: 'vfx', u, t, txt, c });
