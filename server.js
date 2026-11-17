@@ -547,6 +547,7 @@ function qClaim(d, kind, id, all) {   // รับรางวัล: คืน 
   return tot;
 }
 // ===== Login รายวัน (ปฏิทิน): ทุก 5 วัน 15,000 / ทุก 10 วัน 15,000 + การ์ดอาร์ท 2 ใบ / วันอื่น 5,000 · ขาดวันแล้วเริ่มวันที่ 1 ใหม่ =====
+const PK_BUSY = new Set();   // กันกดสุ่ม/ซื้อเด็คซ้ำรัวๆ: ผู้เล่น 1 คนมีคำสั่งสุ่มค้างได้ทีละ 1 รอบ (รอบเดิมยังไม่เสร็จ คำสั่งซ้ำจะถูกทิ้ง ไม่หัก Gem/ไม่สุ่มเพิ่ม)
 const DL_BUSY = new Set();
 const dlRew = n => n % 10 === 0 ? { gems: 15000, dust: 0, art: 2 } : n % 5 === 0 ? { gems: 15000, dust: 0, art: 0 } : { gems: 5000, dust: 0, art: 0 };
 function dlView(d) {
@@ -2366,6 +2367,9 @@ wss.on('connection', ws => {
       }
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
+        if (PK_BUSY.has(ws.user)) return;   // กำลังสุ่ม/ซื้อรอบก่อนอยู่ → ไม่ทำซ้ำ
+        PK_BUSY.add(ws.user);
+        try {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
         if (!ST[m.set]) E('ไม่มีสินค้า'); const again = /^SD0[1-3]$/.test(m.set) || d.bought.includes(m.set);   // SD01-03 แจกฟรี → ซื้อได้เฉพาะแบบซื้อซ้ำ
         if (d.gems < 1500) E('Gem ไม่พอ');
@@ -2379,7 +2383,9 @@ wss.on('connection', ws => {
         ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : (r || ((B[id] && B[id].v) || ['C'])[0]); if (r === 'UR') got.push({ id, r: rr }); all.push({ id, r: rr }); add(d, { id, r: rr }); } });
         tkGive(d, m.set);
         const rows = []; for (let k = 0; k < all.length; k += 5) rows.push(all.slice(k, k + 5));
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: rows.length ? rows : [[{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง ' + all.length + ' ใบ' + (got.length ? ' · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') : '') })); return; }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: rows.length ? rows : [[{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง ' + all.length + ' ใบ' + (got.length ? ' · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') : '') })); return;
+        } finally { PK_BUSY.delete(ws.user); }
+      }
       if (m.t === 'buyskin' || m.t === 'eqskin') {
         const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400, bot1: 2500, dark: 3750, chalk: 3750, adv: 3750, constr: 5000, shrinesky: 5000, ratinv: 5000, hellneon: 6250, space: 6250, warb: 6250, hellgate: 7500, montb: 7500, bankb: 7500, idolb: 7500 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300, blue: 2500, purple: 2500, green: 2500, red: 2500, sun: 2500, violet: 3750, line: 3750, shrine: 3750, soi: 3750, ghost: 5000, galaxy: 5000, holo: 5000, rat: 5000, flame: 6250, dino: 6250, war: 6250, montho: 7500, sweeney: 7500, idol: 7500, bank: 7500 } };
         const pr = SK[m.k] && SK[m.k][m.id]; if (pr == null) E('ไม่มีสินค้า');
@@ -2544,11 +2550,15 @@ wss.on('connection', ws => {
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + tot + ' ใบ สำเร็จ (ใช้ ' + (gem ? gem + ' 💎 + ' : '') + du + ' ผง)' })); return;
       }
       if (m.t === 'open') {
+        if (PK_BUSY.has(ws.user)) return;   // กำลังสุ่มรอบก่อนอยู่ → ไม่สุ่มซ้ำ
+        PK_BUSY.add(ws.user);
+        try {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
         const ps = [], PKC = {}; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim, PKC); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
+        } finally { PK_BUSY.delete(ws.user); }
       }
       if (m.t === 'code') { await codeLock(async () => { let SC;
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
