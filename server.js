@@ -67,7 +67,7 @@ const CHANGELOG = [
     'แถบเวอร์ชันหน้าล็อบบี้: กดเพื่อดูรายการอัปเดตได้'
   ] }
 ];
-const BOX_RE = /^(BT|CC|KD|SD)\d{2}\.(webp|png)$/i;   // รูปกล่อง: อ่านจาก imgs_boxes.zip (หรือ imgs*.zip ใดๆ) ใช้ที่หน้า Event ภายหลัง
+const BOX_RE = /^(BT|KD|SD)\d{2}\.(webp|png)$/i;   // รูปกล่อง: อ่านจาก imgs_boxes.zip (หรือ imgs*.zip ใดๆ) ใช้ที่หน้า Event ภายหลัง
 // ===== ระดับการ์ด = ตามชื่อไฟล์รูป (สแกนอัตโนมัติ) =====
 const ART_R = ['C', 'R', 'SR', 'UR', 'SEC', 'PR', 'CBR', 'USEC'];   // ลำดับระดับ ต่ำ→สูง
 const ART_RE = new RegExp('^(.+?)(?:-(' + ART_R.filter(r => r !== 'C').join('|') + '))?\\.(webp|png)$', 'i');   // ID-ระดับ.webp / .png (ไม่มีคำต่อท้าย = C)
@@ -169,9 +169,6 @@ const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'applic
 const RMAP = { UBR: 'CBR', SCR: 'SEC' };
 // แปลงชื่อระดับเก่าในข้อมูลผู้เล่น: CBR → CBR (และ SCR → SEC กรณีมีข้อมูลที่เคยย้ายไว้)
 const fixR = (id, r) => RMAP[r] || r;
-/* ===== Token เป็นของสะสม: ได้จากกล่อง (SD09: 3 ใบ/กล่อง/ชนิด) เก็บใน d.tkc = { tokenId: จำนวนที่มี } ===== */
-const TKBOX = { SD09: { 'SD09-026': 3 } };
-const tkGive = (d, set) => { const b = TKBOX[set]; if (!b) return; d.tkc = d.tkc || {}; for (const [t, n] of Object.entries(b)) d.tkc[t] = (d.tkc[t] || 0) + n; };
 function mig(d) {
   if (!d || typeof CARDS === 'undefined') return d;
   const CI = new Set(CARDS.map(c => c.id));
@@ -181,7 +178,6 @@ function mig(d) {
       const own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
       ST[s].main.concat(ST[s].life).forEach(([id, n, r]) => { if (!B[id]) return; const miss = n - (own[id] || 0); for (let j = 0; j < miss; j++) add(d, { id, r: (B[id].v || []).includes(r) ? r : (B[id].v || ['C'])[0] }); });
       d.stg.push(s); }); }
-  if (d.cards) { d.tkg = d.tkg || []; for (const set of Object.keys(TKBOX)) if ((d.stg || []).includes(set) && !d.tkg.includes(set)) { tkGive(d, set); d.tkg.push(set); } }   // คนที่มีกล่องนี้อยู่แล้ว → แจก Token ให้ 1 กล่อง (ครั้งเดียว)
   if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i));
     if (x && x.art) for (const i of Object.keys(x.art)) x.art[i] = fixR(i, x.art[i]);
     if (x && x.vr) { const o = {}; for (const [kk, n] of Object.entries(x.vr)) { const [i, r] = kk.split('|'), nk = i + '|' + fixR(i, r); o[nk] = (o[nk] || 0) + n; } x.vr = o; } }
@@ -212,156 +208,15 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, tokens: tkPub, tkc: d.tkc || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), mailn: (d.mail || []).length, rk: d.rk || '', rkv: rkPub(d.rk), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
-const giveSt = (d, k) => { ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); }); if (TKBOX[k]) { tkGive(d, k); (d.tkg = d.tkg || []).includes(k) || d.tkg.push(k); } };
+const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','CC01','CC02'];
 // BOC (CC): ซองละ 5 ใบ ใบ 1-4 = SR, ใบที่ 5 = ช่องลุ้น · ราคา 200/1,800 · การันตีแยกจาก BT (ทุก 20 ซอง)
 const isCC = set => /^CC/.test(set), CC_PITY = 20;
 const CCW = { SR: 82.97, UR: 10, SEC: 7, PR: .03 }, CCG = { UR: 74.9, SEC: 25, PR: .1 };   // v1.9.2: เรทยากขึ้น · PR ต่อใบยากกว่า SEC ต่อใบเสมอ (ดู capPC)
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const add = (d, x) => { const k = x.id + '|' + x.r; d.cards[k] = (d.cards[k] || 0) + 1; };
-// ===== จดหมาย (d.mail): ของจากแอดมิน / โค้ด / รางวัลเควสที่ลืมรับก่อนรีเซ็ต — ผู้เล่นกดรับเองที่ปุ่ม ✉️ หน้าล็อบบี้ =====
-
-// ===== ยศ (Rank): แอดมินสร้าง/แก้ได้ · ผู้เล่นได้ยศเมื่อผ่านเงื่อนไข (ได้แล้วถาวร) · ใส่ได้ครั้งละ 1 ยศ =====
-const RK_RAR = ['C', 'R', 'SR', 'UR', 'SEC', 'PR', 'CBR', 'USEC'], RK_KINDS = ['lt', 'st', 'lv', 'own', 'ownn', 'rar', 'set', 'gems', 'dl', 'dk'];
-const RK_DEF = [
-  { id: 'rk_newbie', name: 'หน้าใหม่ริมคลอง', ic: '🌱', c1: '#9ca3af', c2: '#6b7280', desc: 'ยศเริ่มต้นของทุกคน', mode: 'all', ord: 1, conds: [{ k: 'lv', n: 1 }] },
-  { id: 'rk_soi', name: 'เด็กซอยตลิ่งชัน', ic: '🛵', c1: '#22c55e', c2: '#15803d', desc: 'ลงสนามจนคุ้นซอย', mode: 'all', ord: 2, conds: [{ k: 'lt', m: 'g', md: 'any', n: 10 }] },
-  { id: 'rk_canal', name: 'นักสู้ริมคลอง', ic: '🛶', c1: '#38bdf8', c2: '#0369a1', desc: 'เริ่มมีชื่อในย่าน', mode: 'all', ord: 3, conds: [{ k: 'lt', m: 'w', md: 'any', n: 25 }] },
-  { id: 'rk_craft', name: 'ช่างคราฟแห่งตลาดน้ำ', ic: '🔮', c1: '#c084fc', c2: '#7e22ce', desc: 'คราฟการ์ดจนมือเก๋า', mode: 'all', ord: 4, conds: [{ k: 'lt', m: 'cr', md: 'any', n: 50 }] },
-  { id: 'rk_market', name: 'นักสะสมตลาดนัด', ic: '🎴', c1: '#f472b6', c2: '#be185d', desc: 'สะสมการ์ดหลากหลายแบบ', mode: 'all', ord: 5, conds: [{ k: 'own', n: 100 }] },
-  { id: 'rk_pack', name: 'เซียนเปิดซอง', ic: '📦', c1: '#fbbf24', c2: '#d97706', desc: 'ฉีกซองมาแล้วนับไม่ถ้วน', mode: 'all', ord: 6, conds: [{ k: 'lt', m: 'op', md: 'any', n: 1000 }] },
-  { id: 'rk_art', name: 'ผู้ล่าการ์ดอาร์ต', ic: '🌟', c1: '#fb7185', c2: '#e11d48', desc: 'มีการ์ด PR หลายแบบในครอบครอง', mode: 'all', ord: 7, conds: [{ k: 'rar', r: 'PR', n: 5 }] },
-  { id: 'rk_bot', name: 'ผู้พิชิตบอทท้าทาย', ic: '🤖', c1: '#22d3ee', c2: '#0e7490', desc: 'ชนะบอทท้าทายซ้ำแล้วซ้ำเล่า', mode: 'all', ord: 8, conds: [{ k: 'lt', m: 'w', md: 'chal', n: 10 }] },
-  { id: 'rk_warrior', name: 'จอมยุทธ์ตลิ่งชัน', ic: '⚔️', c1: '#fb923c', c2: '#c2410c', desc: 'ชนะครบ 100 เกม', mode: 'all', ord: 9, conds: [{ k: 'lt', m: 'w', md: 'any', n: 100 }] },
-  { id: 'rk_streak', name: 'ราชาไร้พ่าย', ic: '🔥', c1: '#f87171', c2: '#b91c1c', desc: 'ชนะติดต่อกันยาวมาก', mode: 'all', ord: 10, conds: [{ k: 'st', n: 10 }] },
-  { id: 'rk_tycoon', name: 'เจ้าสัวการ์ด', ic: '💰', c1: '#fde047', c2: '#ea580c', desc: 'คลังการ์ดอู้ฟู่ระดับเจ้าสัว', mode: 'all', ord: 11, conds: [{ k: 'own', n: 500 }] },
-  { id: 'rk_gacha', name: 'ตำนานนักเปิดซอง', ic: '🎰', c1: '#facc15', c2: '#dc2626', desc: 'เปิดซองครบหนึ่งหมื่นซอง', mode: 'all', ord: 12, conds: [{ k: 'lt', m: 'op', md: 'any', n: 10000 }] },
-  { id: 'rk_god', name: 'เทพเจ้าแห่งตลิ่งชัน', ic: '👑', c1: '#a78bfa', c2: '#f59e0b', desc: 'ชนะ 1,000 เกม · สะสม 500 แบบ · เปิดซอง 10,000 ซอง', mode: 'all', ord: 13, conds: [{ k: 'lt', m: 'w', md: 'any', n: 1000 }, { k: 'own', n: 500 }, { k: 'lt', m: 'op', md: 'any', n: 10000 }] },
-  { id: 'rk_staff', name: 'ทีมงานตลิ่งชัน', ic: '🛡️', c1: '#ef4444', c2: '#7f1d1d', desc: 'ยศพิเศษ แอดมินมอบให้เท่านั้น', mode: 'all', ord: 99, conds: [] }
-];
-let RANKS = null, RKM = {};
-const rkIdx = () => { RKM = {}; (RANKS || []).forEach(r => { RKM[r.id] = r; }); };
-async function rkAll() { if (RANKS) return RANKS; const o = await dbGet('sys:ranks'); if (o && Array.isArray(o.list)) RANKS = o.list; else { RANKS = RK_DEF.map(x => JSON.parse(JSON.stringify(x))); await dbPut('sys:ranks', { list: RANKS }); } rkIdx(); return RANKS; }
-const rkSave = async () => { rkIdx(); await dbPut('sys:ranks', { list: RANKS }); };
-setTimeout(() => rkAll().catch(e => console.error('rank load', e)), 3500);
-const rkPub = id => { const r = id && RKM[id]; return r && !r.off ? { id: r.id, n: r.name, c: r.c1, c2: r.c2 || r.c1, ic: r.ic || '' } : null; };
-const rkHave = (d, r) => (d.rkh || []).includes(r.id) || (d.rkg || []).includes(r.id);
-const rkNeed = c => c.k === 'set' && !(c.n > 0) ? CARDS.filter(x => x.id.startsWith(c.s + '-')).length : (c.n | 0);
-function rkCur(d, c) {
-  const lt = (d.qs && d.qs.lt) || {}, st = (d.pf && d.pf.st) || {}, ks = Object.entries(d.cards || {}).filter(([, v]) => v > 0);
-  switch (c.k) {
-    case 'lt': { let v = lt[c.m + ':' + c.md] | 0; if (c.md === 'any' && c.m === 'g') v = Math.max(v, st.g | 0); if (c.md === 'any' && c.m === 'w') v = Math.max(v, st.w | 0); return v; }
-    case 'st': return st.b | 0;
-    case 'lv': return pfLv(d.pf && d.pf.xp).lv;
-    case 'own': return new Set(ks.map(([k]) => k.split('|')[0])).size;
-    case 'ownn': return ks.reduce((a, [, v]) => a + v, 0);
-    case 'rar': return ks.filter(([k]) => k.split('|')[1] === c.r).length;
-    case 'set': return new Set(ks.map(([k]) => k.split('|')[0]).filter(i => i.startsWith(c.s + '-'))).size;
-    case 'gems': return d.gems | 0;
-    case 'dl': return (d.dl && d.dl.s) | 0;
-    case 'dk': return Object.keys(d.decks || {}).length;
-  }
-  return 0;
-}
-function rkText(c) {
-  const n = rkNeed(c), f = x => x.toLocaleString('en-US');
-  switch (c.k) {
-    case 'lt': return QT[c.m] ? qText(c.m, c.md, n) : '-';
-    case 'st': return 'ชนะติดต่อกันสูงสุด ' + f(n) + ' เกม';
-    case 'lv': return 'เลเวลโปรไฟล์ ' + f(n);
-    case 'own': return 'มีการ์ดสะสม ' + f(n) + ' แบบ';
-    case 'ownn': return 'มีการ์ดรวม ' + f(n) + ' ใบ';
-    case 'rar': return 'มีการ์ดระดับ ' + c.r + ' ' + f(n) + ' แบบ';
-    case 'set': return c.n > 0 ? 'สะสมการ์ดชุด ' + c.s + ' ให้ได้ ' + f(n) + ' แบบ' : 'สะสมการ์ดชุด ' + c.s + ' ให้ครบทั้งชุด (' + f(n) + ' แบบ)';
-    case 'gems': return 'มี Gem ' + f(n);
-    case 'dl': return 'เช็คอินรายวันต่อเนื่อง ' + f(n) + ' วัน';
-    case 'dk': return 'บันทึกเด็คไว้ ' + f(n) + ' เด็ค';
-  }
-  return '-';
-}
-const rkOK = (d, r) => { if (!r.conds || !r.conds.length) return false; const t = c => rkCur(d, c) >= rkNeed(c); return r.mode === 'any' ? r.conds.some(t) : r.conds.every(t); };
-function rkEval(d) {   // ตรวจยศที่ผ่านเงื่อนไขแล้ว เก็บถาวรใน d.rkh · คืนชื่อยศที่ได้ใหม่
-  if (!RANKS) return []; d.rkh = d.rkh || []; const nw = [];
-  RANKS.forEach(r => { if (!r.off && !rkHave(d, r) && rkOK(d, r)) { d.rkh.push(r.id); nw.push(r.name); } });
-  return nw;
-}
-function rkView(d) {
-  return (RANKS || []).filter(r => !r.off).slice().sort((a, b) => (a.ord | 0) - (b.ord | 0)).map(r => ({ id: r.id, n: r.name, c: r.c1, c2: r.c2 || r.c1, ic: r.ic || '', d: r.desc || '', mode: r.mode, have: rkHave(d, r), cs: (r.conds || []).map(c => { const cur = rkCur(d, c), nd = rkNeed(c); return { tx: rkText(c), cur: Math.min(cur, nd), n: nd, ok: cur >= nd }; }) }));
-}
-function rkClean(x) {   // ตรวจ/ล้างข้อมูลยศที่แอดมินส่งมา
-  const col = v => /^#[0-9a-fA-F]{6}$/.test(String(v || '')) ? String(v) : null;
-  const name = String(x.name || '').trim().slice(0, 28); if (!name) E('ใส่ชื่อยศ');
-  const c1 = col(x.c1); if (!c1) E('สีหลักต้องเป็น #RRGGBB'); const c2 = col(x.c2) || c1;
-  const conds = (Array.isArray(x.conds) ? x.conds : []).slice(0, 8).map(c => {
-    const k = String((c && c.k) || ''); if (!RK_KINDS.includes(k)) E('เงื่อนไขไม่ถูกต้อง'); const o = { k, n: Math.max(0, Math.min(1e9, (c.n | 0))) };
-    if (k === 'lt') { o.m = String(c.m || ''); o.md = String(c.md || 'any'); if (!QT[o.m] || o.m === 'st' || !QMN[o.md]) E('เงื่อนไขเกม/โหมดไม่ถูกต้อง'); }
-    if (k === 'rar') { o.r = String(c.r || ''); if (!RK_RAR.includes(o.r)) E('ระดับการ์ดไม่ถูกต้อง'); }
-    if (k === 'set') { o.s = String(c.s || '').trim().toUpperCase(); if (!/^[A-Z0-9]{2,8}$/.test(o.s)) E('รหัสชุดการ์ดไม่ถูกต้อง (เช่น BT01)'); }
-    if (k !== 'set' && o.n < 1) E('จำนวนในเงื่อนไขต้อง≥ 1');
-    return o;
-  });
-  return { name, ic: String(x.ic || '').trim().slice(0, 4), c1, c2, desc: String(x.desc || '').trim().slice(0, 120), mode: x.mode === 'any' ? 'any' : 'all', ord: Math.max(0, Math.min(999, x.ord | 0)), off: x.off ? 1 : 0, conds };
-}
-const MAIL_MAX = 300;
-function mailAdd(d, o) {
-  d.mail = d.mail || [];
-  const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ts: Date.now(), ti: String(o.ti || '🎁 ของรางวัล').slice(0, 60), tx: String(o.tx || '').slice(0, 300), gems: Math.max(0, o.gems | 0), dust: Math.max(0, o.dust | 0), art: Math.max(0, Math.min(50, o.art | 0)) };
-  if (o.artm) e.artm = o.artm;
-  if (o.eb && o.eb.n > 0) e.eb = { set: o.eb.set, n: o.eb.n | 0 };
-  const cs = (o.cards || []).filter(c => c && B[c.id] && c.n > 0).map(c => ({ id: c.id, r: c.r, n: Math.min(999, c.n | 0) })); if (cs.length) e.cards = cs;
-  const bx = (o.boxes || []).filter(b => b && b.set && b.n > 0).map(b => ({ set: String(b.set), n: Math.min(100, b.n | 0) })); if (bx.length) e.boxes = bx;
-  if (!e.gems && !e.dust && !e.art && !e.eb && !e.cards && !e.boxes) return null;
-  d.mail.unshift(e); if (d.mail.length > MAIL_MAX) d.mail.length = MAIL_MAX;
-  return e;
-}
-function mailBox(d, set, n, out) {   // กล่อง = ซอง (ซองละ 5 ใบ) ของชุดนั้น · 'ANY' = สุ่มกล่องอีเวนต์
-  if (set === 'ANY') set = pick(EVENT_BOX_SETS);
-  if (SETS.includes(set)) { const K = {}; for (let k = 0; k < n; k++) pack(set, false, K).forEach(x => { add(d, x); out.push(x); }); }
-  else if (EVENT_BOX_SETS.includes(set)) grantEventBox(d, set, n).forEach(x => out.push(x));
-}
-function mailClaim(d, id) {   // id = รหัสจดหมาย หรือ 'all' → คืน { gems, dust, cards, n }
-  const tot = { gems: 0, dust: 0, cards: [], n: 0 }, keep = [];
-  for (const e of (d.mail || [])) {
-    if (id !== 'all' && e.id !== id) { keep.push(e); continue; }
-    qGive(d, e.artm ? { ...e, art: 0 } : e, tot.cards); tot.gems += e.gems | 0; tot.dust += e.dust | 0; tot.n++;
-    if (e.artm) { const A = []; CARDS.forEach(x => (x.v || []).forEach(r => ['PR', 'CBR', 'SEC'].includes(r) && A.push({ id: x.id, r }))); for (let k = 0; k < (e.art | 0) && A.length; k++) { const x = pick(A); add(d, x); tot.cards.push(x); } }
-    (e.cards || []).forEach(c => { for (let k = 0; k < (c.n | 0); k++) { const x = { id: c.id, r: c.r }; add(d, x); tot.cards.push(x); } });
-    (e.boxes || []).forEach(b => mailBox(d, b.set, b.n | 0, tot.cards));
-  }
-  d.mail = keep; return tot;
-}
-const mailView = d => (d.mail || []).map(e => ({ id: e.id, ts: e.ts, ti: e.ti, tx: e.tx, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0, eb: e.eb || null, cards: (e.cards || []).map(c => ({ id: c.id, r: c.r, n: c.n, nm: (B[c.id] && B[c.id].n) || c.id })), boxes: e.boxes || [] }));
-function pruneDecks(d, ids) {   // หักการ์ดแล้วเด็คที่ใช้การ์ดนั้นเกินจำนวนที่เหลือ → ตัดส่วนเกินออกจากเด็ค
-  const own = id => Object.entries(d.cards).reduce((a, [k, v]) => a + (k.split('|')[0] === id ? v : 0), 0);
-  Object.values(d.decks || {}).forEach(k => {
-    if (!k || !k.main) return;
-    ids.forEach(id => {
-      const o = own(id); k.life = k.life || []; let cnt = [...k.main, ...k.life, ...(k.side || [])].filter(x => x === id).length;
-      const rm = arr => { while (cnt > o) { const j = arr.lastIndexOf(id); if (j < 0) break; arr.splice(j, 1); cnt--; } };
-      rm(k.side || []); rm(k.main); rm(k.life);
-      if (k.art && k.art[id] && !(d.cards[id + '|' + k.art[id]] > 0)) delete k.art[id];
-      if (k.vr) {
-        let tot = [...k.main, ...k.life].filter(x => x === id).length;
-        Object.keys(k.vr).filter(kk => kk.split('|')[0] === id).forEach(kk => { const v = Math.min(k.vr[kk], d.cards[kk] | 0, tot); if (v > 0) { k.vr[kk] = v; tot -= v; } else delete k.vr[kk]; });
-        if (tot > 0) for (const [kk, v] of Object.entries(d.cards)) { if (tot <= 0) break; if (kk.split('|')[0] !== id) continue; const used = k.vr[kk] | 0, can = Math.min(tot, v - used); if (can > 0) { k.vr[kk] = used + can; tot -= can; } }
-      }
-    });
-  });
-}
-function cardFileWrite(id, o) {   // เขียนค่าที่แก้ลงไฟล์ cards.json จริง (best effort — ถ้าเครื่องเซิร์ฟเวอร์เขียนไฟล์ไม่ได้ ค่ายังเก็บใน DB และมีผลอยู่)
-  const f = [__dirname, IMG].map(d => path.join(d, 'cards.json')).find(x => fs.existsSync(x)); if (!f) return false;
-  const raw = fs.readFileSync(f, 'utf8'), a = JSON.parse(raw), c = a.find(x => x.id === id); if (!c) return false;
-  Object.assign(c, o); const tmp = f + '.tmp'; fs.writeFileSync(tmp, JSON.stringify(a, null, (raw.match(/\n/g) || []).length > 20 ? 2 : 0)); fs.renameSync(tmp, f); return true;
-}
-function qMailOld(d, q, kind) {   // เควสรายวัน/สัปดาห์ที่ทำเสร็จแต่ยังไม่กดรับ ก่อนรีเซ็ต → ส่งรางวัลเข้าจดหมาย
-  const day = kind === 'd', A = day ? QD : QW, P = (day ? q.dp : q.wp) || {}, C = (day ? q.dc : q.wc) || [], X = (day ? QEX.d : QEX.w) || [];
-  const o = { gems: 0, dust: 0, art: 0, boxes: [] }; let n = 0;
-  qPick(A.length, day ? 10 : 30, day ? 'D' + q.day : 'W' + q.wk).forEach(i => { const t = A[i]; if (!C.includes(i) && (P[t[0] + ':' + t[1]] | 0) >= t[2]) { o.gems += t[3] | 0; o.dust += t[4] | 0; o.art += t[5] | 0; n++; } });
-  X.forEach(t => { if (t.off || C.includes(t.id) || (P[t.m + ':' + t.md] | 0) < t.need) return; o.gems += t.gems | 0; o.dust += t.dust | 0; o.art += t.art | 0; if (t.eb && t.eb.n > 0) o.boxes.push({ set: t.eb.set, n: t.eb.n | 0 }); n++; });
-  if (n) mailAdd(d, { ti: day ? '📅 รางวัลเควสรายวันที่ลืมรับ' : '🗓 รางวัลเควสรายสัปดาห์ที่ลืมรับ', tx: 'เควสที่ทำสำเร็จแล้วแต่ยังไม่ได้กดรับ (' + n + ' เควส) ก่อนเควสรีเซ็ต', ...o });
-}
 const RT = ART_R;   // ลำดับระดับ ต่ำ→สูง (ใช้ชุดเดียวกับการสแกนชื่อไฟล์)
 // ระบบคราฟ/ย่อย: ผงวิเศษ
 const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, CBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
@@ -457,10 +312,9 @@ async function qCh() {   // รายการชาเลนจ์ (เก็�
 function qInit(d) {   // เตรียม/รีเซ็ตข้อมูลเควสของผู้เล่น (รีเซ็ตเมื่อข้ามวัน/สัปดาห์)
   const T = qTH(), q = d.qs = d.qs || {};
   if (!q.lt) { const st = (d.pf && d.pf.st) || {}; q.lt = { 'g:any': st.g | 0, 'w:any': st.w | 0 }; }
-  if (q.day !== T.day) { if (q.day != null) { try { qMailOld(d, q, 'd'); } catch (e) { console.error('mail d', e); } } q.day = T.day; q.dp = {}; q.dc = []; }
-  if (q.wk !== T.wk) { if (q.wk != null) { try { qMailOld(d, q, 'w'); } catch (e) { console.error('mail w', e); } } q.wk = T.wk; q.wp = {}; q.wc = []; }
+  if (q.day !== T.day) { q.day = T.day; q.dp = {}; q.dc = []; }
+  if (q.wk !== T.wk) { q.wk = T.wk; q.wp = {}; q.wc = []; }
   q.cp = q.cp || {}; q.ch = q.ch || []; q.ac = q.ac || {}; q.ev = q.ev || {};
-  (QEV || []).forEach(e => { const v = q.ev[e.id]; if (v && e.rep && v.day !== T.day) { if (!v.cl && !e.off && (v.p | 0) >= e.need) { try { mailAdd(d, { ti: '🎉 รางวัลเควส Event ที่ลืมรับ', tx: (e.name || 'เควส Event') + ' (ทำสำเร็จแต่ไม่ได้กดรับก่อนรีเซ็ต)', gems: e.gems, dust: e.dust, art: e.art, eb: e.eb && e.eb.set ? e.eb : null, cards: e.cards }); } catch (x) { console.error('mail ev', x); } } delete q.ev[e.id]; } });
   return q;
 }
 function qAdd(d, m, n, modes) {
@@ -547,7 +401,6 @@ function qClaim(d, kind, id, all) {   // รับรางวัล: คืน 
   return tot;
 }
 // ===== Login รายวัน (ปฏิทิน): ทุก 5 วัน 15,000 / ทุก 10 วัน 15,000 + การ์ดอาร์ท 2 ใบ / วันอื่น 5,000 · ขาดวันแล้วเริ่มวันที่ 1 ใหม่ =====
-const PK_BUSY = new Set();   // กันกดสุ่ม/ซื้อเด็คซ้ำรัวๆ: ผู้เล่น 1 คนมีคำสั่งสุ่มค้างได้ทีละ 1 รอบ (รอบเดิมยังไม่เสร็จ คำสั่งซ้ำจะถูกทิ้ง ไม่หัก Gem/ไม่สุ่มเพิ่ม)
 const DL_BUSY = new Set();
 const dlRew = n => n % 10 === 0 ? { gems: 15000, dust: 0, art: 2 } : n % 5 === 0 ? { gems: 15000, dust: 0, art: 0 } : { gems: 5000, dust: 0, art: 0 };
 function dlView(d) {
@@ -703,21 +556,14 @@ function deckInsts(d) { const left = {}; Object.entries(d.vr || {}).forEach(([k,
   return { deck: shuf(d.main.map(mk)), life: shuf(d.life.map(id => ({ ...mk(id), up: 0 }))) }; }
 function preDeck(s) { const x = ST[s], vr = {}; [...x.main, ...x.life].forEach(([id, n, r]) => { if (r) vr[id + '|' + r] = (vr[id + '|' + r] || 0) + n; }); return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id), vr }; }
 async function pickDeck(m, user, ban) {
-  if (m.mine) {
-    const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค');
-    const base = mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban);
-    const sn = m.sd != null ? String(m.sd) : (k.sd || ''), inl = m.sd == null && Array.isArray(k.side) && k.side.length, sc = inl ? k.side.filter(i => B[i]) : (sn && u.sides && u.sides[sn] ? u.sides[sn].cards.filter(i => B[i]) : []);
-    let side = sc, sideErr = null;
-    if (side.length) { const V = sideViol(base.main, base.life, side, ban); if (V.length) { sideErr = 'Side ' + (inl ? '' : '"' + sn + '" ') + 'ใช้ไม่ได้ จึงข้ามไป: ' + sumV(V); side = []; } }
-    return { ...base, art: k.art || {}, vr: k.vr || null, tk: tkResolve(k.tk, u, [...base.main, ...base.life]), side, sideErr, sdName: side.length ? sn : '' };
-  }
-  if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return { ...preDeck(m.pre), tk: { ...(TKBOX[m.pre] || {}) } }; }
+  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return { ...mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban), art: k.art || {}, vr: k.vr || null }; }
+  if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return preDeck(m.pre); }
   if (!process.env.BOT_TEST) E('ปิดใช้งานเด็ควางลิสต์/เด็คทดสอบแล้ว');
   return mkDeck(m.text || '', m.rand, m.skip, ban);
 }
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
   await qCh().catch(() => { });
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } let rkn = []; try { rkn = rkEval(d); } catch (e) { } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx, rkn })); } }
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -866,8 +712,8 @@ function ask(r, who, o) {
   const opts = (o.yn || o.choices) ? [] : o.opts;
   if (!o.yn && !o.choices && !opts.length) { o.none && o.none(); return false; }
   const n = Math.min(o.n || 1, opts.length), min = Math.min(o.min == null ? n : o.min, n);
-  r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, rps: !!o.rps, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, show: !!o.show, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
-    cards: (o.show || opts).map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z, sh: o.show ? 1 : 0 } : { u }; }) };
+  r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, rps: !!o.rps, rx: o.rx || null, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
+    cards: opts.map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z } : { u }; }) };
   return true;
 }
 // ===== ไพรมอล รัททาทุย (SD08-001) สกิล 2: อัตโนมัติ เทิร์นละครั้ง เมื่อจะออกจากสนาม เนรเทศ {รัททาทุย} ในนรก 5 ใบ → ไม่ออกจากสนาม =====
@@ -1002,7 +848,7 @@ const MG = {
   'SD03-020': { react: 'summon', steps: [{ key: 'c', pay: 1, text: 'ส่ง Avatar นรก จากมือ ที่ Cost ≥ Avatar ที่อัญเชิญ ลงนรก', opts: (r, i, cx) => handAv(c => symOf(c) === 'นรก' && B[c.id].c >= (cx.ev.cost || 0))(r, i) }],
     run: (r, i, cx) => { mill(r, i, 2); destroyAv(r, cx.ev.u); } },
 };
-function hell33OK(r, i, c) { const p = r.p[i], g = r.g; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && p.hand.length > 0 && p.av.filter(a => nmOf(a).includes('วานร')).length >= 3 && canPlaceAv(r, i, c) && !r.p.some(q => q.av.some(a => a.id === 'BT05-012' && !noFx(r, a))); }
+function hell33OK(r, i, c) { const p = r.p[i], g = r.g; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && p.hand.length > 0 && p.av.filter(a => !a.tk && B[a.id].n.includes('วานร')).length >= 3 && canPlaceAv(r, i, c) && !r.p.some(q => q.av.some(a => a.id === 'BT05-012' && !noFx(r, a))); }
 function handCost(r, i, c) {   // Cost ปัจจุบันบนมือ (null = ใช้ค่าปกติ)
   const b = B[c.id]; if (c.id === 'BT10-074' && new Set(r.p[i].av.filter(a => !a.tk && B[a.id].n.includes('แก๊งขยะ')).map(a => nm9(a))).size >= 2) return 0; if (b && c.id === 'BT07-072' && hasHn(r, i)) return 0; if (!b || b.t !== 'Avatar') return null; const p = r.p[i];
   if (c.id === 'BT05-002') return Math.max(0, b.c - p.hell.filter(h => !h.tk && B[h.id].t === 'Avatar' && B[h.id].n.includes('แมลงปอ')).length);
@@ -1357,7 +1203,6 @@ function shieldStep(r, p) {
   const lipo = (() => { const f = find(r, p.u); return !!(f && f.c.id === 'SD07-007'); })();
   const L = shieldList(r, p);
   if (!L.length) return open1(r, p);
-  { const w = p.who, g0 = r.g; if (!lipo && !g0.used[w].React && !(g0.noReact && g0.noReact.who === w) && r.p[w].hand.some(c => { try { return canReact(r, w, c); } catch (e) { return false; } })) return open1(r, p); }   // มีการ์ดเคาน์เตอร์ด้วย → ไปหน้าต่างตอบโต้เดียว เลือกได้ทั้ง โล่มนุษย์ / การ์ดเคาน์เตอร์
   const go = () => r.g.q.unshift(() => open1(r, p));
   ask(r, p.who, { text: 'โล่มนุษย์: เลือก Avatar โล่มนุษย์ (สภาพตื่น) เพื่อรับการโจมตีแทน' + (lipo ? ' — ลิโป้โจมตี ต้องใช้!' : ' — ยกเลิก = ไม่ใช้ (ยังใช้ได้อีกในช่วงตอบโต้)'), opts: L, n: 1, min: lipo ? 1 : 0, cancel: !lipo, onCancel: go,
     cb: us => {
@@ -1640,35 +1485,6 @@ function banViol(main) {
   return V;
 }
 function checkBan(main) { const V = banViol(main); if (V.length) E(sumV(V)); }
-/* ===== Token ประจำเด็ค + Side Deck =====
-   • Token: เด็คเลือกรายการ Token ที่ "ใส่มา" (deck.tk) = พูลที่เอฟเฟกต์ดึงไปใช้จริง ; เด็คเก่าที่ไม่ได้เลือกไว้ → ตรวจจากข้อความการ์ดในเด็คอัตโนมัติ
-   • Side Deck: ≤10 ใบ + Only #1 อีก 1 ใบ (รวม ≤11) · ห้าม LIFE · ชื่อเดียวกัน Main+Side รวมไม่เกินโควตา · กฎการ์ดบาป/เงื่อนไขพิเศษนับรวม Side ด้วย */
-const TOKENS = { 'SD09-026': { id: 'SD09-026', n: 'วานร', t: 'Avatar', s: 'สัตว์', c: 1, p: 1, g: 0, col: 'เขียว', e: 'Token วานร (ไม่มีสกิล) · ได้จากกล่อง SD09 ใบละ 3 ใบ/กล่อง · ตายแล้วกลับเข้ากอง Token', box: 'SD09', rx: 'Token\\s*วานร' } };
-const tkPub = Object.values(TOKENS).map(t => ({ ...t }));
-const autoTk = ids => Object.values(TOKENS).filter(t => { const re = new RegExp(t.rx); return ids.some(i => B[i] && re.test(B[i].e || '')); }).map(t => t.id);
-const tkAvail = p => { const out = []; for (const [t, n] of Object.entries(p.tkd || {})) { const on = (p.av || []).filter(c => c.tk && c.id === t).length; for (let k = 0; k < n - on; k++) out.push(t); } return out; };   // กอง Token = ทั้งหมดที่ใส่มา − ที่อยู่บนสนาม (ตาย/ออกจากสนาม → กลับเข้ากองเอง)
-const tkNorm = (o, owned, strict) => { const out = {}; for (const [t, n0] of Object.entries(o || {})) { if (!TOKENS[t]) continue; let n = Math.floor(+n0 || 0); if (n <= 0) continue; const own = (owned && owned[t]) || 0; if (n > own) { if (strict) E('Token ไม่พอ: ' + TOKENS[t].n + ' (มี ' + own + ')'); n = own; } if (n > 0) out[t] = n; } return out; };
-const tkResolve = (raw, u, ids) => { const own = u.tkc || {}; if (raw && typeof raw === 'object' && !Array.isArray(raw)) return tkNorm(raw, own, false); const types = Array.isArray(raw) ? tkClean(raw) : autoTk(ids), o = {}; types.forEach(t => { if (own[t] > 0) o[t] = own[t]; }); return o; };
-const tkClean = a => [...new Set((Array.isArray(a) ? a : []).map(String).filter(t => TOKENS[t]))];
-const SIDE_MAX = 10;   // ยังไม่ล็อกสลับ Side ตามเกม (เปลี่ยนได้ทุกเกม) — ถ้ามีอีเวนต์ tournament ให้เช็ก r.gn (เลขเกมในห้อง) ตรงจุด 'sidesw'
-const isO1 = c => c.o === 'Only #1' && !(c.lim > 1);
-function sideSelfViol(side) {   // กฎของ Side Deck ล้วนๆ
-  const V = [];
-  if (side.some(i => B[i].t === 'Life')) V.push('ห้ามใส่ LIFE Card ใน Side Deck');
-  const o1 = side.filter(i => isO1(B[i])).length, rest = side.length - o1;
-  if (side.length) { if (o1 !== 1) V.push(o1 ? 'Side Deck ใส่ Only #1 ได้แค่ 1 ใบ (มี ' + o1 + ')' : 'Side Deck ต้องมี Only #1 อีก 1 ใบ'); if (rest > SIDE_MAX) V.push('Side Deck ใส่ได้สูงสุด ' + SIDE_MAX + ' ใบ ไม่นับ Only #1 (ตอนนี้ ' + rest + ')'); }
-  const cnt = countNames(side), seen = new Set();
-  side.forEach(i => { const n = nk(B[i].n); if (seen.has(n)) return; if (cnt[n] > limOf(B[i])) { seen.add(n); V.push('ซ้ำเกิน ' + limOf(B[i]) + ' ใบ: ' + n); } });
-  return V;
-}
-function sideViol(main, life, side, ban) {   // กฎร่วม Main+Side
-  const V = sideSelfViol(side); if (!side.length) return V;
-  const all = main.concat(side), cnt = countNames(all), seen = new Set();
-  all.forEach(i => namesOf(B[i]).forEach((n, k) => { if (seen.has(n)) return; const l = k ? (LIMNAME[n] || 4) : limOf(B[i]); if (cnt[n] > l) { seen.add(n); V.push('Main+Side ซ้ำเกิน ' + l + ' ใบ: ' + n); } }));
-  if (ban) banViol(all).forEach(v => { if (!V.includes(v)) V.push(v); });
-  return V;
-}
-const sdSend = p => { if (p && p.ws && p.ws.readyState === 1 && p.dd) p.ws.send(JSON.stringify({ t: 'sd', main: p.dd.main, side: p.dd.side, life: p.dd.life, sd: p.dd.sd || '', n: p.sw || 0, tk: p.dd.tk || null })); };
 function mkDeck(text, rand, skip, ban) {
   let main = [], life = [];
   if (rand) {
@@ -1704,8 +1520,8 @@ function rjStatus(ws) {
 }
 const view = (r, i) => {
   r.p.forEach(p => ['hand', 'hell', 'deck', 'dk'].forEach(z => (p[z] || []).forEach(c => { if (c.tired) c.tired = false; })));   // การ์ดที่ไม่ได้อยู่บนสนามต้องไม่นอน
-  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, rk: rkPub(p.rk), dn: p.bot ? ((r.bot && r.bot.dname) || 'เด็คของบอท') : (p.dn || ''), eq: p.eq || {}, tkp: tkAvail(p), av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
-  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, show: g.ask.show, choices: g.ask.choices, rps: g.ask.rps, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
+  CR = r; const g = r.g, pub = p => ({ name: p.name, pic: p.pic || null, lv: p.lv || 0, eq: p.eq || {}, av: p.av.map(x => ({ ...x, wr: undefined, wn: (x.wr || []).map(w => w.id), wl: (x.wr || []).map(w => ({ u: w.u, id: w.id, kd: w.kd, ar: w.ar, sk: r.p.indexOf(p) === i ? wearSk(r, i, x, w) : [] })), xs: r.p.indexOf(p) === i ? extraSk(r, i, x) : [], cp: P(r, x), ab: abOf(r, r.p.indexOf(p), x, 'av'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'av') : 0, sg: hasKw(r, x, 'สามัคคี') ? 1 : 0 })), mg: p.mg.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'mg'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'mg') : 0 })), co: p.co.map(x => ({ ...x, ab: abOf(r, r.p.indexOf(p), x, 'co'), gl: r.p.indexOf(p) === i ? glOf(r, i, x, 'co') : 0 })), hell: p.hell.map(c => c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, r.p.indexOf(p)) ? 1 : 0 } : c.id === 'BT05-033' ? { ...c, hab: hell33OK(r, r.p.indexOf(p), c) ? 1 : 0 } : ABIL[c.id] && ABIL[c.id].zone === 'hell' ? { ...c, hab: kdHellAb(r, r.p.indexOf(p), c) } : c), dk: p.dk.map(c => (ABIL[c.id] && ABIL[c.id].zone === 'dk') ? { ...c, hab: kdHellAb(r, i, c) } : c), deck: p.deck.length, dt: dtop03(r, p), dta: dtop03ar(r, p), hn: p.hand.length, life: p.life.map(l => l.up ? l : { up: 0 }) });
+  return { i, rv10: bt10Reveal(r, i), odc: r.p[1 - i].dc ? Math.max(0, DC_MS - (Date.now() - r.p[1 - i].dc)) : 0, dc: g.dc || null, md: r.p.map(p => !!p.m), me: { ...pub(r.p[i]), hand: r.p[i].hand.map(c => { const o = KD_HAND[c.id] ? { ...c, ab: kdHandAb(r, i, c) } : c, cc = handCost(r, i, c); return cc != null ? { ...o, cc } : o; }), hell: r.p[i].hell.map(c => c.id === 'BT05-033' && hell33OK(r, i, c) ? { ...c, ab: 1 } : c.id === 'BT05-064' ? { ...c, hab: hell64OK(r, i) ? 1 : 0 } : (/^(BT09-|CC02-|BT11-|BT10-032|BT10-029|BT06-058|BT06-022)/.test(c.id) && ABIL[c.id] && ABIL[c.id].zone === 'hell') ? { ...c, hab: kdHellAb(r, i, c) } : c) }, op: pub(r.p[1 - i]), mine: g.turn === i, phase: g.phase, land: g.land && { c: { ...g.land.c, ab: abOf(r, i, g.land.c, 'land'), gl: glOf(r, i, g.land.c, 'land') }, o: g.land.o }, land2: g.land2 && { c: { ...g.land2.c }, o: g.land2.o }, log: g.log.slice(-40), over: g.over, ev: g.ev || null, evw: g.evw ? { n: g.evw.n, me: !!g.evw.ok[i], op: !!g.evw.ok[1 - i] } : null, dw: g.dw, dr: g.dr || null, bt: g.bt || null, fx: (g.fxl || []).map(f => f.k === 'scout' && f.i !== i ? { ...f, ids: f.ids.map(() => 'back'), ars: [] } : f), tn: g.n, ru: g.used && g.used[i] && g.used[i].React ? 1 : 0, ask: g.ask ? { mine: g.ask.who === i, text: g.ask.text, opts: g.ask.who === i ? g.ask.opts : [], n: g.ask.n, min: g.ask.min, cancel: g.ask.cancel, yn: g.ask.yn, choices: g.ask.choices, rps: g.ask.rps, rx: g.ask.who === i ? g.ask.rx : undefined, cards: g.ask.who === i ? g.ask.cards : null } : null, won: g.over ? (g.win == null ? null : g.win === i) : null, pend: g.pend ? { mine: g.pend.who === i, can: g.pend.who === i ? reactList(r, i) : undefined, ev: g.pend.ev ? { k: g.pend.ev.k, id: g.pend.ev.id } : null, k: g.pend.k, until: g.pend.until, u: g.pend.u, tg: g.pend.tg, ai: g.pend.ai, sh: (g.pend.who === i && g.pend.k === 'atk' && !g.pend.sd && !g.ask && !(g.noReact && g.noReact.who === i)) ? shieldList(r, g.pend) : undefined } : null };
 };
 const sview = r => { const v = view(r, 0); v.spec = 1; v.evw = null; v.mine = false; v.tp = r.g.turn; v.me.hn = r.p[0].hand.length; v.me.hand = []; v.ru = 1; if (v.ask) v.ask = { ...v.ask, mine: false, opts: [], cards: null }; if (v.pend) v.pend = { ...v.pend, mine: false }; return v; };
 const bc = r => { (r.spec || []).forEach(w => { if (r.g && w.readyState === 1) w.send(JSON.stringify({ t: 's', s: sview(r) })); }); bc0(r); };
@@ -2174,10 +1990,6 @@ function resolveAtk(r, p) {
 }
 function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') { resolveAtk(r, p); if (r.g.noReact && r.g.noReact.b5) r.g.noReact = null; } runQ(r); }
 function begin(r) {
-  r.gn = (r.gn || 0) + 1;   // เลขเกมในห้อง (ไว้ล็อกสลับ Side ตามกติกา tournament ในอนาคต)
-  r.p.forEach(x => { const raw = x.dd && x.dd.tk && typeof x.dd.tk === 'object' && !Array.isArray(x.dd.tk) ? x.dd.tk : null, mx = r.cfg.tkMax | 0; x.tkd = {};
-    if (raw) Object.entries(raw).forEach(([t, n]) => { if (TOKENS[t] && n > 0) x.tkd[t] = mx > 0 ? Math.min(n, mx) : n; });
-    else autoTk([...(x.deck || []), ...(x.life || [])].map(c => c.id)).forEach(t => { x.tkd[t] = mx > 0 ? Math.min(3, mx) : 3; }); });   // บอท/เด็คทดสอบไม่มีของสะสม → ให้ชนิดละ 3
   r.p.forEach(x => { hookHand(x); hookDeck(x); });
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; x.fd = 0; x.ban = null; });
   r.g = { turn: 0, phase: 'dice', pend: null, ask: null, q: [], n: 0, used: [{}, {}], land: null, log: ['เริ่มเกม!'], over: null };
@@ -2187,7 +1999,7 @@ function begin(r) {
 async function rematch(r, i) {
   r.p[i].rm = 1; r.p.forEach(x => x.bot && (x.rm = 1)); if (!r.rmT) r.rmT = Date.now();
   if (r.p.every(x => x.rm)) {
-    for (const x of r.p) { const d = x.bot ? botDeck() : (x.dd || await pickDeck(x.last, x.name, r.cfg.ban)); { const y = deckInsts(d); x.deck = y.deck; x.life = y.life; } x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
+    for (const x of r.p) { const d = x.bot ? botDeck() : await pickDeck(x.last, x.name, r.cfg.ban); { const y = deckInsts(d); x.deck = y.deck; x.life = y.life; } x.hand = []; x.hell = []; x.av = []; x.mg = []; x.co = []; x.dk = []; x.lf = []; x.noCost = []; }
     r.rmT = 0; if (r.bot) { r.bot.tn = -1; r.bot.fail = 0; } begin(r);
   } else { const o = r.p[1 - i].ws; o && o.readyState === 1 && o.send(JSON.stringify({ t: 'rmq' })); }
   bc(r);
@@ -2263,7 +2075,7 @@ wss.on('connection', ws => {
         const t = String(m.name || '').toLowerCase(), d = await dbGet(ws.user);
         if (!(d.fr || []).includes(t)) E('ดูโปรไฟล์ได้เฉพาะเพื่อนของคุณ');
         const o = await dbGet(t); if (!o) E('ไม่พบผู้ใช้'); const f = pfView(o);
-        ws.send(JSON.stringify({ t: 'fprof', name: t, rkv: rkPub(o.rk), pic: o.pic || null, on: userWs(t).length > 0, lv: f.lv, cur: f.cur, need: f.need, st: f.st, hist: (f.hist || []).slice(0, 30) })); return;
+        ws.send(JSON.stringify({ t: 'fprof', name: t, pic: o.pic || null, on: userWs(t).length > 0, lv: f.lv, cur: f.cur, need: f.need, st: f.st, hist: (f.hist || []).slice(0, 30) })); return;
       }
       if (m.t === 'finv') {
         const t = String(m.name || '').toLowerCase(), code = String(m.room || '').toUpperCase(), d = await dbGet(ws.user), q = rooms[code];
@@ -2301,38 +2113,23 @@ wss.on('connection', ws => {
         console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
         pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
       }
-      if (m.t === 'admcardget' || m.t === 'admcard' || m.t === 'admgrant' || m.t === 'admnotice') {   // เมนูแอดมิน: แก้การ์ด / แจกหักของ / ประกาศอัปเดต
+      if (m.t === 'admcardget' || m.t === 'admcard' || m.t === 'admgrant' || m.t === 'admnotice') {   // เมนูแอดมิน: แก้การ์ด / แจกของ / ประกาศอัปเดต
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
-        if (m.t === 'admcardget') { const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); const o = { id: c.id, v: c.v || [] }; ['n', 't', 'st', 's', 'col', 'gc', 'o', 'c', 'g', 'p', 'e'].forEach(k => { o[k] = c[k] == null ? '' : c[k]; }); ws.send(JSON.stringify({ t: 'admcard', c: o })); return; }
-        if (m.t === 'admcard') {   // แก้ข้อมูลการ์ดจริง: มีผลทันทีในเกม + เก็บถาวรใน DB + เขียนลงไฟล์ cards.json
+        if (m.t === 'admcardget') { const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); ws.send(JSON.stringify({ t: 'admcard', c: { id: c.id, n: c.n, c: c.c, g: c.g, p: c.p, e: c.e || '' } })); return; }
+        if (m.t === 'admcard') {
           const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); const f = m.f || {}, o = {};
-          const LIM = { n: 80, t: 20, st: 40, s: 80, col: 20, gc: 20, o: 40, e: 3000 };
-          Object.keys(LIM).forEach(k => { if (typeof f[k] !== 'string') return; const v = k === 'e' ? f[k] : f[k].trim(); if (v.length > LIM[k]) E('ช่อง ' + k + ' ยาวเกิน ' + LIM[k] + ' ตัวอักษร'); if ((k === 'n' || k === 't') && !v) return; if (v !== String(c[k] == null ? '' : c[k])) o[k] = v; });
-          ['c', 'g', 'p'].forEach(k => { if (f[k] === '' || f[k] == null) return; const v = +f[k]; if (!Number.isInteger(v) || v < 0 || v > 99) E('ค่า ' + k + ' ต้องเป็นเลข 0-99'); if (v !== c[k]) o[k] = v; });
-          if (!Object.keys(o).length) E('ไม่มีช่องไหนเปลี่ยน');
+          if (typeof f.n === 'string' && f.n.trim() && f.n.length <= 80) o.n = f.n.trim();
+          if (typeof f.e === 'string' && f.e.length <= 3000) o.e = f.e;
+          ['c', 'g', 'p'].forEach(k => { if (f[k] !== '' && f[k] != null && c[k] != null || (f[k] !== '' && f[k] != null && c.t === 'Avatar')) { const v = +f[k]; if (!Number.isInteger(v) || v < 0 || v > 99) E('ค่า ' + k + ' ต้องเป็นเลข 0-99'); o[k] = v; } });
           Object.assign(c, o); CEDIT[c.id] = { ...(CEDIT[c.id] || {}), ...o }; await dbPut('sys:cardedit', { m: CEDIT, upd: Date.now() });
-          let fw = false; try { fw = cardFileWrite(c.id, o); } catch (e) { console.error('เขียน cards.json ไม่ได้', e.message); }
-          console.log('admin แก้การ์ด', ws.user, c.id, JSON.stringify(o).slice(0, 160)); ws.send(JSON.stringify({ note: 'บันทึกการ์ด ' + c.id + ' แล้ว (' + Object.keys(o).join(', ') + ') · ' + (fw ? 'เขียนลงไฟล์ cards.json แล้ว' : 'เก็บใน DB แล้ว (เขียนไฟล์ cards.json ไม่ได้)') + ' · ผู้เล่นรีเฟรชหน้าเกมเพื่อรับค่าใหม่' })); return;
+          console.log('admin แก้การ์ด', ws.user, c.id, JSON.stringify(o).slice(0, 120)); ws.send(JSON.stringify({ note: 'บันทึกการ์ด ' + c.id + ' แล้ว (ผู้เล่นรีเฟรชหน้าเกมเพื่อรับค่าใหม่)' })); return;
         }
-        if (m.t === 'admgrant') {   // แจก/หัก Gem · ผง · การ์ด · Box (ซอง) — ของที่ "แจก" ส่งเข้าจดหมายผู้เล่น · ของที่ "หัก" หักทันที
-          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น');
-          const cards = (Array.isArray(m.cards) ? m.cards : []).slice(0, 60).map(x => ({ id: String((x && x.id) || '').trim(), r: String((x && x.r) || ''), n: Math.max(-999, Math.min(999, (x && x.n) | 0)) })).filter(x => x.n);
-          const boxes = (Array.isArray(m.boxes) ? m.boxes : []).slice(0, 20).map(x => ({ set: String((x && x.set) || '').trim().toUpperCase(), n: Math.max(0, Math.min(100, (x && x.n) | 0)) })).filter(x => x.n > 0);
-          cards.forEach(x => { const cd = B[x.id]; if (!cd) E('ไม่พบการ์ด ' + x.id); const vs = cd.v || ['C']; if (!x.r) x.r = vs[0]; else if (!vs.includes(x.r)) E(x.id + ' ไม่มีระดับ ' + x.r + ' (มี: ' + vs.join(', ') + ')'); });
-          boxes.forEach(x => { if (!SETS.includes(x.set) && !EVENT_BOX_SETS.includes(x.set)) E('ไม่มีกล่อง ' + x.set); });
-          if (!gems && !dust && !cards.length && !boxes.length) E('ใส่ Gem / ผง / การ์ด / Box อย่างน้อย 1 อย่าง');
+        if (m.t === 'admgrant') {
+          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น'); if (!gems && !dust) E('ใส่จำนวน Gem หรือผง');
           const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex) E('ไม่พบผู้เล่น ' + n);
-          const d = await dbGet(n), sum = [], send_ = { cards: [], boxes };
-          if (gems < 0) { d.gems = Math.max(0, (d.gems || 0) + gems); sum.push('หัก ' + (-gems) + ' Gem'); }
-          if (dust < 0) { d.dust = Math.max(0, (d.dust || 0) + dust); sum.push('หัก ' + (-dust) + ' ผง'); }
-          const cut = [];
-          cards.forEach(x => { if (x.n > 0) { send_.cards.push(x); return; } const k = x.id + '|' + x.r, have = d.cards[k] | 0, t = Math.min(have, -x.n); if (t > 0) { d.cards[k] = have - t; if (!d.cards[k]) delete d.cards[k]; cut.push(x.id); } sum.push('หักการ์ด ' + x.id + ' (' + x.r + ') ' + t + '/' + (-x.n) + ' ใบ'); });
-          if (cut.length) pruneDecks(d, [...new Set(cut)]);
-          const addG = Math.max(0, gems), addD = Math.max(0, dust), ml = mailAdd(d, { ti: '🎁 ของจากแอดมิน', tx: String(m.msg || '').trim().slice(0, 300), gems: addG, dust: addD, cards: send_.cards, boxes: send_.boxes });
-          if (ml) sum.push('ส่งเข้าจดหมาย:' + [addG ? ' ' + addG + ' Gem' : '', addD ? ' ' + addD + ' ผง' : '', send_.cards.length ? ' การ์ด ' + send_.cards.map(x => x.id + '|' + x.r + ' x' + x.n).join(', ') : '', boxes.length ? ' Box ' + boxes.map(x => x.set + ' x' + x.n).join(', ') : ''].join(''));
-          await dbPut(n, d);
-          pushMe(n, ml ? '🎁 แอดมินส่งของให้ — ไปรับที่ ✉️ จดหมาย' : '⚠️ แอดมินปรับของในบัญชีของคุณ');
-          ws.send(JSON.stringify({ note: 'ทำกับ ' + n + ' แล้ว: ' + sum.join(' · ') })); return;
+          const d = await dbGet(n); d.gems = Math.max(0, (d.gems || 0) + gems); d.dust = Math.max(0, (d.dust || 0) + dust); await dbPut(n, d);
+          userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: '🎁 แอดมินส่งของให้: ' + (gems ? gems + ' Gem ' : '') + (dust ? dust + ' ผง' : '') })); } catch (e) { } });
+          ws.send(JSON.stringify({ note: 'ให้ ' + n + ' แล้ว: ' + gems + ' Gem, ' + dust + ' ผง' })); return;
         }
         if (m.t === 'admnotice') { const t = String(m.text || '').trim().slice(0, 300); if (!t) E('ใส่ข้อความ'); wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ note: '📢 ' + t })); }); ws.send(JSON.stringify({ note: 'ประกาศแล้ว' })); return; }
       }
@@ -2367,9 +2164,6 @@ wss.on('connection', ws => {
       }
       const me_ = d => ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) }));
       if (m.t === 'buyst') {
-        if (PK_BUSY.has(ws.user)) return;   // กำลังสุ่ม/ซื้อรอบก่อนอยู่ → ไม่ทำซ้ำ
-        PK_BUSY.add(ws.user);
-        try {
         const d = await dbGet(ws.user); d.bought = d.bought || [];
         if (!ST[m.set]) E('ไม่มีสินค้า'); const again = /^SD0[1-3]$/.test(m.set) || d.bought.includes(m.set);   // SD01-03 แจกฟรี → ซื้อได้เฉพาะแบบซื้อซ้ำ
         if (d.gems < 1500) E('Gem ไม่พอ');
@@ -2381,11 +2175,8 @@ wss.on('connection', ws => {
           const tot = tiers.reduce((p, t) => p + WUR[t], 0); let x = Math.random() * tot; for (const t of tiers) if ((x -= WUR[t]) < 0) return t; return 'UR'; };
         const all = [];   // การ์ดทุกใบในกล่อง (แสดงครบทุกใบ ไม่ใช่แค่ UR+)
         ST[m.set].main.concat(ST[m.set].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) { const rr = r === 'UR' ? rollUR(id) : (r || ((B[id] && B[id].v) || ['C'])[0]); if (r === 'UR') got.push({ id, r: rr }); all.push({ id, r: rr }); add(d, { id, r: rr }); } });
-        tkGive(d, m.set);
         const rows = []; for (let k = 0; k < all.length; k += 5) rows.push(all.slice(k, k + 5));
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: rows.length ? rows : [[{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง ' + all.length + ' ใบ' + (got.length ? ' · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') : '') })); return;
-        } finally { PK_BUSY.delete(ws.user); }
-      }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps: rows.length ? rows : [[{ id: ST[m.set].main[0][0], r: 'C' }]], me: prof(ws.user, d), note: 'ซื้อซ้ำ ' + m.set + ' · ได้การ์ดครบกล่อง ' + all.length + ' ใบ' + (got.length ? ' · UR+ ที่สุ่มได้: ' + got.map(x => x.r).join(', ') : '') })); return; }
       if (m.t === 'buyskin' || m.t === 'eqskin') {
         const SK = { board: { classic: 0, slate: 300, wood: 300, neon: 400, bot1: 2500, dark: 3750, chalk: 3750, adv: 3750, constr: 5000, shrinesky: 5000, ratinv: 5000, hellneon: 6250, space: 6250, warb: 6250, hellgate: 7500, montb: 7500, bankb: 7500, idolb: 7500 }, card: { black: 0, crimson: 300, gold: 400, ocean: 300, blue: 2500, purple: 2500, green: 2500, red: 2500, sun: 2500, violet: 3750, line: 3750, shrine: 3750, soi: 3750, ghost: 5000, galaxy: 5000, holo: 5000, rat: 5000, flame: 6250, dino: 6250, war: 6250, montho: 7500, sweeney: 7500, idol: 7500, bank: 7500 } };
         const pr = SK[m.k] && SK[m.k][m.id]; if (pr == null) E('ไม่มีสินค้า');
@@ -2414,47 +2205,6 @@ wss.on('connection', ws => {
           await dbPut('sys:pubdecks', T); PUBD.list = T.list || []; PUBD.t = Date.now(); ws.send(pdMsg(T, note));
         }); return;
       }
-      if (m.t === 'deldeck') {   // ลบเด็คของตัวเอง
-        const d = await dbGet(ws.user), nm = String(m.name || ''); if (!d.decks || !d.decks[nm]) E('ไม่พบเด็ค ' + nm);
-        delete d.decks[nm]; await dbPut(ws.user, d); me_(d); return;
-      }
-      if (m.t === 'rkget') {   // ผู้เล่น: ดูยศทั้งหมด + ความคืบหน้า
-        await rkAll(); const d = await dbGet(ws.user), nw = rkEval(d); if (nw.length) await dbPut(ws.user, d);
-        ws.send(JSON.stringify({ t: 'rk', list: rkView(d), sel: d.rk || '' })); if (nw.length) ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), rkn: nw })); return;
-      }
-      if (m.t === 'rkpick') {   // เลือกใส่ยศ (ครั้งละ 1) · '' = ไม่ใช้
-        await rkAll(); const d = await dbGet(ws.user); rkEval(d); const id = String(m.id || '');
-        if (id) { const r = RKM[id]; if (!r || r.off || !rkHave(d, r)) E('ยังไม่ได้ยศนี้'); }
-        d.rk = id; await dbPut(ws.user, d); Object.values(rooms).forEach(q => q.p.forEach(p => { if (p.name === ws.user) p.rk = id; }));
-        ws.send(JSON.stringify({ t: 'rk', list: rkView(d), sel: d.rk || '' })); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: id ? 'เปลี่ยนยศแล้ว' : 'ถอดยศแล้ว' })); return;
-      }
-      if (m.t === 'rkadmget' || m.t === 'rkset' || m.t === 'rkdel' || m.t === 'rkgive') {   // แอดมิน: จัดการยศ
-        if (ws.user !== ADMIN) E('เฉพาะแอดมิน'); await rkAll();
-        const out = () => ws.send(JSON.stringify({ t: 'rkadm', list: RANKS, QT, QMN, RAR: RK_RAR }));
-        if (m.t === 'rkadmget') { out(); return; }
-        if (m.t === 'rkset') {
-          const x = m.r || {}, o = rkClean(x), id = String(x.id || ''), i = id ? RANKS.findIndex(r => r.id === id) : -1;
-          if (i >= 0) RANKS[i] = { ...RANKS[i], ...o }; else { if (RANKS.length >= 80) E('ยศเยอะเกินไป (สูงสุด 80)'); RANKS.push({ id: 'rk' + Date.now().toString(36), ...o }); }
-          await rkSave(); out(); ws.send(JSON.stringify({ note: 'บันทึกยศ "' + o.name + '" แล้ว' })); return;
-        }
-        if (m.t === 'rkdel') { const id = String(m.id || ''), i = RANKS.findIndex(r => r.id === id); if (i < 0) E('ไม่พบยศ'); const nm = RANKS[i].name; RANKS.splice(i, 1); await rkSave(); out(); ws.send(JSON.stringify({ note: 'ลบยศ "' + nm + '" แล้ว (ผู้เล่นที่ใส่ยศนี้จะไม่แสดงยศ)' })); return; }
-        if (m.t === 'rkgive') {   // มอบ/ริบยศให้ผู้เล่น (ใช้กับยศพิเศษที่ไม่มีเงื่อนไข หรือมอบข้ามเงื่อนไข)
-          const n = String(m.u || '').trim(), r = RKM[String(m.id || '')]; if (!n) E('ใส่ชื่อผู้เล่น'); if (!r) E('ไม่พบยศ');
-          const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex) E('ไม่พบผู้เล่น ' + n);
-          const d = await dbGet(n); d.rkg = d.rkg || [];
-          if (m.on) { if (!d.rkg.includes(r.id)) d.rkg.push(r.id); } else { d.rkg = d.rkg.filter(x => x !== r.id); if (d.rk === r.id && !rkHave(d, r)) d.rk = ''; }
-          await dbPut(n, d); pushMe(n, m.on ? '🏅 แอดมินมอบยศ "' + r.name + '" ให้คุณ' : '⚠️ ยศ "' + r.name + '" ถูกเพิกถอน');
-          ws.send(JSON.stringify({ note: (m.on ? 'มอบยศ' : 'ริบยศ') + ' "' + r.name + '" ' + (m.on ? 'ให้ ' : 'จาก ') + n + ' แล้ว' })); return;
-        }
-      }
-      if (m.t === 'mailget') { const d = await dbGet(ws.user); ws.send(JSON.stringify({ t: 'mail', list: mailView(d) })); return; }
-      if (m.t === 'mailclaim') {
-        const d = await dbGet(ws.user), tot = mailClaim(d, m.all ? 'all' : String(m.id || '')); if (!tot.n) E('ไม่พบจดหมาย');
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'mail', list: mailView(d) }));
-        const note = '✉️ รับของจากจดหมาย' + (tot.gems ? ' 💎 ' + tot.gems.toLocaleString('en-US') : '') + (tot.dust ? ' ✨ ' + tot.dust.toLocaleString('en-US') : '') + (tot.cards.length ? ' 🃏 ' + tot.cards.length + ' ใบ' : '');
-        if (tot.cards.length) { const ps = []; for (let i = 0; i < tot.cards.length; i += 5) ps.push(tot.cards.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note })); } else ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note }));
-        return;
-      }
       if (m.t === 'savedeck') {
         const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
         const main = (m.main || []).map(String), life = (m.life || []).map(String), cnt = {};
@@ -2466,37 +2216,7 @@ wss.on('connection', ws => {
         if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); const art = {}; Object.entries(m.art || {}).forEach(([i, r]) => { if (cnt[i] && B[i] && (d.cards[i + '|' + r] || 0) > 0) art[i] = String(r); }); const vr = {}, vs = {}; Object.entries(m.vr || {}).forEach(([k, n]) => { const [i, r] = String(k).split('|'); n = n | 0; if (n > 0 && cnt[i] && (d.cards[i + '|' + r] || 0) >= n) { vr[i + '|' + r] = n; vs[i] = (vs[i] || 0) + n; } });
         for (const i in vs) if (vs[i] > cnt[i]) E('จำนวนระดับเกิน');
         for (const i in cnt) if ((vs[i] || 0) < cnt[i]) { const r = art[i] || (B[i].v || ['C'])[0], k = i + '|' + r; vr[k] = (vr[k] || 0) + cnt[i] - (vs[i] || 0); }
-        const tk = m.tk && typeof m.tk === 'object' && !Array.isArray(m.tk) ? tkNorm(m.tk, d.tkc, true) : (Array.isArray(m.tk) ? tkResolve(m.tk, d, []) : null), side = (m.side || []).map(String);
-        side.forEach(i => { if (!B[i]) E('ไม่พบ ' + i); });
-        if (side.length) { const cc = { ...cnt }; side.forEach(i => { cc[i] = (cc[i] || 0) + 1; }); for (const i in cc) if (cc[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Main+Side: ' + B[i].n); const V = sideViol(main, life, side, false); if (V.length) E('Side ผิดกฎ: ' + sumV(V)); }   // Side ติดตัวเด็คนี้
-        d.decks[nm] = { main, life, art, vr, ...(tk ? { tk } : {}), ...(side.length ? { side } : {}) };
-        await dbPut(ws.user, d); me_(d); return;
-      }
-      if (m.t === 'savesd') {   // บันทึก Side Deck (แยกจากเด็ค ตั้งชื่อได้)
-        const d = await dbGet(ws.user), own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
-        const cards = (m.cards || []).map(String), cnt = {};
-        cards.forEach(i => { if (!B[i]) E('ไม่พบ ' + i); cnt[i] = (cnt[i] || 0) + 1; });
-        for (const i in cnt) if (cnt[i] > (own[i] || 0)) E('การ์ดไม่พอ: ' + B[i].n);
-        const V = sideSelfViol(cards); if (V.length) E(sumV(V));
-        const nm = String(m.name || '').trim().slice(0, 20) || 'Side ใหม่'; d.sides = d.sides || {};
-        if (!d.sides[nm] && Object.keys(d.sides).length >= 20) E('Side Deck เต็ม 20');
-        d.sides[nm] = { cards }; await dbPut(ws.user, d); me_(d); return;
-      }
-      if (m.t === 'delsd') {
-        const d = await dbGet(ws.user), nm = String(m.name || ''); if (d.sides) delete d.sides[nm];
-        Object.values(d.decks || {}).forEach(k => { if (k && k.sd === nm) delete k.sd; });
-        await dbPut(ws.user, d); me_(d); return;
-      }
-      if (m.t === 'linksd') {   // ลิงก์ Side Deck เข้ากับเด็ค ('' = ยกเลิกลิงก์)
-        const d = await dbGet(ws.user), k = d.decks && d.decks[String(m.deck || '')]; if (!k) E('ไม่พบเด็ค');
-        const sn = String(m.sd || '');
-        if (!sn) { delete k.sd; } else {
-          const sc = d.sides && d.sides[sn]; if (!sc) E('ไม่พบ Side Deck');
-          const own = {}; Object.entries(d.cards).forEach(([kk, v]) => { const i = kk.split('|')[0]; own[i] = (own[i] || 0) + v; });
-          const cc = {}; [...k.main, ...k.life, ...sc.cards].forEach(i => { cc[i] = (cc[i] || 0) + 1; }); for (const i in cc) if (cc[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Main+Side: ' + B[i].n);
-          const V = sideViol(k.main, k.life, sc.cards, false); if (V.length) E('ลิงก์ไม่ได้: ' + sumV(V));
-          k.sd = sn;
-        }
+        d.decks[nm] = { main, life, art, vr };
         await dbPut(ws.user, d); me_(d); return;
       }
       if (m.t === 'fadd') {
@@ -2550,21 +2270,18 @@ wss.on('connection', ws => {
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + tot + ' ใบ สำเร็จ (ใช้ ' + (gem ? gem + ' 💎 + ' : '') + du + ' ผง)' })); return;
       }
       if (m.t === 'open') {
-        if (PK_BUSY.has(ws.user)) return;   // กำลังสุ่มรอบก่อนอยู่ → ไม่สุ่มซ้ำ
-        PK_BUSY.add(ws.user);
-        try {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
         const ps = [], PKC = {}; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim, PKC); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
-        } finally { PK_BUSY.delete(ws.user); }
       }
       if (m.t === 'code') { await codeLock(async () => { let SC;
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, WUPDATE: { gems: 1000 }, DUST: { dust: 555 }, QUEST: { gems: 500, dust: 150 }, PROFILE: { art: 1 }, ...(SC = (await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); if (SC[c]) { if (X.exp && Date.now() > X.exp) E('โค้ดนี้หมดอายุแล้ว'); if (X.max > 0 && (X.u | 0) >= X.max) E('โค้ดนี้มีผู้รับครบจำนวนแล้ว'); X.u = (X.u | 0) + 1; await dbPut('sys:codes', SC); } d.codes.push(c);
-        mailAdd(d, { ti: '🎟 โค้ด ' + c, tx: 'รางวัลจากการใช้โค้ด ' + c, gems: X.gems, dust: X.dust, art: X.art, artm: 'code' });   // รางวัลโค้ดเข้าจดหมาย → กดรับเองที่ ✉️
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🎟 ใช้โค้ดสำเร็จ — รางวัลส่งไปที่ ✉️ จดหมายแล้ว กดรับได้เลย' })); return;
+        let ps = []; d.gems += X.gems || 0; d.dust = (d.dust || 0) + (X.dust || 0);
+        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','CBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: [X.gems ? 'ได้ ' + X.gems + ' Gem' : '', X.dust ? 'ได้ ' + X.dust + ' ผง' : ''].filter(Boolean).join(' · ') })); return;
       }); return;
       }
       if (m.t === 'chinfo') { ws.send(JSON.stringify(chInfo())); return; }
@@ -2575,7 +2292,7 @@ wss.on('connection', ws => {
         const mkP = name => ({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] });
         r = rooms[code] = { p: [mkP(ws.user), mkP('บอท (' + BOT_LV[lv].n + ')')], g: null, code, exp: Date.now() + 18e5, cfg: { clock: 0, react: 0, ban: true }, bot: { lv, tried: new Set(), at: 0, fail: 0, tn: -1, w: null, arm: null } };
         i = 0; const bp = r.p[1], bd = botDeck(); bp.bot = 1; bp.eq = {}; bp.deck = shuf(bd.main.map(inst)); bp.life = shuf(bd.life.map(id => ({ ...inst(id), up: 0 })));
-        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; r.p[0].sv = ud && ud.decks ? Object.values(ud.decks).filter(x => x && x.main && x.main.length >= 30).map(x => x.main.slice()) : null; r.p[0].pic = (ud && ud.pic) || null; r.p[0].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; r.p[0].rk = (ud && ud.rk) || ''; }
+        r.p[0].ws = ws; { const ud = await dbGet(ws.user); r.p[0].eq = (ud && ud.eq) || {}; r.p[0].sv = ud && ud.decks ? Object.values(ud.decks).filter(x => x && x.main && x.main.length >= 30).map(x => x.main.slice()) : null; r.p[0].pic = (ud && ud.pic) || null; r.p[0].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; }
         bc(r); return;
       }
       if (m.t === 'join') {
@@ -2585,29 +2302,15 @@ wss.on('connection', ws => {
         if (!r) { if (!m.create) E('ไม่พบห้อง'); r = rooms[code] = { p: [], g: null, code, exp: Date.now() + 18e4, cfg: { clock: [5,10,20].includes(+m.clock) ? +m.clock : 0, react: [10,20,30].includes(+m.react) ? +m.react : 0, ban: String(m.ban) !== '0' } }; }
         i = r.p.findIndex(p => p.name === name);
         if (i < 0) { if (r.p.length >= 2) E('ห้องเต็ม'); i = r.p.length; r.p.push({ name, deck: null, hand: [], hell: [], av: [], mg: [], co: [], dk: [], life: [], lf: [], noCost: [] }); }
-        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; r.p[i].rk = (ud && ud.rk) || ''; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r); sdSend(r.p[i]);
+        r.p[i].ws = ws; delete LOST[name]; { const ud = await dbGet(name); r.p[i].eq = (ud && ud.eq) || {}; r.p[i].pic = (ud && ud.pic) || null; r.p[i].lv = ud ? pfLv(ud.pf && ud.pf.xp).lv : 1; } if (r.p.length === 2) r.exp = 0; if (r.p[i].dc) { r.p[i].dc = null; if (r.g) log(r, '✔ ' + name + ' กลับมา'); } bc(r);
       } else if (m.t === 'deck') {
         if (!r || r.g) E('ตั้งเด็คไม่ได้');
         const d = await pickDeck(m, ws.user, r.cfg.ban), p = r.p[i];
-        p.dn = m.mine ? String(m.mine).slice(0, 40) : ((ST[m.pre] && ST[m.pre].name) || 'เด็คสำเร็จรูป'); p.last = m; p.sw = 0; p.dd = { main: d.main.slice(), life: d.life.slice(), side: (d.side || []).slice(), tk: d.tk && typeof d.tk === 'object' && !Array.isArray(d.tk) ? { ...d.tk } : null, art: d.art || {}, vr: d.vr || null, sd: d.sdName || '' };
-        { const y = deckInsts(d); p.deck = y.deck; p.life = y.life; } p.hand = [];
-        bc(r); sdSend(p); if (d.sideErr && ws.readyState === 1) ws.send(JSON.stringify({ note: d.sideErr }));
-      } else if (m.t === 'sidesw') {   // สลับการ์ด Main ↔ Side (ก่อนเริ่มเกม / หลังจบเกมก่อนกดเล่นซ้ำ)
-        if (!r || (r.g && !r.g.over)) E('สลับ Side ได้ก่อนเริ่มเกมหรือหลังจบเกมเท่านั้น');
-        const p = r.p[i]; if (!p || !p.dd) E('เลือกเด็คก่อน'); if (p.rm) E('กดเล่นซ้ำไปแล้ว สลับ Side ไม่ได้');
-        const out = (m.out || []).map(String), inn = (m.inn || []).map(String);
-        if (out.length !== inn.length) E('จำนวนที่สลับออกและเข้าต้องเท่ากัน');
-        const mainA = p.dd.main.slice(), sideA = p.dd.side.slice();
-        const takeOut = (a, ids) => ids.forEach(x => { const k = a.indexOf(x); if (k < 0) E('ไม่มีการ์ด ' + (B[x] ? B[x].n : x)); a.splice(k, 1); });
-        takeOut(mainA, out); takeOut(sideA, inn); mainA.push(...inn); sideA.push(...out);
-        const V = [...deckViol(mainA, p.dd.life), ...(r.cfg.ban ? banViol(mainA.concat(sideA)) : [])]; if (V.length) E(sumV(V));
-        p.dd.main = mainA; p.dd.side = sideA; p.sw = (p.sw || 0) + 1;
-        if (!r.g) { const y = deckInsts(p.dd); p.deck = y.deck; p.life = y.life; p.hand = []; }
-        sdSend(p); bc(r);
+        p.last = m; { const y = deckInsts(d); p.deck = y.deck; p.life = y.life; } p.hand = [];
+        bc(r);
       } else if (m.t === 'rcfg') {
         if (!r || r.g || i !== 0) E('เฉพาะเจ้าห้องตั้งกติกาได้');
         if (m.clock != null) r.cfg.clock = [5, 10, 20].includes(+m.clock) ? +m.clock : 0;
-        if (m.tkmax != null) r.cfg.tkMax = Math.max(0, m.tkmax | 0);   // กฎห้อง: จำกัด Token ต่อชนิด (0 = ไม่จำกัด)
         if (m.react != null) r.cfg.react = [10, 20, 30].includes(+m.react) ? +m.react : 0;
         if (m.ban != null) { const nb = String(m.ban) !== '0'; if (nb !== r.cfg.ban) r.p.forEach(x => { if (!x.bot) x.deck = null; }); r.cfg.ban = nb; }
         bc(r);
@@ -3076,12 +2779,11 @@ function futChain(r, actor, what, done) {
   const counter = (card, key) => futChain(r, w, { text: 'ใช้ React Magic "' + B[card.id].n + '"', name: B[card.id].n, react: true }, c => done(!c));   // ฝ่าย actor ตอบโต้กลับได้
   const f = futCard(r, w), k = what.react ? kd17Card(r, w) : null;
   if (!f && !k) return done(false);
-  // หน้าต่างเดียว: โชว์การ์ดตอบโต้ทั้งหมดที่ใช้ได้ (ชายจากอนาคต / อย่าให้มีครั้งที่ 2) แล้วเลือกใช้ 1 ใบ หรือไม่ใช้ — ไม่ถามซ้ำสองรอบ
-  const lst = [f && [f, 'fut'], k && [k, 'kd17']].filter(Boolean);
-  ask(r, w, { show: lst.map(x => x[0].u),
-    choices: [...lst.map(([c, key]) => (key === 'fut' ? '⛔ ใช้ ' : '🚫 ใช้ ') + B[c.id].n + (key === 'fut' ? ' — ยกเลิกทั้งหมด' : ' — ยกเลิกผล React (ใบละ 1 ต่อเทิร์น)')), '✖ ไม่ใช้'],
-    text: '⚡ ตอบโต้: ฝ่ายตรงข้าม' + what.text + ' — เลือกการ์ดที่จะใช้ยกเลิก' + (lst.length > 1 ? ' (เลือกได้ 1 ใบ)' : '') + ' หรือกด "ไม่ใช้"',
-    cb: j => { if (!(j < lst.length)) return done(false); const [card, key] = lst[j]; if (!me.hand.includes(card) || !spend(card, key)) return done(false); counter(card, key); } });
+  const opts = [f, k].filter(Boolean).map(c => c.u);   // หน้าต่างเลือกการ์ด: ชายจากอนาคต / อย่าให้มีครั้งที่ 2 (ถ้ามีในมือ)
+  ask(r, w, { text: FUTQ + ' ฝ่ายตรงข้าม' + what.text + ' — เลือกการ์ดที่จะใช้ยกเลิก (' + (f ? 'ชายจากอนาคต' : '') + (f && k ? ' / ' : '') + (k ? 'อย่าให้มีครั้งที่ 2 ยกเลิกผล React ได้ แม้ใช้ React ไปแล้วในเทิร์นนี้ · ใบละ 1 ต่อเทิร์น' : '') + ') หรือกด ยกเลิก เพื่อไม่ใช้', opts, n: 1, min: 1, cancel: true,
+    rx: { why: 'ฝ่ายตรงข้าม' + what.text, hint: k ? 'อย่าให้มีครั้งที่ 2 ยกเลิกผล React ได้ แม้ใช้ React ไปแล้วในเทิร์นนี้ · ใบละ 1 ต่อเทิร์น' : '' },   // client แสดงเป็นแผง ⚡ ช่วงตอบโต้ แบบเดียวกับ React ปกติ
+    onCancel: () => done(false),
+    cb: us => { const c = me.hand.find(h => h.u === us[0]); if (!c) return done(false); const key = isFut(c) ? 'fut' : 'kd17'; if (!spend(c, key)) return done(false); counter(c, key); } });
 }
 // ทางเข้าเดิม: React Magic ที่ร่ายแล้ว — go(cancelled)
 function kdReactGate(r, i, c, go) {
@@ -4732,7 +4434,7 @@ function bt8Weapon(r, c) {   // อีวิลไมเกรน: เมื่�
 }
 
 /* ===== BT08 รอบ 2: ใบที่ใช้กลไกเดิม (Land/สวมใส่/untarget/mill/kill) ===== */
-const isArthur8 = a => isAv(a) && /อาเธอร์|อาร์เธอร์|Arthur/i.test(nm8(a));
+const isArthur8 = a => isAv(a) && nm8(a).startsWith('อาเธอร์');
 function bt8Prot(r, who, x, mg) {   // 035 เล่าปี่: ไม่ถูกเลือกเป็นเป้า Magic ฝ่ายตรงข้าม ตราบที่มี ขุนพลเขียว {ต่างชาติ} ใบอื่น
   if (who === undefined || x.tk || x.id !== 'BT08-035' || !(MGX > 0 || mg)) return false;
   const oi = r.p.findIndex(q => q.av.includes(x)); if (oi < 0 || oi === who || noFx(r, x)) return false;
@@ -4752,7 +4454,7 @@ function wearFromHell8(r, i, c, pred, ml) {   // 059/060: สั่งใช้�
     const k = p.hell.indexOf(c); if (k < 0) return; p.hell.splice(k, 1); p.mg.push(c); c.at = t.c.u; r.g.used[i].Modification = 1; vfx(t.c.u, 'aura', '🗡 สวมใส่ ' + B[c.id].n, '#f97316'); log(r, '🗡 ' + B[c.id].n + ' จากนรก → สวมใส่ ' + nmOf(t.c)); bt8Wear(r, i, c, t.c); } });
 }
 ABIL['BT08-059'] = { zone: 'hell', label: 'ธรณีสูบ 1 ใบ สวมใส่ คาเรนต์ จากนรกให้ อัศวินโต๊ะกลม', cond: (r, i) => !r.g.used[i].Modification && r.p[i].av.some(isKnight) && r.p[i].deck.length > 1, run: (r, i, c) => wearFromHell8(r, i, c, isKnight, 1) };
-ABIL['BT08-060'] = { zone: 'hell', label: 'สวมใส่ เอกซ์คาลิเบอร์ จากนรกให้ อาเธอร์', hint: 'ต้องมี Avatar "อาเธอร์" บนสนามที่ยังไม่ได้สวมใส่ เอกซ์คาลิเบอร์', cond: (r, i, c) => r.p[i].av.some(a => isArthur8(a) && canWear(a, c)), run: (r, i, c) => wearFromHell8(r, i, c, isArthur8, 0) };
+ABIL['BT08-060'] = { zone: 'hell', label: 'สวมใส่ เอกซ์คาลิเบอร์ จากนรกให้ อาเธอร์', cond: (r, i) => r.p[i].av.some(isArthur8), run: (r, i, c) => wearFromHell8(r, i, c, isArthur8, 0) };
 Object.assign(SUM, {
   'BT08-010': (r, i, x) => {   // เซอร์นัท — จุติ: นำ ไอ้นัท จากนรกมาสวมใส่ (🟡 รับสกิลของไอ้นัท ยังไม่ทำ)
     const p = r.p[i], L = p.hell.filter(h => isAv(h) && B[h.id].n.startsWith('ไอ้นัท')).map(h => h.u); if (!L.length) return log(r, 'จุติ เซอร์นัท: ไม่พบ ไอ้นัท ในนรก');
@@ -6167,6 +5869,10 @@ bt10Sup = function (r, i, q, recv, bs) { _sup0(r, i, q, recv, bs);
 
 const botDeck = () => preDeck(pick(Object.keys(ST).filter(k => /^SD0[1-8]$/.test(k))));
 const botIdx = r => r.p.findIndex(p => p.bot);
+// การ์ด "ตัวจ่าย" ล้วนๆ (Gem สูง / POWER ต่ำ / Cost ต่ำ / ไม่มีสกิลบนสนาม หรือมีแต่ผลตอนถูกใช้เป็น Cost) เช่น ช่างแอร์ดวงซวย, พระลักษมี → บอทเก็บไว้จ่าย Cost ไม่เอาลงสนาม (ยกเว้นมือล้น)
+const BOT_COSTTXT = /(ถูกใช้เป็น\s*Cost|ถูกใช้เป็นค่า\s*Cost|ถูกทิ้งเป็นค่า\s*Cost|ถูกจ่าย\s*Cost|ถูกใช้ทิ้ง\s*Cost|ใช้เป็น Cost การอัญเชิญ|เป็นค่า Cost)/;
+const botPayerOnly = h => { if (!h || h.tk) return false; const d = B[h.id]; if (!d || d.t !== 'Avatar') return false; const tx = (d.e || '').trim(); return (d.g || 0) >= 3 && (d.p || 0) <= 1 && (d.c || 0) <= 2 && (!tx || BOT_COSTTXT.test(tx)); };
+const botHoldPayer = (r, k, h) => botPayerOnly(h) && r.p[k].hand.length <= 7;
 // คะแนนความ "มีค่า" ของการ์ด (ใช้เทียบเป้าหมาย / เลือกใบที่จะจ่ายเป็น Cost)
 const botCv = (r, x) => { if (x.tk) return (x.tk.p || 0) + 1; const d = B[x.id]; if (!d) return 0; const f = find(r, x.u);
   return (f && f.z === 'av' ? P(r, x) : (d.p || 0)) + (d.c || 0) * .6 + (d.t === 'Avatar' ? 1 : 0) + (d.t === 'Magic' && f && f.z === 'hand' ? (BOT_REACT.has(d.id) ? 3.5 : 1.5) * (r.bot && r.bot.w ? r.bot.w.hold : 1) : 0) + (r.bot && r.bot.cmb && f && f.i !== botIdx(r) && r.bot.cmb.has(x.id) ? 1.2 : 0); };   // ยาก: Magic/React บนมือมีค่า ไม่เอาไปจ่าย Cost ง่ายๆ
@@ -6177,10 +5883,21 @@ function botAct(r, k, m) {
   catch (e) { bt.fail++; bt.le = (typeof e === 'string' ? e : (e && e.message) || String(e)) + ' [' + (m && m.t) + ']'; if (typeof e !== 'string') console.error('bot', e); botSync(r); return false; }
 }
 // เลือกการ์ดบนมือจ่ายเป็น Cost: ชุดที่ Gem พอและ "เสียของน้อยที่สุด"
+// ข้อจำกัดการจ่าย Cost ของการ์ดตัวจ่ายแต่ละใบ (เหมือนที่เซิร์ฟเวอร์ตรวจตอน summon) — กันบอทเลือกจ่ายผิดแล้วโดนปฏิเสธ
+function botPayLegal(card, c, h, av) {
+  try {
+    const d = B[h.id], c3 = COST03[h.id];
+    if (c3 && !(av && c3.ok(card))) return false;
+    if (d.n === 'ตุ๊กตารัททาทุย' && !(av && isRat(card))) return false;
+    if (h.id === 'KD01-004' && !(av && symOf(card) === 'เทพ')) return false;
+    if (bt11CostBan(c, d)) return false;
+  } catch (e) { return false; }
+  return true;
+}
 function botPay(r, k, card, hand) {
   const c = B[card.id], me = r.p[k], HND = hand || me.hand; if (!c.c) return { us: [], keep: 0 };
   const av = c.t === 'Avatar';
-  const pool = HND.filter(h => h.u !== card.u && B[h.id].g && !(B[h.id].gc && c.col && B[h.id].gc !== c.col) && !(me.noCost || []).includes(B[h.id].n) && !(h.id === 'SD08-010' && !(av && isRat(card)))).slice(0, 10);
+  const pool = HND.filter(h => h.u !== card.u && B[h.id].g && !(B[h.id].gc && c.col && B[h.id].gc !== c.col) && !(me.noCost || []).includes(B[h.id].n) && !(h.id === 'SD08-010' && !(av && isRat(card))) && botPayLegal(card, c, h, av)).slice(0, 10);
   let best = null;
   for (let m = 1; m < (1 << pool.length); m++) {
     let sum = 0, keep = 0, n = 0;
@@ -6201,7 +5918,7 @@ function botLook(r, k, ops, W) {
   const me = r.p[k]; if (ops.length < 2) return;
   const ev = (h2, hand2, avN, coN) => {
     const d = B[h2.id]; if (!d) return -9;
-    if (d.t === 'Avatar') { if (h2.id === 'SD03-003' || avN >= 3 || !canPlaceAv(r, k, h2)) return -9; }
+    if (d.t === 'Avatar') { if (h2.id === 'SD03-003' || avN >= 3 || !canPlaceAv(r, k, h2) || botHoldPayer(r, k, h2)) return -9; }
     else if (d.t === 'Construct') { if (coN >= 3 || me.co.some(x => B[x.id].n === d.n)) return -9; }
     else return -9;
     const pay = botPay(r, k, h2, hand2); if (!pay) return -9;
@@ -6287,7 +6004,7 @@ function botMain(r, k) {
   if (bt.lv === 4) { for (const [x, z] of chZones(me)) { if (T.has('u' + x.u) || !abOf(r, k, x, z) || !chAbilEarly(r, k, x)) continue; T.add('u' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true; } }   // ท้าทาย: สกิลจั่ว/ค้นหา ใช้ก่อนลงการ์ด
   me.hand.forEach(h => {
     const d = B[h.id]; if (!d || T.has('s' + h.u)) return;
-    if (d.t === 'Avatar') { if (h.id === 'SD03-003' || (g.lim && g.lim[k] && d.s !== g.lim[k]) || !canPlaceAv(r, k, h)) return; }
+    if (d.t === 'Avatar') { if (h.id === 'SD03-003' || (g.lim && g.lim[k] && d.s !== g.lim[k]) || !canPlaceAv(r, k, h) || botHoldPayer(r, k, h)) return; }
     else if (d.t === 'Construct') { if (me.co.length >= 3 || me.co.some(x => B[x.id].n === d.n)) return; }
     else return;
     const pay = botPay(r, k, h); if (!pay) return;
@@ -6295,10 +6012,6 @@ function botMain(r, k) {
   });
   if (bt.lv === 3) botLook(r, k, ops, W);   // ยาก: มองล่วงหน้า 2 ใบ (ท้าทายใช้ chPlanPick วางทั้งชุดอยู่แล้ว)
   if (botBait(r, k, false)) { const n0 = ops.length; for (let j = ops.length - 1; j >= 0; j--) if (ops[j].d.t === 'Avatar') ops.splice(j, 1); if (ops.length < n0 || me.hand.some(h => B[h.id] && B[h.id].t === 'Avatar')) bt.baitN = g.n; }   // ล่อให้ตี LIFE
-  if (ops.some(q => isPayerAv(q.d))) {   // ตัวจ่าย: ไม่ลงสนาม ยกเว้นมือเต็ม หรือสนามเราว่างจนถูกบีบ/ไม่มีใบอื่นให้ลง
-    const squeezed = me.hand.length >= 7 || (me.av.length === 0 && r.p[1 - k].av.length > 0 && ops.every(q => isPayerAv(q.d)));
-    if (!squeezed) for (let j = ops.length - 1; j >= 0; j--) if (isPayerAv(ops[j].d)) ops.splice(j, 1);
-  }
   ops.forEach(o => { o.rv = ops.some(q => q !== o && q.pay.us.includes(o.h.u) && q.gain > -1.5); });   // ใบนี้เป็น "ตัวจ่าย" ของใบที่คุ้มกว่า → อย่าเอาลงสนามเสียเอง
   ops.forEach(o => { if (o.rv) o.gain -= 5; else if (ops.length > 1 && o.d.t === 'Avatar') o.gain -= (B[o.h.id].g || 0) * .5; });   // ใบที่มี Gem ใช้จ่ายได้ → เก็บไว้จ่ายก่อน ถ้ายังมีใบอื่นให้ลง
   ops.sort((a, b) => b.gain - a.gain);
@@ -6319,8 +6032,6 @@ function botMain(r, k) {
   }
   return botAct(r, k, { t: 'next' });
 }
-// ตัวจ่าย Cost: Avatar ที่ Cost ต่ำ POWER ต่ำ แต่ GEM สูง (≥3) และไม่มีสกิลบนสนาม — บอทเก็บไว้ในมือจ่ายให้ใบอื่น ไม่ลงสนามเอง
-const isPayerAv = d => !!d && d.t === 'Avatar' && (d.g || 0) >= 3 && (d.c || 0) <= 1 && (d.p || 0) <= 1 && !/สั่งใช้|ต่อเนื่อง|เทิร์นละครั้ง|แทงหลัง/.test(d.e || '');
 function botBattle(r, k) {
   const g = r.g, me = r.p[k], op = r.p[1 - k], bt = r.bot, lv = Math.min(bt.lv, 3), W = bt.w || CHW0, T = bt.tried, opts = [];
   if (muayLimit(r)) { me.av.forEach(a => T.add('a' + a.u)); return false; }   // มวยทะเล: ตีครบ 1 ใบแล้ว
@@ -7006,7 +6717,6 @@ const sdWanHell9 = (r, i) => r.p[i].hell.filter(sdWanC9);
 const sdTokN9 = (r, i) => r.p[i].av.filter(a => a.tk && a.tk.n === 'วานร').length;
 const sdMyWan9 = (r, i) => r.p[i].av.filter(sdIsWan9);
 function sdMkTk9(r, i, why) {
-  if (!tkAvail(r.p[i]).includes('SD09-026')) { log(r, '🐒 กอง Token วานรของ ' + r.p[i].name + ' ไม่เหลือ (หรือไม่ได้ใส่มา) อัญเชิญไม่ได้'); return null; }
   const p = r.p[i], t = { u: UID++, id: 'SD09-026', pw: 0, tired: false, tk: { n: 'วานร', s: 'สัตว์', p: 1, c: 1, col: 'เขียว' } };
   if (!canPlaceAv(r, i, t)) { log(r, '🐒 Avatar เต็ม อัญเชิญ Token วานรไม่ได้'); return null; }
   p.av.push(t); fx({ k: 'summon', u: t.u }); vfx(t.u, 'rise', '🐒 Token วานร', '#22c55e'); vfx(t.u, 'ring', '', '#86efac');
