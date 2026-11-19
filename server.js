@@ -148,6 +148,7 @@ const BOXDIR = path.join(require('os').tmpdir(), 'bot-box');   // รูปก�
   } catch (err) { console.log('unzip error', err.message); }
 })();
 scanArt(); CARDS.forEach(applyArtV);
+['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','BT12','CC01','CC02'].forEach(st => { const n = CARDS.filter(x => x.id.startsWith(st + '-') && (x.v || []).length).length; console.log('set', st, 'cards:', n, n ? '' : '⚠ ไม่มีการ์ด — เปิดซองชุดนี้ไม่ได้'); });
 console.log('art files:', Object.keys(ART_FILES).length, '| ระดับ CBR:', CARDS.filter(c => (c.v || []).includes('CBR')).length, 'ใบ');
 const srv = http.createServer((q, r) => {
   if (q.url.split('?')[0] === '/health') { r.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }); return r.end('ok'); }   // ใช้ให้บริการ ping (เช่น UptimeRobot) ยิงกันเซิร์ฟเวอร์หลับ
@@ -2277,7 +2278,7 @@ wss.on('connection', ws => {
       }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
-        if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
+        if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (!CARDS.some(c => c.id.startsWith(m.set + '-') && (c.v || []).length)) E('ชุด ' + m.set + ' ยังไม่มีการ์ดในระบบ (cards.json / รูปการ์ดยังไม่ถูกอัปโหลดครบ) — ยังไม่หักเจม'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
         const ps = [], PKC = {}; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim, PKC); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
