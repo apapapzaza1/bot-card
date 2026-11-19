@@ -817,7 +817,7 @@ const bt=document.createElement('button');bt.textContent='ปิด';bt.onclick=
 document.addEventListener('keydown',e=>{e.key==='Escape'&&close()})})();
 let AM=null,AX={};fetch('/artmap.json?'+Date.now()).then(r=>r.json()).then(a=>{AX={};AM=new Set(a.map(n=>{const m=/^(.+)\.(png|webp)$/i.exec(n);if(m){AX[m[1]]=m[2];return m[1]}return n}));try{pfChip()}catch(e){}if(S&&!$('game').hidden)render()}).catch(e=>{});
 const LEG={SCR:'SEC',UBR:'CBR'};
-const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';return`background-image:url(/${k}.${AX[k]||'webp'});background-size:${/^BT12-/.test(id)?'104% 104%':'100% 100%'};background-position:center`};
+const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';return`background-image:url(/${k}.${AX[k]||'webp'});background-size:100% 100%;background-position:center`};
 const ZL={av:'Avatar Zone',co:'Construct Zone',mg:'Magic Zone'},ZS={av:'มี Avatar บนสนามได้สูงสุด 4 ใบ',co:'มี Construct ได้สูงสุด 3 ใบ',mg:'เล่น Magic ได้ประเภทละครั้ง'};
 function conn(){if(ws&&ws.readyState<2)return;const w=ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
 w.onopen=()=>{try{chkVer()}catch(e){}cfg.tok&&send({t:'tok',tok:cfg.tok})};w.onclose=()=>{if(w!==ws)return;dropped();setTimeout(conn,2000)};
