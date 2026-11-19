@@ -522,20 +522,21 @@ function capPC(e, cnt) {
   }
   return o;
 }
-/* RATE UP: ผู้เล่นเลือกการ์ด 1 ใบต่อกล่อง → การ์ดใบนั้น (ทุกระดับ) ถูกถ่วงน้ำหนัก ×2 ตอนสุ่มในระดับเดียวกัน (เรทประมาณ 2 เท่า) */
+/* RATE UP: ผู้เล่นเลือกการ์ด SEC 1 ใบต่อกล่อง → การ์ดใบนั้น (ระดับ SEC) ถูกถ่วงน้ำหนัก ×2 ตอนสุ่มในระดับเดียวกัน (เรทประมาณ 2 เท่า) */
 const RU_MULT = 2;
-function pickRU(a, ru) {
-  if (!ru || !a.some(x => x.id === ru)) return pick(a);
-  const tot = a.reduce((s, x) => s + (x.id === ru ? RU_MULT : 1), 0); let t = Math.random() * tot;
-  for (const x of a) { t -= x.id === ru ? RU_MULT : 1; if (t < 0) return x; }
+function pickRU(a, ru, rar) {
+  if (!ru || rar !== 'SEC' || !a.some(x => x.id === ru)) return pick(a);   // RATE UP เฉพาะการ์ดระดับ SEC
+  const n = a.length, w = n > 2 ? RU_MULT * (n - 1) / (n - RU_MULT) : 50;   // น้ำหนักที่ทำให้โอกาสของใบที่เลือก = 2 เท่าของปกติพอดี (ภายในระดับ SEC)
+  const tot = n - 1 + w; let t = Math.random() * tot;
+  for (const x of a) { t -= x.id === ru ? w : 1; if (t < 0) return x; }
   return a[a.length - 1];
 }
 function pack(set, gar, K) {
   K = K || {}; const R = K.R || (K.R = (() => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => o.push({ id: c.id, r }))); return o; })());
   const av = K.av || (K.av = new Set(R.map(x => x.r))), by = r => (K.by = K.by || {})[r] || (K.by[r] = R.filter(x => x.r === r));
-  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(capPC(Object.fromEntries(Object.entries(W).filter(([t]) => av.has(t))), t => by(t).length)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pickRU(a, K.ru) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
+  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(capPC(Object.fromEntries(Object.entries(W).filter(([t]) => av.has(t))), t => by(t).length)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pickRU(a, K.ru, r) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
   const roll = W => { const e = capPC(eff(av, W), t => by(t).length), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return 'R'; };
-  const g = r => { const a = by(r); return a.length ? pickRU(a, K.ru) : pick(by('C').length ? by('C') : R); };
+  const g = r => { const a = by(r); return a.length ? pickRU(a, K.ru, r) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
 }
 /* ===== EVENT BOX (หลังบ้าน): ซองละ 5 ใบ · ช่อง 1-3 = ช่องพื้นฐาน, ช่อง 4 = ช่องกลาง, ช่อง 5 = ช่องลุ้น · เรทเน้นให้ได้ยากไว้ก่อน (ยากกว่าตู้ BT ปกติ)
@@ -2288,7 +2289,7 @@ wss.on('connection', ws => {
         const d = await dbGet(ws.user), set = String(m.set || ''), id = String(m.id || '');
         if (!SETS.includes(set)) E('ไม่มีชุดนี้');
         d.ru = d.ru || {};
-        if (!id) delete d.ru[set]; else { if (!id.startsWith(set + '-') || !CARDS.some(c => c.id === id && (c.v || []).length)) E('การ์ดนี้ไม่อยู่ในกล่อง ' + set); d.ru[set] = id; }
+        if (!id) delete d.ru[set]; else { if (!id.startsWith(set + '-') || !CARDS.some(c => c.id === id && (c.v || []).includes('SEC'))) E('RATE UP เลือกได้เฉพาะการ์ด SEC ในกล่อง ' + set); d.ru[set] = id; }
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: id ? '⭐ ตั้ง RATE UP แล้ว' : 'ยกเลิก RATE UP แล้ว' })); return;
       }
       if (m.t === 'open') {
