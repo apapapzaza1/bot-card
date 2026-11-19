@@ -213,7 +213,7 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), ru: d.ru || {}, pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','BT12','CC01','CC02'];
@@ -522,12 +522,20 @@ function capPC(e, cnt) {
   }
   return o;
 }
+/* RATE UP: ผู้เล่นเลือกการ์ด 1 ใบต่อกล่อง → การ์ดใบนั้น (ทุกระดับ) ถูกถ่วงน้ำหนัก ×2 ตอนสุ่มในระดับเดียวกัน (เรทประมาณ 2 เท่า) */
+const RU_MULT = 2;
+function pickRU(a, ru) {
+  if (!ru || !a.some(x => x.id === ru)) return pick(a);
+  const tot = a.reduce((s, x) => s + (x.id === ru ? RU_MULT : 1), 0); let t = Math.random() * tot;
+  for (const x of a) { t -= x.id === ru ? RU_MULT : 1; if (t < 0) return x; }
+  return a[a.length - 1];
+}
 function pack(set, gar, K) {
   K = K || {}; const R = K.R || (K.R = (() => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => o.push({ id: c.id, r }))); return o; })());
   const av = K.av || (K.av = new Set(R.map(x => x.r))), by = r => (K.by = K.by || {})[r] || (K.by[r] = R.filter(x => x.r === r));
-  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(capPC(Object.fromEntries(Object.entries(W).filter(([t]) => av.has(t))), t => by(t).length)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pick(a) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
+  if (isCC(set)) { const W = gar ? CCG : CCW, e = Object.entries(capPC(Object.fromEntries(Object.entries(W).filter(([t]) => av.has(t))), t => by(t).length)), tot = e.reduce((a, [, w]) => a + w, 0); let x = Math.random() * tot, t5 = 'SR'; for (const [t, w] of e) if ((x -= w) < 0) { t5 = t; break; } const g = r => { const a = by(r); return a.length ? pickRU(a, K.ru) : pick(R); }; return [g('SR'), g('SR'), g('SR'), g('SR'), g(t5)]; }
   const roll = W => { const e = capPC(eff(av, W), t => by(t).length), tot = Object.values(e).reduce((a, b) => a + b, 0); let x = Math.random() * tot; for (const [t, w] of Object.entries(e)) if ((x -= w) < 0) return t; return 'R'; };
-  const g = r => { const a = by(r); return a.length ? pick(a) : pick(by('C').length ? by('C') : R); };
+  const g = r => { const a = by(r); return a.length ? pickRU(a, K.ru) : pick(by('C').length ? by('C') : R); };
   return [g('C'), g('C'), g('C'), g(roll(RW)), g(roll(gar ? GW : CW))];
 }
 /* ===== EVENT BOX (หลังบ้าน): ซองละ 5 ใบ · ช่อง 1-3 = ช่องพื้นฐาน, ช่อง 4 = ช่องกลาง, ช่อง 5 = ช่องลุ้น · เรทเน้นให้ได้ยากไว้ก่อน (ยากกว่าตู้ BT ปกติ)
@@ -609,7 +617,7 @@ const is016 = x => !!x && !x.tk && (x.id === 'BT04-016' || x.id === 'CC02-029');
 const mg016 = (r, f) => !!(f && f.z === 'av' && MGX > 0 && (is016(f.c) || f.c.mgProt >= r.g.n || bt8Rg(r, f.c)) && f.i !== MGWHO && !noFx(r, f.c));   // Magic ฝ่ายตรงข้ามกำลังจะมีผลกับ 016
 const mgQ = (r, f) => { if (is016(f.c) || bt8Rg(r, f.c)) log(r, '🛡 ' + nmOf(f.c) + ' ไม่รับผลจาก Magic ฝ่ายตรงข้าม'); };   // ข้อความเตือนเฉพาะ 016/เณรคู (วีรชนชีวภาพ ฯลฯ ไร้ผลเงียบๆ ไม่บอกฝ่ายตรงข้าม)
 const mgCut = (r, who, cx) => { let cut = 0; if (!cx || !cx.pick) return 0; for (const k of Object.keys(cx.pick)) { const v = cx.pick[k]; if (!Array.isArray(v)) continue; const nv = v.filter(u => { const ff = find(r, u); return !(ff && ff.z === 'av' && ff.c.mgProt >= r.g.n && !is016(ff.c) && ff.i !== who && !noFx(r, ff.c)); }); if (nv.length !== v.length) { cut = 1; cx.pick[k] = nv; } } return cut; };   // ตัดเป้าหมายที่ไม่รับผล Magic ออกเงียบๆ ก่อนทำผล
-const protectedFrom = (r, who, x, mg) => protectedFrom0(r, who, x) || bt8Prot(r, who, x, mg) || bt9Prot(r, who, x, mg) || bt10Prot(r, who, x, mg) || bt11Prot(r, who, x, mg) || (who !== undefined && (is016(x) || (x.mgProt >= r.g.n && !(MGSEL > 0 && !mg))) && (MGX > 0 || mg) && r.p.findIndex(q => q.av.includes(x)) !== who && !noFx(r, x));
+const protectedFrom = (r, who, x, mg) => protectedFrom0(r, who, x) || bt8Prot(r, who, x, mg) || bt9Prot(r, who, x, mg) || bt10Prot(r, who, x, mg) || bt11Prot(r, who, x, mg) || (who !== undefined && (is016(x) || (x.mgProt >= r.g.n && !(MGSEL > 0))) && (MGX > 0 || mg) && r.p.findIndex(q => q.av.includes(x)) !== who && !noFx(r, x));
 const allAvT = (r, i) => allAv(r).filter(a => !protectedFrom(r, i, a.x)).map(a => a.x.u);
 const canPlaceAv = (r, i, c) => { if (bt9NoPlace(r, i, c) || cc2NoPlace(r, i, c) || bt11NoPlace(r, i, c) || b12NoPlace(r, i, c)) return false; if (c.id === 'KD02-001' && !c.kdOK) return false; if (r.g.sa5 && r.g.sa5.i === i && r.g.sa5.n === r.g.n && !B[c.id].n.includes('Super Air')) return false; if (c.id === 'BT05-017' && r.p[i].av.some(a => a.id === 'BT05-017')) return false; if (c.id === 'BT08-011' && r.p[i].av.some(a => a.id === 'BT08-011')) return false; if (c.id === 'BT06-006' && r.p[i].av.some(a => a.id === 'BT06-006')) return false; const p = r.p[i], L = r.g.land, cap = ((L && L.o === i && L.c.id === 'SD08-017' && p.av.every(isRat) && isRat(c)) || (L && L.o === i && L.c.id === 'BT04-059' && p.av.every(a => symOf(a) === 'รัททาทุย') && symOf(c) === 'รัททาทุย')) ? 6 : 4; if (c.tk || (B[c.id] && B[c.id].t === 'Token')) return p.av.length < 6; return p.av.filter(x => !x.tk).length < cap && p.av.length < 6; };
 const addHold = (x, v, until) => { (x.hd = x.hd || []).push({ v, until }); if (v > 0) x.bc = (x.bc || 0) + 1; fx({ k: 'buff', u: x.u, v }); };
@@ -2144,7 +2152,7 @@ wss.on('connection', ws => {
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         const cur = () => CHOV ? { v: CHOV.v, log: CHOV.log } : { v: VERSION, log: CHANGELOG };
         if (m.t === 'admchset') {
-          const L = Array.isArray(m.log) ? m.log.slice(0, 100).map(x => ({ v: String((x && x.v) || '').trim().slice(0, 20), d: /^\d{4}-\d{2}-\d{2}$/.test(String((x && x.d) || '')) ? x.d : '', items: (Array.isArray(x && x.items) ? x.items : []).slice(0, 40).map(t => String(t).trim().slice(0, 500)).filter(Boolean) })).filter(x => x.v) : [];
+          const L = Array.isArray(m.log) ? m.log.slice(0, 100).map(x => ({ v: String((x && x.v) || '').trim().slice(0, 20), d: /^\d{4}-\d{2}-\d{2}$/.test(String((x && x.d) || '')) ? x.d : '', hl: x && x.hl ? 1 : 0, items: (Array.isArray(x && x.items) ? x.items : []).slice(0, 40).map(t => String(t).trim().slice(0, 500)).filter(Boolean) })).filter(x => x.v) : [];
           if (!L.length) E('ต้องมีอย่างน้อย 1 เวอร์ชัน'); CHOV = { v: L[0].v, log: L, t: Date.now() }; await dbPut('sys:changelog', CHOV);
           ws.send(JSON.stringify({ note: 'บันทึกรายการอัปเดตแล้ว (ปัจจุบัน ' + CHOV.v + ')' }));
         } else if (m.t === 'admchreset') { CHOV = null; await dbPut('sys:changelog', { v: '', log: [] }); ws.send(JSON.stringify({ note: 'กลับไปใช้รายการอัปเดตจากไฟล์แล้ว' })); }
@@ -2276,10 +2284,17 @@ wss.on('connection', ws => {
         await qCh(); qAdd(d, 'cr', tot);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🔮 คราฟ ' + tot + ' ใบ สำเร็จ (ใช้ ' + (gem ? gem + ' 💎 + ' : '') + du + ' ผง)' })); return;
       }
+      if (m.t === 'setru') {   // เลือก/ยกเลิกการ์ด RATE UP ของกล่อง
+        const d = await dbGet(ws.user), set = String(m.set || ''), id = String(m.id || '');
+        if (!SETS.includes(set)) E('ไม่มีชุดนี้');
+        d.ru = d.ru || {};
+        if (!id) delete d.ru[set]; else { if (!id.startsWith(set + '-') || !CARDS.some(c => c.id === id && (c.v || []).length)) E('การ์ดนี้ไม่อยู่ในกล่อง ' + set); d.ru[set] = id; }
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: id ? '⭐ ตั้ง RATE UP แล้ว' : 'ยกเลิก RATE UP แล้ว' })); return;
+      }
       if (m.t === 'open') {
         const d = await dbGet(ws.user), n = m.n === 10 ? 10 : 1, cc = isCC(String(m.set)), cost = (n === 10 ? 900 : 100) * (cc ? 2 : 1);
         if (!SETS.includes(m.set)) E('ไม่มีชุดนี้'); if (!CARDS.some(c => c.id.startsWith(m.set + '-') && (c.v || []).length)) E('ชุด ' + m.set + ' ยังไม่มีการ์ดในระบบ (cards.json / รูปการ์ดยังไม่ถูกอัปโหลดครบ) — ยังไม่หักเจม'); if (d.gems < cost) E('Gem ไม่พอ'); d.gems -= cost;
-        const ps = [], PKC = {}; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim, PKC); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
+        const ps = [], PKC = { ru: (d.ru || {})[m.set] || null }; const pk = cc ? 'pityCC' : 'pity', lim = cc ? CC_PITY : 50; for (let k = 0; k < n; k++) { d[pk] = (d[pk] || 0) + 1; const p = pack(m.set, d[pk] >= lim, PKC); if (p.some(x => ['UR','SEC','PR','CBR','USEC'].includes(x.r))) d[pk] = 0; p.forEach(x => add(d, x)); ps.push(p); }
         await qCh(); qAdd(d, 'op', n);
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d) })); return;
       }
@@ -5023,6 +5038,13 @@ sweep = function (r) {
 
 /* ---------- ห่อ bt8Win : ผลชนะการต่อสู้ ---------- */
 const _w94 = bt8Win;
+// กัณหา นาคเกล็ดดำ: หลังอัญเชิญ นาค → เปิดใช้งานความสามารถ "อัตโนมัติ" ของใบนั้นทันที โดยไม่ตรวจเงื่อนไข (POWER ≥ 7) — ได้รับความสามารถจนจบเทิร์น
+function nagaAuto(r, c) {
+  const gn = r.g.n, f = find(r, c.u); if (!f || f.z !== 'av' || noFx(r, c)) return;
+  if (c.id === 'BT06-001') { c.k1 = gn; vfx(c.u, 'aura', '🐉 LIFE ไม่ทำงาน', '#38bdf8'); log(r, '🐉 ' + nmOf(c) + ': เปิดใช้งานอัตโนมัติทันที — เทิร์นนี้ LIFE Card ที่ถูกหงายจากการโจมตีของใบนี้ ความสามารถไม่ทำงาน'); }
+  else if (c.id === 'BT06-002') { c.k2 = gn; vfx(c.u, 'aura', '🐉 ความเสียหาย 2 ใบ', '#a855f7'); log(r, '🐉 ' + nmOf(c) + ': เปิดใช้งานอัตโนมัติทันที — เทิร์นนี้โจมตี LIFE สำเร็จ ทำความเสียหาย 2 ใบ'); }
+  else if (c.id === 'BT09-005') { c.g5 = gn; vfx(c.u, 'aura', '🐍 ได้รับความสามารถ', '#a855f7'); log(r, '🐍 ' + nmOf(c) + ': เปิดใช้งานอัตโนมัติทันที — ได้รับความสามารถอัญเชิญ นาค เมื่อโจมตีสำเร็จ'); }
+}
 bt8Win = function (r, p, a, d, res) {
   _w94(r, p, a, d, res); if (res !== 'win' && res !== 'lose') return;
   const wi = res === 'win' ? p.ai : 1 - p.ai, w = res === 'win' ? a : d, lo = res === 'win' ? d : a, isAtk = res === 'win';
@@ -5033,7 +5055,7 @@ bt8Win = function (r, p, a, d, res) {
   if (hasEq(r, w, 'BT09-068') && op.hell.length) r.g.q.push(() => ask(r, wi, { text: 'กระบองตำรวจ: เลือกการ์ดในนรกฝ่ายตรงข้าม 1 ใบ วางบนสุดของ Deck เขา', opts: op.hell.map(c => c.u), cb: us => { const k = op.hell.findIndex(c => c.u === us[0]); if (k >= 0) { const c = op.hell.splice(k, 1)[0]; op.deck.push(c); vfx(w.u, 'aura', '🚔 วางบน Deck', '#38bdf8'); log(r, '🚔 กระบองตำรวจ: วาง ' + B[c.id].n + ' บนสุดของ Deck ' + op.name); } } }));
   if (hasN9(w, 'ริกกี้')) me.co.filter(k => k.id === 'BT09-074' && k.ou !== r.g.n).forEach(k => { const h = me.hell.find(c => !c.tk && B[c.id].n.trim() === 'หนังมนุษย์ ชุดแก้แค้น'); if (!h) return; k.ou = r.g.n; me.hell.splice(me.hell.indexOf(h), 1); me.deck.push(h); shuf(me.deck); vfx(k.u, 'aura', '🧥 กลับ Deck', '#a855f7'); log(r, '🧥 ตู้เสื้อผ้าของริกกี้: นำ หนังมนุษย์ ชุดแก้แค้น จากนรกกลับเข้า Deck แล้วสับ'); });
   if (isAtk && w.g5 === r.g.n && me.deck.length) { const N = me.deck.filter(c => !c.tk && isAv(c) && nmOf(c).includes('นาค') && B[c.id].c === 3 && (symOf(c) === 'สัตว์มหัศจรรย์' || also9(c, 'สัตว์มหัศจรรย์'))).map(c => c.u);
-    N.length && r.g.q.push(() => ask(r, wi, { text: 'กัณหา: เลือก Avatar "นาค" Cost 3 {สัตว์มหัศจรรย์} จาก Deck อัญเชิญ (ใช้ความสามารถอัตโนมัติทันที)', opts: N, cb: us => { const c = me.deck.find(q => q.u === us[0]); if (c && sumH9(r, wi, c, 'deck', '🐍 นาค', '#a855f7')) { shuf(me.deck); log(r, '🐍 กัณหา: อัญเชิญ ' + B[c.id].n + ' จาก Deck'); } } })); }
+    N.length && r.g.q.push(() => ask(r, wi, { text: 'กัณหา: เลือก Avatar "นาค" Cost 3 {สัตว์มหัศจรรย์} จาก Deck อัญเชิญ (ใช้ความสามารถอัตโนมัติทันที)', opts: N, cb: us => { const c = me.deck.find(q => q.u === us[0]); if (c && sumH9(r, wi, c, 'deck', '🐍 นาค', '#a855f7')) { shuf(me.deck); log(r, '🐍 กัณหา: อัญเชิญ ' + B[c.id].n + ' จาก Deck'); nagaAuto(r, c); } } })); }
 };
 
 const _bs94 = bt6Bs;
@@ -8103,6 +8125,9 @@ P = function (r, x) { const v = _P12h(r, x); if (!x || x.tk || !(x.wr || []).som
 // ---- 067 ลงทะเบียนเป็น React ที่ไม่กดใช้เอง ----
 try { MG['BT12-067'] = Object.assign(MG['BT12-067'] || {}, { react: 'never' }); } catch (e) {}
 
+/* ===== รอบสุดท้าย: ห่อ Magic ที่ประกาศหลังบล็อกเดิม (BT08+) ให้ใช้กติกา "เป้าที่ไม่รับผล Magic เลือกได้ แต่ไร้ผล" เหมือนกัน ===== */
+{ const w = d => { if (d.__w) return; d.__w = 1; if (d.steps) d.steps = d.steps.map(s => ({ ...s, opts: (...a) => { const o = MGWHO; MGX++; MGSEL++; MGWHO = a[1]; try { return s.opts(...a); } finally { MGX--; MGSEL--; MGWHO = o; } } })); if (d.run) { const f = d.run; d.run = (...a) => { const o = MGWHO; MGX++; MGWHO = a[1]; const cut = mgCut(a[0], a[1], a[2]); try { return f(...a); } catch (e) { if (cut) return; throw e; } finally { MGX--; MGWHO = o; } }; } };
+  Object.keys(MG).forEach(k => w(MG[k])); }
 srv.listen(process.env.PORT || 3000, () => console.log('ready'));
 // กันหลุดเอง: ส่ง ping ทุก 25 วิ ให้ proxy ไม่ตัด WebSocket ที่นิ่งๆ (เช่นเล่นกับบอท)
 setInterval(() => { try { wss.clients.forEach(w => { if (w.readyState === 1) w.ping(); }); } catch (e) { } }, 25000);
