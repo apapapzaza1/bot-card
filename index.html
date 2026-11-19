@@ -818,7 +818,27 @@ const bt=document.createElement('button');bt.textContent='ปิด';bt.onclick=
 document.addEventListener('keydown',e=>{e.key==='Escape'&&close()})})();
 let AM=null,AX={};fetch('/artmap.json?'+Date.now()).then(r=>r.json()).then(a=>{AX={};AM=new Set(a.map(n=>{const m=/^(.+)\.(png|webp)$/i.exec(n);if(m){AX[m[1]]=m[2];return m[1]}return n}));try{pfChip()}catch(e){}if(S&&!$('game').hidden)render()}).catch(e=>{});
 const LEG={SCR:'SEC',UBR:'CBR'};
-const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';return`background-image:url(/${k}.${AX[k]||'webp'});background-size:100% 100%;background-position:center`};
+const art=(id,r)=>{if(!AM||!cfg.img||!id)return'';r=LEG[r]||r;const b=((C[id]&&C[id].v)||[])[0]||'C',nm=x=>x===b?(b==='C'?id:id+'-'+b):id+'-'+x;let k=r?nm(r):nm(b);if(!AM.has(k))k=nm(b);if(!AM.has(k)&&AM.has(id))k=id;if(!AM.has(k))return'';const raw=`/${k}.${AX[k]||'webp'}`,f=WFIX[k];if(f===undefined)fixArt(k,raw);return`background-image:url(${f||raw});background-size:100% 100%;background-position:center`};
+/* ตัดขอบขาว/มุมขาวของรูปการ์ดอัตโนมัติ (แก้บัคการ์ดมีขอบขาว): flood-fill สีขาวจากขอบรูป -> โปร่งใส แล้วครอปเหลือเฉพาะตัวการ์ด ; รูปที่ไม่มีขอบขาวไม่ถูกแตะ */
+const WFIX={},WFQ={};
+function whiteTrim(p,w,h){const N=w*h,v=new Uint8Array(N),st=new Int32Array(N);let sp=0,cnt=0;
+const wt=i=>{const j=i*4;return p[j+3]<24||(p[j]>=225&&p[j+1]>=225&&p[j+2]>=225)};
+const push=i=>{if(!v[i]&&wt(i)){v[i]=1;st[sp++]=i;cnt++}};
+for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+while(sp){const i=st[--sp],x=i%w,y=(i/w)|0;if(x>0)push(i-1);if(x<w-1)push(i+1);if(y>0)push(i-w);if(y<h-1)push(i+w)}
+if(!cnt)return null;
+let x0=w,y0=h,x1=-1,y1=-1;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(!v[y*w+x]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+if(x1<0)return null;const bw=x1-x0+1,bh=y1-y0+1;
+if(x0>w*.08||y0>h*.08||(w-1-x1)>w*.08||(h-1-y1)>h*.08||bw<w*.8||bh<h*.8)return null;
+let inside=0;for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(v[y*w+x])inside++;
+if(inside>N*.012)return null;
+for(let i=0;i<N;i++)if(v[i])p[i*4+3]=0;
+return{x0,y0,bw,bh}}
+function fixArt(k,raw){if(k in WFQ)return;WFQ[k]=1;const im=new Image();im.onload=()=>{try{const w=im.naturalWidth,h=im.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0);const d=g.getImageData(0,0,w,h),r=whiteTrim(d.data,w,h);if(!r){WFIX[k]=0;return}
+g.putImageData(d,0,0);const c2=document.createElement('canvas');c2.width=r.bw;c2.height=r.bh;c2.getContext('2d').drawImage(c,r.x0,r.y0,r.bw,r.bh,0,0,r.bw,r.bh);
+c2.toBlob(b=>{if(!b){WFIX[k]=0;return}const u=URL.createObjectURL(b);WFIX[k]=u;try{document.querySelectorAll('[style*="url('+raw+')"]').forEach(e=>{e.style.backgroundImage='url('+u+')'})}catch(e){}
+try{if(S&&!$('game').hidden)render()}catch(e){}},'image/webp',.96)}catch(e){WFIX[k]=0}};im.onerror=()=>{WFIX[k]=0};im.src=raw}
+
 const ZL={av:'Avatar Zone',co:'Construct Zone',mg:'Magic Zone'},ZS={av:'มี Avatar บนสนามได้สูงสุด 4 ใบ',co:'มี Construct ได้สูงสุด 3 ใบ',mg:'เล่น Magic ได้ประเภทละครั้ง'};
 function conn(){if(ws&&ws.readyState<2)return;const w=ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);
 w.onopen=()=>{try{chkVer()}catch(e){}cfg.tok&&send({t:'tok',tok:cfg.tok})};w.onclose=()=>{if(w!==ws)return;dropped();setTimeout(conn,2000)};
