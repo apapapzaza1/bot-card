@@ -16,6 +16,7 @@ const CHANGELOG = [
     'เงื่อนไขพิเศษใหม่: ถ้าใส่ อีสานสลิงเกอร์ ปิ๊ก Avatar ทั้งเด็คต้องมีคำว่า \"อีสานสลิงเกอร์\" ในชื่อหรือ Text box',
     'ปลดเงื่อนไข \"เลือกใส่ได้อย่างใดอย่างหนึ่ง\" ของ จอมเวทย์ กาลู และ โคกอีสานนูน — ใส่คู่กันได้แล้ว',
     'จัดเด็ค: เพิ่มปุ่ม \"🚫 แบนลิสต์\" ดูรายการแบนลิสต์ทั้งหมด (การ์ดที่อยู่ในเด็คตอนนี้และติดแบนจะขึ้นสีแดง) · แตะชื่อการ์ดเพื่อดูรูปการ์ด',
+    'แก้บัค ลุงไนท์ ราชาวานร: นับ Token \"วานร\" เป็น Avatar \"วานร\" ในเงื่อนไขสั่งใช้จากนรกแล้ว (ปุ่มใช้จะขึ้นเมื่อคุม วานร ครบ 3 ใบรวม Token)',
     'เด็คที่ติดแบนลิสต์จะเรืองแสงสีแดง ทั้งในหน้าจัดเด็ค (ปุ่มโหลดเด็ค / สตาร์ทเตอร์) และหน้าเลือกเด็คก่อนเล่น',
   ] },
   { v: 'v1.10.1', d: '2026-11-20', items: [
@@ -875,7 +876,7 @@ const MG = {
   'SD03-020': { react: 'summon', steps: [{ key: 'c', pay: 1, text: 'ส่ง Avatar นรก จากมือ ที่ Cost ≥ Avatar ที่อัญเชิญ ลงนรก', opts: (r, i, cx) => handAv(c => symOf(c) === 'นรก' && B[c.id].c >= (cx.ev.cost || 0))(r, i) }],
     run: (r, i, cx) => { mill(r, i, 2); destroyAv(r, cx.ev.u); } },
 };
-function hell33OK(r, i, c) { const p = r.p[i], g = r.g; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && p.hand.length > 0 && p.av.filter(a => !a.tk && B[a.id].n.includes('วานร')).length >= 3 && canPlaceAv(r, i, c) && !r.p.some(q => q.av.some(a => a.id === 'BT05-012' && !noFx(r, a))); }
+function hell33OK(r, i, c) { const p = r.p[i], g = r.g; return g.turn === i && g.phase === 'main' && !g.ask && !g.pend && p.hand.length > 0 && p.av.filter(a => sdIsWan9(a)).length >= 3 && canPlaceAv(r, i, c) && !r.p.some(q => q.av.some(a => a.id === 'BT05-012' && !noFx(r, a))); }
 function handCost(r, i, c) {   // Cost ปัจจุบันบนมือ (null = ใช้ค่าปกติ)
   const b = B[c.id]; if (c.id === 'BT10-074' && new Set(r.p[i].av.filter(a => !a.tk && B[a.id].n.includes('แก๊งขยะ')).map(a => nm9(a))).size >= 2) return 0; if (b && c.id === 'BT07-072' && hasHn(r, i)) return 0; if (!b || b.t !== 'Avatar') return null; const p = r.p[i];
   if (c.id === 'BT05-002') return Math.max(0, b.c - p.hell.filter(h => !h.tk && B[h.id].t === 'Avatar' && B[h.id].n.includes('แมลงปอ')).length);
