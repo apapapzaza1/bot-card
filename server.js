@@ -7,10 +7,15 @@ FORCE_ONLY1.forEach(id => { if (B[id]) B[id].o = 'Only #1'; });
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.10.0';
+const VERSION = process.env.APP_VERSION || 'v1.10.1';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.10.1', d: '2026-11-20', items: [
+    'หน้าล็อบบี้: เพิ่มปุ่ม "Event" อยู่เหนือ "เล่นกับบอท" (ข้างในขึ้น "เปิดเร็วๆ นี้")',
+    'คราฟ: เพิ่มแท็บ "แลกผงเป็นเจม" — 10 ผงวิเศษ = 1 Gem',
+    'แก้บัคการ์ดมีขอบขาว: เกมตัดขอบขาว/มุมขาวของรูปการ์ดให้อัตโนมัติ',
+  ] },
   { v: 'v1.10.0', d: '2026-11-18', items: [
     'เพิ่มชุด BT12 (ซอย 3) — การ์ด 76 ใบ (Avatar / Magic / Land / Modification / Construct / Token) พร้อมรูป SEC / PR / CBR ใน imgs_cards_BT_part2.zip และมีกล่อง BT12 ในร้านค้า (BOX SET)',
     'สกิล BT12 รอบ A–F: Avatar ส่วนใหญ่ (POWER ต่อเนื่อง, ต่อสู้, จุติ, สั่งใช้, คำสั่งเสีย), Magic หลายใบ, React 065/066, Modification 068–070, Land 071–073 และ Construct 074/075 — ที่เหลือทยอยเพิ่มรอบถัดไป',
@@ -226,6 +231,7 @@ const RT = ART_R;   // ลำดับระดับ ต่ำ→สูง (ใ
 // ระบบคราฟ/ย่อย: ผงวิเศษ
 const DUST = { C: 50, R: 100, SR: 150, UR: 200, SEC: 250, PR: 250, CBR: 250, USEC: 250 };   // ผงที่ได้ตอนย่อย (ต่อใบ)
 const CRAFT_R = ['C', 'R', 'SR', 'UR'];   // คราฟได้เฉพาะระดับนี้ (SEC ขึ้นไปคราฟไม่ได้)
+const DUST_PER_GEM = 10;   // แลกผงวิเศษเป็น Gem: 10 ผง = 1 Gem
 const CRAFT_OWN = 1000, CRAFT_NEW_DUST = 1500, CRAFT_NEW_GEM = 2500, DUST_KEEP = 4;   // ย่อยได้เฉพาะใบที่เกิน 4
 /* ===================== ระบบเควส (รายวัน / รายสัปดาห์ / ชาเลนจ์ / ความสำเร็จ) =====================
    - ตัวนับ (metric): g เล่นครบ, w ชนะ, wf ชนะภายใน 12 เทิร์น, sm อัญเชิญ Avatar, bd ก่อสร้าง Construct, mg ใช้ Magic,
@@ -2254,6 +2260,12 @@ wss.on('connection', ws => {
         d.cards[k] = have - n; if (!d.cards[k]) delete d.cards[k];
         const got = n * DUST[r]; d.dust = (d.dust || 0) + got;
         await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🟣 ย่อย ' + n + ' ใบ ได้ ' + got + ' ผง' })); return;
+      }
+      if (m.t === 'dust2gem') {   // แลกผงวิเศษเป็น Gem อัตรา DUST_PER_GEM ผง = 1 Gem
+        const d = await dbGet(ws.user), mx = Math.floor((d.dust || 0) / DUST_PER_GEM), n = m.all ? mx : Math.min(mx, Math.max(0, m.n | 0));
+        if (n < 1) E('ผงวิเศษไม่พอ (ต้องใช้ ' + DUST_PER_GEM + ' ผงต่อ 1 Gem)');
+        d.dust = (d.dust || 0) - n * DUST_PER_GEM; d.gems = (d.gems || 0) + n;
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '💎 แลก ' + (n * DUST_PER_GEM) + ' ผง ได้ ' + n + ' Gem' })); return;
       }
       if (m.t === 'craft') {   // คราฟการ์ด: มีแล้ว = 1000 ผง / ยังไม่มี = 2500 Gem + 1500 ผง
         const d = await dbGet(ws.user), id = String(m.id), r = String(m.r), k = id + '|' + r;
