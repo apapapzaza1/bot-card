@@ -172,6 +172,7 @@ const srv = http.createServer((q, r) => {
     if (u0 === '/version.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify({ v: CHOV ? CHOV.v : VERSION, t: Math.round(Math.max(BUILD_AT(), CHOV ? CHOV.t : 0)) })); }
     if (u0 === '/boxinfo.json') { const o = {}; for (const [n, v] of Object.entries(BOXSRC)) { let live = null; try { live = fs.statSync(path.join(fs.existsSync(path.join(BOXDIR, n)) ? BOXDIR : IMG, n)).size; } catch (e) { } o[n] = { ...v, live }; } r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-store' }); return r.end(JSON.stringify(o, null, 1)); }   // ไว้เช็กว่าเซิร์ฟเวอร์ถือรูปกล่องไฟล์ไหนอยู่
     if (u0 === '/boxes.json') { let l = []; try { l = [...new Set([...fs.readdirSync(BOXDIR), ...fs.readdirSync(IMG)].filter(n => BOX_RE.test(n)))].sort(); } catch (e) { } r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(l)); }   // รายชื่อรูปกล่องที่มี
+    if (u0 === '/tokens.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.values(B).filter(c => c.t === 'Token').map(c => ({ id: c.id, n: c.n, t: 'Token', c: c.c, g: c.g, p: c.p, s: c.s, col: c.col, e: c.e || '', v: c.v || ['C'] })))); }   // รายการ Token ทั้งหมด (ไว้ใส่ติดเด็ค)
     if (u0 === '/artmap.json') { r.writeHead(200, { 'Content-Type': MT['.json'], 'Cache-Control': 'no-cache' }); return r.end(JSON.stringify(Object.keys(ART_FILES).map(nm => /\.webp$/i.test(ART_FILES[nm]) ? nm : ART_FILES[nm]))); }   // รายชื่อไฟล์รูปทั้งหมด (png ใส่นามสกุลต่อท้าย)
     if (u0 === '/cards.json') { try { const a = JSON.parse(fs.readFileSync([__dirname, IMG].map(d => path.join(d, 'cards.json')).find(f => fs.existsSync(f)), 'utf8'));
       a.forEach(c => { applyArtV(c); patchGem(c); if (CEDIT[c.id]) Object.assign(c, CEDIT[c.id]); if (FORCE_ONLY1.includes(c.id)) c.o = 'Only #1'; });
@@ -200,7 +201,10 @@ function mig(d) {
       d.stg.push(s); }); }
   if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i));
     if (x && x.art) for (const i of Object.keys(x.art)) x.art[i] = fixR(i, x.art[i]);
-    if (x && x.vr) { const o = {}; for (const [kk, n] of Object.entries(x.vr)) { const [i, r] = kk.split('|'), nk = i + '|' + fixR(i, r); o[nk] = (o[nk] || 0) + n; } x.vr = o; } }
+    if (x && x.vr) { const o = {}; for (const [kk, n] of Object.entries(x.vr)) { const [i, r] = kk.split('|'), nk = i + '|' + fixR(i, r); o[nk] = (o[nk] || 0) + n; } x.vr = o; }
+    if (x && x.side) x.side = x.side.map(String).map(kk => { const [i, r] = kk.split('|'); return i + '|' + fixR(i, r); }).filter(kk => CI.has(kk.split('|')[0]));
+    if (x && x.so) { const [i, r] = String(x.so).split('|'); x.so = CI.has(i) ? i + '|' + fixR(i, r) : null; }
+    if (x && x.tk) x.tk = x.tk.map(String).filter(i => B[i] && B[i].t === 'Token'); }
   if (typeof d.pic === 'string' && d.pic.includes('|')) { const [i, r] = d.pic.split('|'); d.pic = i + '|' + fixR(i, r); }
   return d;
 }
@@ -585,8 +589,24 @@ function deckInsts(d) { const left = {}; Object.entries(d.vr || {}).forEach(([k,
   const mk = id => { const c = inst(id), a = (left[id] && left[id].shift()) || (d.art && d.art[id]); if (a) c.ar = a; return c; };
   return { deck: shuf(d.main.map(mk)), life: shuf(d.life.map(id => ({ ...mk(id), up: 0 }))) }; }
 function preDeck(s) { const x = ST[s], vr = {}; [...x.main, ...x.life].forEach(([id, n, r]) => { if (r) vr[id + '|' + r] = (vr[id + '|' + r] || 0) + n; }); return { main: x.main.flatMap(([id, n]) => Array(n).fill(id)), life: x.life.map(([id]) => id), vr }; }
+// สลับการ์ด Side ก่อนเริ่มเกม: sw = [[คีย์การ์ดในเด็ค 'id|ระดับ', คีย์การ์ด Side 'id|ระดับ'], ...] จับคู่ตามลำดับ 1-1 2-2 3-3
+function applySwap(k, sw) {
+  if (!Array.isArray(sw) || !sw.length) return null;
+  const pool = [...(k.side || []), ...(k.so ? [k.so] : [])], main = k.main.slice(), life = k.life.slice(), vr = { ...(k.vr || {}) };
+  if (sw.length > pool.length) E('สลับเกินจำนวนการ์ดใน Side');
+  for (const pr of sw) {
+    if (!Array.isArray(pr) || pr.length !== 2) E('ข้อมูลการสลับผิดรูปแบบ');
+    const ok = String(pr[0]), ik = String(pr[1]), oi = ok.split('|')[0], ii = ik.split('|')[0];
+    const px = pool.indexOf(ik); if (px < 0) E('ไม่มีการ์ดนี้ใน Side (หรือเลือกซ้ำเกินจำนวน)');
+    if (!B[oi] || !B[ii] || !(vr[ok] > 0)) E('ไม่พบการ์ดที่จะสลับออกในเด็ค');
+    if ((B[oi].t === 'Life') !== (B[ii].t === 'Life')) E('การ์ด LIFE สลับได้เฉพาะกับการ์ด LIFE ใน Side เท่านั้น');
+    const arr = B[oi].t === 'Life' ? life : main, ax = arr.indexOf(oi); if (ax < 0) E('ไม่พบการ์ดที่จะสลับออกในเด็ค');
+    pool.splice(px, 1); arr[ax] = ii; if (!--vr[ok]) delete vr[ok]; vr[ik] = (vr[ik] || 0) + 1;
+  }
+  return { main, life, vr };
+}
 async function pickDeck(m, user, ban) {
-  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); return { ...mkDeck([...k.main, ...k.life].map(i => i + ' x1').join(' '), 0, 0, ban), art: k.art || {}, vr: k.vr || null }; }
+  if (m.mine) { const u = await dbGet(user), k = u.decks && u.decks[m.mine]; if (!k) E('ไม่พบเด็ค'); const w = applySwap(k, m.sw), mm = w ? w.main : k.main, ll = w ? w.life : k.life; return { ...mkDeck([...mm, ...ll].map(i => i + ' x1').join(' '), 0, 0, ban), art: k.art || {}, vr: w ? w.vr : (k.vr || null), tk: k.tk || [] }; }
   if (m.pre) { const u = await dbGet(user); if (!ST[m.pre] || !(/^SD0[1-3]$/.test(m.pre) || (u.bought || []).includes(m.pre))) E('ยังไม่มีเด็คนี้'); return preDeck(m.pre); }
   if (!process.env.BOT_TEST) E('ปิดใช้งานเด็ควางลิสต์/เด็คทดสอบแล้ว');
   return mkDeck(m.text || '', m.rand, m.skip, ban);
@@ -2248,7 +2268,16 @@ wss.on('connection', ws => {
         if (!d.decks[nm] && Object.keys(d.decks).length >= 20) E('เด็คเต็ม 20'); const art = {}; Object.entries(m.art || {}).forEach(([i, r]) => { if (cnt[i] && B[i] && (d.cards[i + '|' + r] || 0) > 0) art[i] = String(r); }); const vr = {}, vs = {}; Object.entries(m.vr || {}).forEach(([k, n]) => { const [i, r] = String(k).split('|'); n = n | 0; if (n > 0 && cnt[i] && (d.cards[i + '|' + r] || 0) >= n) { vr[i + '|' + r] = n; vs[i] = (vs[i] || 0) + n; } });
         for (const i in vs) if (vs[i] > cnt[i]) E('จำนวนระดับเกิน');
         for (const i in cnt) if ((vs[i] || 0) < cnt[i]) { const r = art[i] || (B[i].v || ['C'])[0], k = i + '|' + r; vr[k] = (vr[k] || 0) + cnt[i] - (vs[i] || 0); }
-        d.decks[nm] = { main, life, art, vr };
+        /* Side deck: 10 ใบ + ช่อง Only #1 อีก 1 ใบ (เก็บเป็น 'id|ระดับ') · Token ที่ติดเด็ค */
+        const side = (m.side || []).map(String), so = m.so ? String(m.so) : null, sc = {}, sci = {};
+        if (side.length > 10) E('Side ใส่ได้สูงสุด 10 ใบ (ไม่นับช่อง Only #1)');
+        [...side, ...(so ? [so] : [])].forEach(kk => { const [i] = kk.split('|'); if (!B[i] || B[i].t === 'Token') E('Side: ไม่พบการ์ด ' + i); sc[kk] = (sc[kk] || 0) + 1; sci[i] = (sci[i] || 0) + 1; });
+        if (side.some(kk => B[kk.split('|')[0]].o === 'Only #1')) E('การ์ด Only #1 ต้องใส่ในช่อง Only #1 ของ Side เท่านั้น');
+        if (so && B[so.split('|')[0]].o !== 'Only #1') E('ช่อง Only #1 ใส่ได้เฉพาะการ์ด Only #1');
+        for (const kk in sc) { const i = kk.split('|')[0]; if ((vr[kk] || 0) + sc[kk] > (d.cards[kk] || 0)) E('การ์ดไม่พอสำหรับ Side: ' + B[i].n); }
+        for (const i in sci) if ((cnt[i] || 0) + sci[i] > (own[i] || 0)) E('การ์ดไม่พอสำหรับ Side: ' + B[i].n);
+        const tk = [...new Set((m.tk || []).map(String))].filter(i => B[i] && B[i].t === 'Token').slice(0, 10);
+        d.decks[nm] = { main, life, art, vr, side, so, tk };
         await dbPut(ws.user, d); me_(d); return;
       }
       if (m.t === 'fadd') {
@@ -2264,7 +2293,7 @@ wss.on('connection', ws => {
       if (m.t === 'dust') {   // ย่อยการ์ด → ผงวิเศษ (เก็บไว้ ≥4 ใบ/ระดับ และไม่ต่ำกว่าที่เด็คที่บันทึกไว้ใช้)
         const d = await dbGet(ws.user), id = String(m.id), r = String(m.r), k = id + '|' + r, have = (d.cards && d.cards[k]) || 0;
         if (!B[id] || !DUST[r]) E('ย่อยการ์ดนี้ไม่ได้');
-        let keep = DUST_KEEP; Object.values(d.decks || {}).forEach(dk => { keep = Math.max(keep, (dk.vr && dk.vr[k]) || 0); });
+        let keep = DUST_KEEP; Object.values(d.decks || {}).forEach(dk => { keep = Math.max(keep, ((dk.vr && dk.vr[k]) || 0) + (dk.side || []).filter(x => x === k).length + (dk.so === k ? 1 : 0)); });
         const ok = Math.max(0, have - keep), n = m.all ? ok : Math.min(ok, Math.max(0, m.n | 0));
         if (n < 1) E('ย่อยได้เฉพาะใบที่เกิน ' + keep + ' ใบ (มี ' + have + ')');
         d.cards[k] = have - n; if (!d.cards[k]) delete d.cards[k];
