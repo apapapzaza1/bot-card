@@ -114,7 +114,7 @@ input,textarea{-webkit-user-select:text;user-select:text;font-size:16px}
 #rx{position:fixed;left:0;right:0;bottom:0;z-index:7;background:#14141cf5;color:#eee;border-top:2px solid #f6a;padding:10px 10px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -10px 30px #000a;animation:up .25s}
 @keyframes up{from{transform:translateY(100%)}}
 #rx h4{margin:0 0 4px;text-align:center}#rx .rr{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:8px 0;--w:78px}
-#rx .rxs .c{outline:3px solid #f6a;transform:translateY(-6px)}
+#rx .rxs .c{outline:3px solid #f6a;transform:translateY(-6px)}#rx .rxd{opacity:.32;filter:grayscale(.8);pointer-events:none}#rx .rxz{display:block;text-align:center;font-size:.7em;opacity:.8}#rx .rb2 button:disabled{opacity:.45}
 #rx .rb2{display:flex;gap:10px}#rx .rb2 button{flex:1;padding:12px;font-weight:700;font-size:1.05em;margin:0}#rx .yes{background:#c2185b;color:#fff;border-color:#f6a}
 .atkb{background:#b71c1c!important;color:#fff!important;border-color:#f66!important;font-weight:700}.atkb:disabled{opacity:.5}
 .hint{width:100%;text-align:center;font-size:.85em;color:#fc3;padding:2px}
@@ -1418,15 +1418,30 @@ if(sel&&!find(sel))sel=null;diceUI();mullUI();akUI();if((!sel&&S.phase!='mull')|
 let tt;const toast=t=>{const e=$('ts');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,1600)};
 function drawFx(me,n){const sds=document.querySelectorAll('#mid .sd'),sd=sds.length?(me?sds[sds.length-1]:sds[0]):null,a=rc(sd&&sd.querySelector('.z-dk'))||{x:innerWidth*(me?.85:.15),y:innerHeight*(me?.6:.25)},b=rc(me?$('hand'):document.querySelector('#mid .oh'))||{x:innerWidth/2,y:me?innerHeight*.9:30};for(let k=0;k<Math.min(n,6);k++){const e=document.createElement('div');e.className='bk dfx';document.body.append(e);const w=e.offsetWidth,h=e.offsetHeight,f=(q,sc)=>`translate(${q.x-w/2}px,${q.y-h/2}px) scale(${sc})`;const an=e.animate([{transform:f(a,.6),opacity:0},{transform:f(a,.8),opacity:1,offset:.12},{transform:f(b,1),opacity:.2}],{duration:750,delay:k*170,easing:'ease-in-out',fill:'both'});an.onfinish=()=>e.remove();setTimeout(()=>e.remove(),2500+k*170)}}
 function drt(){const d=S.dr;if(!d||d.n==lastDr)return;lastDr=d.n;if(d.c>0){drawFx(d.who==S.i,d.c);toast((d.who==S.i?'คุณ':'ศัตรู')+'จั่ว '+d.c+' ใบ');sfx('draw')}}
-function rx(){if(S.ask&&S.ask.mine&&S.ask.rx&&!S.over)return rxAsk();const e=$('rx'),p=S.pend,PG=p&&p.mine&&p.k=='atk'&&p.can?S.me.hand.filter(x=>x.id=='BT11-024'&&p.can.includes(x.u)):[],R0=S.me.hand.filter(x=>{const c=info(x);return c.t=='Magic'&&(c.st=='React'||x.id=='SD05-020'||x.id=='BT01-041'||c.id=='BT07-049'&&S.me.av.some(a=>/ตำรวจ/.test(info(a).n||'')))&&(!p||!p.can||p.can.includes(x.u))});
-const R=S.ru?PG:R0.concat(PG);if(S.over||!p||!p.mine||S.ask||(S.ru&&!PG.length)){e.hidden=true;rxSel=null;return}const SH=(p.mine&&p.sh)?p.sh:[];if(p.can&&!R.length&&!SH.length){e.hidden=true;rxSel=null;return}
-if(!R.some(x=>x.u==rxSel))rxSel=R.length==1?R[0].u:null;
+/* ===== หน้าต่าง Reaction เดียว: การ์ดเคาน์เตอร์ทั้งหมด (Magic React/การ์ดในมือ/ความสามารถ Avatar บนสนาม) + โล่มนุษย์ ===== */
+let rxMd=null,rxK='';
+const RXB=new Set(['BT05-044','BT06-007','BT08-018','BT08-036','BT10-001','BT11-003']),RXH=new Set(['BT05-023','BT11-024','BT11-041']),RXA=new Set([...RXB,'BT11-024','BT11-041']);
+const rxType=x=>{const c=info(x);return(c.t=='Magic'&&(c.st=='React'||x.id=='SD05-020'||x.id=='BT01-041'||x.id=='BT07-049'))||RXH.has(x.id)};
+function rxItems(p){const can=p.cr||p.can||[];return[...S.me.hand.filter(x=>can.includes(x.u)||rxType(x)).map(x=>({x,z:'hand',ok:can.includes(x.u)})),...S.me.av.filter(x=>RXB.has(x.id)).map(x=>({x,z:'av',ok:can.includes(x.u)}))]}
+const rxM=m=>{rxMd=m;rxSel=null;rx()};
+function rx(){if(S.ask&&S.ask.mine&&S.ask.rx&&!S.over)return rxAsk();const e=$('rx'),p=S.pend;
+if(S.over||!p||!p.mine||S.ask||mode=='pay'){e.hidden=true;rxSel=null;return}
+const SH=(p.mine&&p.sh)?p.sh:[],IT=rxItems(p),U=IT.filter(i=>i.ok);
+if(!U.length&&!SH.length){e.hidden=true;rxSel=null;return}
+const k=p.k+'|'+(p.u||'')+'|'+(p.tg||'')+'|'+(p.ev?p.ev.id:'')+'|'+(p.ai==null?'':p.ai);if(k!=rxK){rxK=k;rxMd=null;rxSel=null}
+const hS=SH.length>0,hC=U.length>0;let md=rxMd;if(md=='sh'&&!hS)md=null;if(md=='ct'&&!hC)md=null;if(!md){if(hS&&!hC)md='sh';else if(hC&&!hS)md='ct'}
+if(!U.some(i=>i.x.u==rxSel))rxSel=(md=='ct'&&U.length==1)?U[0].x.u:null;
 let why='';if(p.k=='atk'){const a=find(p.u),t=p.tg=='life'?null:find(p.tg);why=a?esc(info(a.x).n)+' (Power '+(info(a.x).p+(a.x.pw||0))+') โจมตี '+(t?esc(info(t.x).n):'LIFE ของคุณ'):'ศัตรูประกาศโจมตี'}else{const c=C[S.ev&&S.ev.id];why='ศัตรูใช้ '+(c?esc(c.n):'การ์ด')}
-e.innerHTML=`<h4>⚡ ช่วงตอบโต้ (Reaction)${p.until?' <span id="rxt"></span>':''}</h4><div style="text-align:center;font-size:.85em">${why}</div><div class="rr">${R.map(x=>`<div class="${x.u==rxSel?'rxs':''}">${cd(x,'hand',0)}</div>`).join('')}</div>${SH.length?`<div class="rb2">${SH.map(u=>{const f=find(u);return `<button class="yes" onclick="send({t:'shield',u:${u}})">🛡 โล่มนุษย์: ${f?esc(info(f.x).n):''}</button>`}).join('')}</div>`:''}<div class="rb2">${R.length?`<button class="yes" onclick="rxGo()">ใช้${rxSel?' '+esc(info(find(rxSel).x).n):''}</button>`:''}<button onclick="send({t:'pass'})">${R.length?'ไม่ใช้ (Pass)':'ข้าม (Pass)'}</button></div>`;e.hidden=false;rxT()}
+const pass=`<button onclick="send({t:'pass'})">${hC||hS?'ไม่ใช้ (Pass)':'ข้าม (Pass)'}</button>`,back=(hS&&hC)?`<button onclick="rxM(null)">← กลับ</button>`:'';
+let body='';
+if(!md)body=`<div class="rb2"><button class="yes" onclick="rxM('sh')">🛡 ใช้โล่มนุษย์</button><button class="yes" onclick="rxM('ct')">⚡ ใช้การ์ดเคาน์เตอร์</button></div><div class="rb2">${pass}</div>`;
+else if(md=='sh')body=`<div class="rb2" style="flex-wrap:wrap">${SH.map(u=>{const f=find(u);return `<button class="yes" onclick="send({t:'shield',u:${u}})">🛡 โล่มนุษย์: ${f?esc(info(f.x).n):''}</button>`}).join('')}</div><div class="rb2">${back}${pass}</div>`;
+else body=`<div class="rr">${IT.map(i=>`<div class="${i.ok?'':'rxd'}${i.x.u==rxSel?' rxs':''}">${cd(i.x,i.z,0)}${i.z=='av'?'<small class="rxz">🏟 บนสนาม</small>':''}</div>`).join('')}</div><div class="rb2">${back}<button class="yes" ${rxSel?'':'disabled'} onclick="rxGo()">ใช้${rxSel?' '+esc(info(find(rxSel).x).n):''}</button>${pass}</div>`;
+e.innerHTML=`<h4>⚡ ช่วงตอบโต้ (Reaction)${p.until?' <span id="rxt"></span>':''}</h4><div style="text-align:center;font-size:.85em">${why}</div>${body}`;e.hidden=false;rxT()}
 const rxT=()=>{const e=$('rxt');if(e&&S&&S.pend&&S.pend.until)e.textContent=' '+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s'};
 function rxAsk(){const e=$('rx'),a=S.ask,R=S.me.hand.filter(x=>a.opts.includes(x.u));if(!R.length){e.hidden=true;rxSel=null;return}if(!R.some(x=>x.u==rxSel))rxSel=R.length==1?R[0].u:null;e.innerHTML=`<h4>⚡ ช่วงตอบโต้ (Reaction)</h4><div style="text-align:center;font-size:.85em">${esc(a.rx.why||'')}</div><div class="rr">${R.map(x=>`<div class="${x.u==rxSel?'rxs':''}">${cd(x,'hand',0)}</div>`).join('')}</div>${a.rx.hint?`<div style="text-align:center;font-size:.75em;opacity:.8;margin-bottom:6px">${esc(a.rx.hint)}</div>`:''}<div class="rb2"><button class="yes" onclick="rxAskGo()">ใช้${rxSel?' '+esc(info(find(rxSel).x).n):''}</button><button onclick="send({t:'pick',cancel:1})">ไม่ใช้ (Pass)</button></div>`;e.hidden=false}
 const rxAskGo=()=>{if(!rxSel)return alert('แตะเลือกการ์ดก่อน');send({t:'pick',us:[rxSel]})};
-const rxGo=()=>{if(!rxSel)return alert('แตะเลือกการ์ด React ก่อน');const f=find(rxSel);send({t:f&&f.x.id=='BT11-024'?'atkresp':f&&f.x.id=='BT01-040'?'doc':'cast',u:rxSel})};
+const rxGo=()=>{if(!rxSel)return alert('แตะเลือกการ์ดก่อน');const f=find(rxSel);if(!f)return;const id=f.x.id;if(id=='BT05-023'){sel=rxSel;const c=info(f.x);if(c.c&&gemSum(f)<c.c&&!xpCanPre(f))return toast(gemMsg(f));rxSel=null;if(c.c){mode='pay';pay=[];xp=[];render()}else send({t:'summon',u:sel,pay:[]});return}send({t:RXA.has(id)?'atkresp':id=='BT01-040'?'doc':'cast',u:rxSel})};
 function btl(){const b=S.bt;if(lastBt==-1){lastBt=b?b.n:0;return}if(!b||b.n==lastBt)return;lastBt=b.n;
 const cv=(id,n,p,cl,rr)=>{const a=id?art(id,rr):'';return`<div class="bk2 ${cl}"><div class="bcd${a?'':' nt'}" style="${a}">${a?'':esc(n)}</div><s class="bp">${p}</s></div>`};
 const ld=b.res=='lose'||b.res=='both',rd=b.res=='win'||b.res=='both',L=cv(b.aid,b.an,b.pa,'la'+(ld?' dead':''),b.aar);let R,t;
