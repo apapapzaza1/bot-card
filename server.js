@@ -219,7 +219,7 @@ const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'bas
 const PF_NEED = L => 200 + 50 * L;   // EXP ที่ต้องใช้จากเลเวล L ไป L+1
 const pfLv = xp => { let L = 1, x = Math.max(0, xp | 0); while (x >= PF_NEED(L)) { x -= PF_NEED(L); L++; } return { lv: L, cur: x, need: PF_NEED(L) }; };
 const pfView = d => { const p = d.pf || {}, st = p.st || {}, l = pfLv(p.xp); return { pend: p.pend || [], xp: p.xp | 0, lv: l.lv, cur: l.cur, need: l.need, hist: p.hist || [], st: { g: st.g | 0, w: st.w | 0, l: st.l | 0, s: st.s | 0, b: st.b | 0 } }; };
-// รางวัลทุก 5 เลเวล: Gem 500 (+250 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150) ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / CBR 10%
+// รางวัลทุก 5 เลเวล: Gem 15,000 (+5,000 ทุก 5 เลเวลที่เพิ่ม) + ผง 300 (+150)  ※ ต้องตรงกับ pfRw ใน index.html ; ทุก 10 เลเวล: การ์ดอาร์ท (เลเวล/10 ใบ) SEC 65% / UR 25% / CBR 10%
 const pfReward = L => { if (L % 5) return null; const k = L / 5; return { lv: L, gems: 15000 + 5000 * (k - 1), dust: 300 + 150 * (k - 1), n: L % 10 ? 0 : L / 10 }; };
 const PF_ART_W = [['SEC', 65], ['UR', 25], ['CBR', 10]];
 const pfArt = () => { let x = Math.random() * 100, r = 'SEC'; for (const [t, w] of PF_ART_W) { if ((x -= w) < 0) { r = t; break; } }
