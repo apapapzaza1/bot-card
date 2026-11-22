@@ -2266,7 +2266,7 @@ wss.on('connection', ws => {
         console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
         pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
       }
-      if (m.t === 'admgrant' || m.t === 'admmeta' || m.t === 'admnotice') {   // เมนูแอดมิน: แจก/หักของ (จดหมาย) / ประกาศอัปเดต
+      if (m.t === 'admgrant' || m.t === 'admgrantall' || m.t === 'admmeta' || m.t === 'admnotice') {   // เมนูแอดมิน: แจก/หักของ (จดหมาย) / ประกาศอัปเดต
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         if (m.t === 'admmeta') { ws.send(JSON.stringify({ t: 'admmeta', bt: mailBt(), ev: mailEv() })); return; }
         if (m.t === 'admgrant') {
@@ -2291,6 +2291,31 @@ wss.on('connection', ws => {
           await dbPut(n, d);
           userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: !mailHas(o) && !txt ? '⚠ แอดมินปรับของในบัญชี' : (m.direct && mailHas(o) && !txt ? '🎁 แอดมินใส่ของเข้าบัญชีให้แล้ว' : '✉️ มีจดหมายจากแอดมิน — เปิดที่ปุ่ม ✉️') })); } catch (e) { } });
           ws.send(JSON.stringify({ note: 'ถึง ' + n + (sum.length ? (m.direct && mailHas(o) ? ' ใส่เข้าบัญชีทันที: ' : ' ส่งจดหมาย: ') + sum.filter(Boolean).join(' · ') : '') + (cut.length ? ' · หัก: ' + cut.join(', ') : '') })); return;
+        }
+        if (m.t === 'admgrantall') {   // แอดมิน: แจกของให้ "ทุกคน" (เฉพาะส่วนที่เป็นบวก ส่งเข้ากล่องจดหมาย หรือใส่เข้าบัญชีทันทีถ้าติ๊ก direct)
+          const gems = Math.max(0, Math.min(1e7, +m.gems | 0)), dust = Math.max(0, Math.min(1e6, +m.dust | 0)), gv = [], bx = [], okSet = ['ANY', 'BT', 'EV', ...mailBt(), ...mailEv()];
+          for (const c of (Array.isArray(m.cards) ? m.cards : []).slice(0, 60)) {
+            const id = String((c && c.id) || '').trim(), cd = CARDS.find(x => x.id === id), q = Math.max(0, Math.min(999, (c && c.n) | 0)); if (!id || !q) continue; if (!cd) E('ไม่พบการ์ด ' + id);
+            const r = MAIL_LEG[c.r] || String(c.r || '').toUpperCase(); if (!(cd.v || []).includes(r)) E(id + ' ไม่มีระดับ ' + (c.r || '?') + ' (มี: ' + (cd.v || []).join(', ') + ')');
+            gv.push({ id, r, n: q });
+          }
+          for (const b of (Array.isArray(m.boxes) ? m.boxes : []).slice(0, 30)) { const set = String((b && b.set) || '').toUpperCase(), q = Math.max(0, Math.min(50, (b && b.n) | 0)); if (!set || !q) continue; if (!okSet.includes(set)) E('ไม่มีกล่อง ' + set); bx.push({ set, n: q }); }
+          const txt = !!(String(m.title || '').trim() || String(m.body || '').trim()); if (!gems && !dust && !gv.length && !bx.length && !txt) E('ใส่ของที่จะแจก หรือข้อความอย่างน้อย 1 อย่าง (แจกทุกคนไม่รองรับการหัก)');
+          let names = [];
+          if (SB) { for (let off = 0; off < 200000; off += 1000) { const r = (await (await fetch(`${SB}/rest/v1/users?select=name&order=name&limit=1000&offset=${off}`, { headers: H })).json()) || []; if (!Array.isArray(r)) break; names.push(...r.map(x => x.name)); if (r.length < 1000) break; } }
+          else names = Object.keys(mem);
+          names = [...new Set(names.filter(n => n && !String(n).startsWith('sys:')))]; if (!names.length) E('ไม่พบผู้เล่น');
+          const o = { from: 'แอดมิน', title: String(m.title || '').trim().slice(0, 80) || '🎁 ของขวัญจากแอดมิน', body: String(m.body || '').slice(0, 500), gems, dust, cards: gv, boxes: bx }, has = mailHas(o);
+          let ok = 0, bad = 0;
+          for (const n of names) {
+            try {
+              const d = await dbGet(n);
+              if (has) { if (m.direct) { mailApply(d, o, []); if (txt) mailAdd(d, { ...o, gems: 0, dust: 0, cards: [], boxes: [] }); } else mailAdd(d, o); } else mailAdd(d, o);
+              await dbPut(n, d); ok++;
+              userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: m.direct && has && !txt ? '🎁 แอดมินใส่ของเข้าบัญชีให้แล้ว' : '✉️ มีจดหมายจากแอดมิน — เปิดที่ปุ่ม ✉️' })); } catch (e) { } });
+            } catch (e) { bad++; }
+          }
+          ws.send(JSON.stringify({ note: '🎁 แจกทุกคนแล้ว ' + ok + ' คน' + (bad ? ' · ล้มเหลว ' + bad : '') + (has ? (m.direct ? ' (ใส่เข้าบัญชีทันที)' : ' (ส่งจดหมาย)') : ' (ข้อความ)') })); return;
         }
         if (m.t === 'admnotice') { const t = String(m.text || '').trim().slice(0, 300); if (!t) E('ใส่ข้อความ'); wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ note: '📢 ' + t })); }); ws.send(JSON.stringify({ note: 'ประกาศแล้ว' })); return; }
       }
