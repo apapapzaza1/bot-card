@@ -599,7 +599,9 @@ const EVW = {
   mid: { C: 64.37, R: 27, SR: 6.5, UR: 1.3, SEC: .8, PR: .03 },
   top: { R: 64, SR: 25, UR: 6.8, SEC: 4, PR: .15, CBR: .04, USEC: .01 },
 };
-const EVS = ['base', 'base', 'base', 'mid', 'top'];
+// กล่องอีเวนต์: 1 ซอง = 1 ใบ
+EVW.one = { ...EVW.top };   // ใบเดียว = เรทช่องลุ้นเดิม (R 64 · SR 25 · UR 6.8 · SEC 4 · PR .15 · CBR .04 · USEC .01) — ปรับตรงนี้ได้
+const EVS = ['one'];
 const evEff = (av, W) => { const o = {}, have = RT.filter(t => av.has(t)); for (const t of RT) { const w = W[t]; if (!w) continue; let k = RT.indexOf(t); while (k > 0 && !av.has(RT[k])) k--; const tt = av.has(RT[k]) ? RT[k] : have[0]; o[tt] = (o[tt] || 0) + w; } return o; };   // ระดับที่ไม่มีในกล่อง → ปัดลงไประดับที่มีจริง (ถ้าต่ำกว่าทุกระดับ → ระดับต่ำสุดที่มี)
 const evPool = set => { const o = []; CARDS.forEach(c => c.id.startsWith(set + '-') && c.v.forEach(r => o.push({ id: c.id, r }))); return o; };
 function evPack(set, K) {
