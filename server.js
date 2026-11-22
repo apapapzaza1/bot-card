@@ -2242,6 +2242,10 @@ wss.on('connection', ws => {
         } finally { MAIL_BUSY.delete(ws.user); }
         return;
       }
+      if (m.t === 'evrate') {   // ผู้เล่นทุกคน: ดูเรทกล่องอีเวนต์ (อ่านอย่างเดียว ไม่มีจำลองเปิด)
+        const o = String(m.open || '').toUpperCase();
+        ws.send(JSON.stringify({ t: 'evbox', any: evAnyRates(mailEv()), sets: EVENT_BOX_SETS.map(evRates), open: o === 'ANY' || EVENT_BOX_SETS.includes(o) ? o : '' })); return;
+      }
       if (m.t === 'evbox') {   // แอดมิน: ดูเรทกล่องอีเวนต์หลังบ้าน + จำลองเปิด (ไม่บันทึกลงบัญชี)
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         if (!EVENT_BOX_SETS.includes(m.set)) { ws.send(JSON.stringify({ t: 'evbox', any: evAnyRates(mailEv()), sets: EVENT_BOX_SETS.map(evRates), note: 'กล่องอีเวนต์: ' + EVENT_BOX_SETS.join(' / ') })); return; }
