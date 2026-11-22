@@ -405,7 +405,7 @@ function qView(d, admin) {
 }
 const qRed = d => { try { return qView(d).red; } catch (e) { return 0; } };
 function qGive(d, o, cards) { d.gems += o.gems | 0; d.dust = (d.dust || 0) + (o.dust | 0); for (let k = 0; k < (o.art | 0); k++) { const c = qArt(); if (c) { add(d, c); cards.push(c); } }
-  if (o.eb && o.eb.n > 0) for (let k = 0; k < o.eb.n; k++) { const set = o.eb.set === 'ANY' ? pick(EVENT_BOX_SETS) : o.eb.set; if (EVENT_BOX_SETS.includes(set)) grantEventBox(d, set, 1).forEach(x => cards.push(x)); } }   // รางวัลกล่องอีเวนต์: สุ่มเปิดซอง (ซองละ 5 ใบ) ใส่บัญชี · set = 'ANY' คือสุ่มทุกกล่อง
+  if (o.eb && o.eb.n > 0) for (let k = 0; k < o.eb.n; k++) { const set = o.eb.set === 'ANY' ? evAnyPick(EVENT_BOX_SETS.filter(s => evPool(s).length)) : o.eb.set; if (EVENT_BOX_SETS.includes(set)) grantEventBox(d, set, 1).forEach(x => cards.push(x)); } }   // รางวัลกล่องอีเวนต์: สุ่มเปิดซอง (ซองละ 5 ใบ) ใส่บัญชี · set = 'ANY' คือสุ่มทุกกล่อง
 function qClaim(d, kind, id, all) {   // รับรางวัล: คืน { gems, dust, cards, n }
   const q = qInit(d), V = qView(d), tot = { gems: 0, dust: 0, cards: [], n: 0 }, give = o => { qGive(d, o, tot.cards); tot.gems += o.gems | 0; tot.dust += o.dust | 0; tot.n++; };
   const L = (V[kind] || []).filter(x => all || String(x.id) === String(id));
@@ -586,6 +586,14 @@ function pack(set, gar, K) {
 /* ===== EVENT BOX (หลังบ้าน): ซองละ 5 ใบ · ช่อง 1-3 = ช่องพื้นฐาน, ช่อง 4 = ช่องกลาง, ช่อง 5 = ช่องลุ้น · เรทเน้นให้ได้ยากไว้ก่อน (ยากกว่าตู้ BT ปกติ)
    ไม่อยู่ในร้านค้า — แจกเป็นรางวัลเควส (ฟิลด์ eb ของเควส → qGive) · ใช้จาก: evPack(set) / grantEventBox(d, set, n) (ให้การ์ดเข้าบัญชีผู้เล่น สำหรับรางวัลอีเวนต์) / แอดมินส่ง {t:'evbox', set, n} เพื่อดูเรท+จำลองเปิด (ไม่บันทึก) */
 const EVENT_BOX_SETS = ['ODY1', 'PRMO', 'PRE0', 'FPRO', 'SL01', 'SL02'];
+// "สุ่มทุกกล่อง" (เควส / จดหมาย EV): น้ำหนักต่อกล่อง ODY1 (ได้ง่ายสุด) > SL01 > SL02 > PRMO > PRE0 > FPRO (ยากสุด) (รวม 100) — ปรับตัวเลขตรงนี้ที่เดียว
+const EV_ANY_W = { ODY1: 28, SL01: 24, SL02: 20, PRMO: 14, PRE0: 9, FPRO: 5 };
+function evAnyPick(list) {
+  const L = (list && list.length ? list : EVENT_BOX_SETS).filter(s => EV_ANY_W[s] > 0), tot = L.reduce((a, s) => a + EV_ANY_W[s], 0);
+  if (!tot) return pick(list && list.length ? list : EVENT_BOX_SETS);
+  let x = Math.random() * tot; for (const s of L) if ((x -= EV_ANY_W[s]) < 0) return s; return L[L.length - 1];
+}
+function evAnyRates(list) { const L = (list || EVENT_BOX_SETS).filter(s => EV_ANY_W[s] > 0), tot = L.reduce((a, s) => a + EV_ANY_W[s], 0), o = {}; L.forEach(s => o[s] = +(EV_ANY_W[s] / tot * 100).toFixed(2)); return o; }
 const EVW = {
   base: { C: 87.336, R: 11.2, SR: 1.3, UR: .08, SEC: .08, PR: .004 },
   mid: { C: 64.37, R: 27, SR: 6.5, UR: 1.3, SEC: .8, PR: .03 },
@@ -632,7 +640,7 @@ function mailApply(d, x, out) {   // ใส่ของในจดหมาย�
   (x.cards || []).forEach(c => { for (let k = 0; k < (c.n | 0); k++) { const o = { id: c.id, r: c.r }; add(d, o); out.push(o); } });
   const KS = {};
   (x.boxes || []).forEach(b => { for (let k = 0; k < (b.n | 0); k++) {
-    const set = b.set === 'ANY' ? pick([...mailBt(), ...mailEv()]) : b.set === 'BT' ? pick(mailBt()) : b.set === 'EV' ? pick(mailEv()) : b.set; if (!set) continue;
+    const set = b.set === 'ANY' ? pick([...mailBt(), ...mailEv()]) : b.set === 'BT' ? pick(mailBt()) : b.set === 'EV' ? evAnyPick(mailEv()) : b.set; if (!set) continue;
     const K = KS[set] = KS[set] || {}, p = EVENT_BOX_SETS.includes(set) ? evPack(set, K) : pack(set, false, K); p.forEach(c => { add(d, c); out.push(c); }); } });
 }
 const mailView = d => (d.mail || []).map(x => ({ id: x.id, t: x.t, from: x.from, title: x.title, body: x.body, gems: x.gems | 0, dust: x.dust | 0, art: x.art | 0, cards: x.cards || [], boxes: x.boxes || [], rd: x.rd ? 1 : 0, cl: x.cl ? 1 : 0, has: mailHas(x) ? 1 : 0 }));
@@ -2236,9 +2244,9 @@ wss.on('connection', ws => {
       }
       if (m.t === 'evbox') {   // แอดมิน: ดูเรทกล่องอีเวนต์หลังบ้าน + จำลองเปิด (ไม่บันทึกลงบัญชี)
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
-        if (!EVENT_BOX_SETS.includes(m.set)) { ws.send(JSON.stringify({ t: 'evbox', sets: EVENT_BOX_SETS.map(evRates), note: 'กล่องอีเวนต์: ' + EVENT_BOX_SETS.join(' / ') })); return; }
+        if (!EVENT_BOX_SETS.includes(m.set)) { ws.send(JSON.stringify({ t: 'evbox', any: evAnyRates(mailEv()), sets: EVENT_BOX_SETS.map(evRates), note: 'กล่องอีเวนต์: ' + EVENT_BOX_SETS.join(' / ') })); return; }
         const n = Math.max(1, Math.min(200, m.n | 0 || 1)), K = {}, tally = {}; for (let k = 0; k < n; k++) evPack(m.set, K).forEach(x => tally[x.r] = (tally[x.r] || 0) + 1);
-        ws.send(JSON.stringify({ t: 'evbox', rates: evRates(m.set), sim: { packs: n, tally }, note: 'จำลองเปิด ' + m.set + ' ' + n + ' ซอง: ' + Object.entries(tally).map(([t, v]) => t + ' ' + v).join(' · ') })); return;
+        ws.send(JSON.stringify({ t: 'evbox', any: evAnyRates(mailEv()), rates: evRates(m.set), sim: { packs: n, tally }, note: 'จำลองเปิด ' + m.set + ' ' + n + ' ซอง: ' + Object.entries(tally).map(([t, v]) => t + ' ' + v).join(' · ') })); return;
       }
       if (m.t === 'banset' || m.t === 'banreset') {   // แอดมินแก้ไข/รีเซ็ตแบนลิสต์ (เก็บถาวร + ประกาศให้ผู้เล่นออนไลน์ทันที)
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
