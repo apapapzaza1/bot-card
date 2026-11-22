@@ -609,7 +609,7 @@ body.ing #bg::before{animation:none}
 .qbar{height:10px;border-radius:6px;background:#8883;overflow:hidden}
 .qbar i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#22c55e)}
 .qrw{display:flex;gap:6px;flex-wrap:wrap;font-size:.85em}
-.qrw span{background:#8883;border-radius:10px;padding:2px 8px}
+.qrw span{background:#8883;border-radius:10px;padding:2px 8px} .ebun{position:relative;flex:0 0 100%;height:132px;margin:4px 0}.ebun .bx{position:absolute;transform-origin:0 0;transform:scale(var(--s));width:110px}.ebun .bk{opacity:.85}
 .cdf{display:grid;gap:10px}.cdf label{display:grid;gap:4px;font-size:.85em;opacity:.9}.cdf input{box-sizing:border-box;width:100%}.cdg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.cdc{display:flex;flex-wrap:wrap;gap:6px}.cdc button{border:1px solid #888;background:transparent;color:inherit;border-radius:999px;padding:4px 12px;cursor:pointer;font-size:.85em}.cdc button.on{background:#7c3aed;border-color:#a855f7;color:#fff}.cdr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #8884}.cdr:first-child{border-top:0}.cdr b{letter-spacing:2px}.cdr small{display:block;opacity:.75}
 .qf{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}
 .qf input,.qf select{min-width:0}
@@ -1371,7 +1371,9 @@ $('md').innerHTML=`<div class="in wide"><div class="bh"><div class="bh1"><button
 let QS=null,QTB='d',QFIRST=0;
 const qdot=()=>{const n=(ME&&ME.qn)||0,e=$('qdot');if(e){e.hidden=!n;e.textContent=n>9?'9+':n}};
 const qHM=ms=>{ms=Math.max(0,ms);const h=Math.floor(ms/36e5),m=Math.floor(ms%36e5/6e4);return h>=24?Math.floor(h/24)+' วัน '+(h%24)+' ชม.':h+' ชม. '+m+' นาที'};
-const qRw=o=>`<div class="qrw">${o.gems?`<span>💎 ${o.gems.toLocaleString()}</span>`:''}${o.dust?`<span>✨ ${o.dust.toLocaleString()}</span>`:''}${o.art?`<span>🃏 การ์ดอาร์ทสุ่ม ×${o.art}</span>`:''}${o.eb?`<span>📦 กล่องอีเวนต์ ${o.eb.set=='ANY'?'(สุ่มทุกกล่อง)':o.eb.set} ×${o.eb.n} ซอง</span>`:''}</div>`;
+const EBUN_BACK=['SL01','SL02','PRMO'],EBUN_FRONT=['PRE0','FPRO'];   // มัดกล่องอีเวนต์ (สุ่มทุกกล่อง): หลัง 3 หน้า 2 — แก้รายชื่อกล่องตรงนี้
+const ebun=()=>`<div class="ebun">${EBUN_BACK.map((k,i)=>`<div class="bx bk" style="--s:.55;left:${i*52}px;top:0;--h:${(+(k.slice(2))||k.charCodeAt(0))*33%360};z-index:1">${box(k).replace(/^<div class="bx"[^>]*>/,'').replace(/<\/div>$/,'')}</div>`).join('')}${EBUN_FRONT.map((k,i)=>`<div class="bx" style="--s:.68;left:${30+i*72}px;top:34px;--h:${(+(k.slice(2))||k.charCodeAt(0))*33%360};z-index:2">${box(k).replace(/^<div class="bx"[^>]*>/,'').replace(/<\/div>$/,'')}</div>`).join('')}</div>`;
+const qRw=o=>`<div class="qrw">${o.gems?`<span>💎 ${o.gems.toLocaleString()}</span>`:''}${o.dust?`<span>✨ ${o.dust.toLocaleString()}</span>`:''}${o.art?`<span>🃏 การ์ดอาร์ทสุ่ม ×${o.art}</span>`:''}${o.eb?`<span>📦 กล่องอีเวนต์ ${o.eb.set=='ANY'?'(สุ่มทุกกล่อง)':o.eb.set} ×${o.eb.n} ซอง</span>`:''}${o.eb&&o.eb.set=='ANY'?ebun():''}</div>`;
 function qRow(x,k,adm){const ok=!x.cl&&x.p>=x.n;let act;
 if(x.done)act='<span class="tagx">ครบทุกขั้น ⭐</span>';else if(x.cl)act='<span class="tagx">รับแล้ว ✔</span>';else if(x.full)act='<span class="tagx">ครบจำนวนแล้ว</span>';else act=`<button class="${ok?'pri':''}" ${ok?'':'disabled'} onclick="send({t:'qclaim',k:'${k}',id:'${x.id}'})">${ok?'🎁 รับรางวัล':x.p.toLocaleString()+'/'+x.n.toLocaleString()}</button>`;
 return`<div class="qrow${x.cl?' cl':ok?' ok':''}"><div class="qtop"><b>${x.ic?x.ic+' ':''}${esc(x.tx)}</b><span>${act}</span></div><div class="qbar"><i style="width:${Math.min(100,x.p/Math.max(1,x.n)*100)}%"></i></div><div class="qtop"><small>${x.of?'ขั้น '+x.tier+'/'+x.of+' · ':''}${x.p.toLocaleString()} / ${x.n.toLocaleString()}</small>${x.lim?'<span class="qrw"><span>สิทธิ์เหลือ '+Math.max(0,x.lim-x.cn)+'/'+x.lim+'</span></span>':''}${x.done?'':qRw(x)}</div>${qAdm(x,k,adm)}</div>`}
