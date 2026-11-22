@@ -234,7 +234,7 @@ function pfGain(d, win, bot, opName) {
   p.hist = [{ t: Date.now(), w: win ? 1 : 0, op: String(opName || '').slice(0, 24), bot: bot ? 1 : 0 }, ...(p.hist || [])].slice(0, 20);
   return { xp, l0, l1, rw };
 }
-const prof = (n, d) => ({ name: n, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), ru: d.ru || {}, pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
+const prof = (n, d) => ({ name: n, ml: (d.mail || []).filter(x => !x.rd).length, pic: d.pic || null, pf: pfView(d), gems: d.gems, dust: d.dust || 0, cards: d.cards, admin: n === ADMIN, decks: d.decks || {}, sides: d.sides || {}, fr: d.fr || [], rq: d.rq || [], qn: qRed(d), ru: d.ru || {}, pity: d.pity || 0, pityCC: d.pityCC || 0, bought: d.bought || [], skins: d.skins || [], eq: d.eq || {}, ban: (() => { try { return BAN; } catch (e) { return null; } })() });
 const ST = JSON.parse(fs.readFileSync(path.join(__dirname, 'starters.json'), 'utf8'));
 const giveSt = (d, k) => ST[k].main.concat(ST[k].life).forEach(([id, n, r]) => { for (let j = 0; j < n; j++) add(d, { id, r }); });
 const SETS = ['BT01','BT02','BT03','BT04','BT05','BT06','BT07','BT08','BT09','BT10','BT11','BT12','CC01','CC02'];
@@ -339,8 +339,8 @@ async function qCh() {   // รายการชาเลนจ์ (เก็�
 function qInit(d) {   // เตรียม/รีเซ็ตข้อมูลเควสของผู้เล่น (รีเซ็ตเมื่อข้ามวัน/สัปดาห์)
   const T = qTH(), q = d.qs = d.qs || {};
   if (!q.lt) { const st = (d.pf && d.pf.st) || {}; q.lt = { 'g:any': st.g | 0, 'w:any': st.w | 0 }; }
-  if (q.day !== T.day) { q.day = T.day; q.dp = {}; q.dc = []; }
-  if (q.wk !== T.wk) { q.wk = T.wk; q.wp = {}; q.wc = []; }
+  if (q.day !== T.day) { if (q.day != null && q.dp) qMiss(d, q, 'd'); q.day = T.day; q.dp = {}; q.dc = []; }
+  if (q.wk !== T.wk) { if (q.wk != null && q.wp) qMiss(d, q, 'w'); q.wk = T.wk; q.wp = {}; q.wc = []; }
   q.cp = q.cp || {}; q.ch = q.ch || []; q.ac = q.ac || {}; q.ev = q.ev || {};
   return q;
 }
@@ -381,7 +381,8 @@ function qEvRows(q, admin, ch) {
     const I = qEvInfo(q, e, now), v = q.ev[e.id] || {}, lim = e.lim | 0, full = lim > 0 && (e.cn | 0) >= lim && !v.cl, pe = e.pre && QEV.find(z => z.id === e.pre);
     return { id: e.id, tx: (e.name ? e.name + ' — ' : '') + qText(e.m, e.md, e.need), desc: e.desc || '', p: Math.min(e.need, v.p | 0), n: e.need, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0, eb: e.eb || null,
       cards: (e.cards || []).map(c => ({ id: c.id, r: c.r, n: c.n, nm: (B[c.id] && B[c.id].n) || c.id })), cl: v.cl ? 1 : 0, st: I.st, left: I.end && I.st !== 'exp' ? Math.max(0, I.end - now) : 0, startIn: e.start && now < e.start ? e.start - now : 0,
-      acc: e.acc ? 1 : 0, dur: e.dur | 0, rep: e.rep ? 1 : 0, pre: pe ? (pe.name || qText(pe.m, pe.md, pe.need)) : '', lim, cn: e.cn | 0, full: full ? 1 : 0, off: e.off ? 1 : 0 };
+      acc: e.acc ? 1 : 0, dur: e.dur | 0, rep: e.rep ? 1 : 0, pre: pe ? (pe.name || qText(pe.m, pe.md, pe.need)) : '', lim, cn: e.cn | 0, full: full ? 1 : 0, off: e.off ? 1 : 0,
+      raw: admin ? { name: e.name || '', desc: e.desc || '', m: e.m, md: e.md, need: e.need, gems: e.gems | 0, dust: e.dust | 0, art: e.art | 0, eb: e.eb || null, cards: (e.cards || []).map(c => ({ id: c.id, r: c.r, n: c.n })), acc: e.acc ? 1 : 0, start: e.start | 0, end: e.end | 0, dur: e.dur | 0, pre: e.pre || '', lim, rep: e.rep ? 1 : 0 } : undefined };
   });
 }
 function qView(d, admin) {
@@ -389,13 +390,13 @@ function qView(d, admin) {
   const dI = qPick(QD.length, 10, 'D' + T.day), wI = qPick(QW.length, 30, 'W' + T.wk);
   const dl = dI.map(i => { const t = QD[i]; return mk(qText(t[0], t[1], t[2]), q.dp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.dc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
   const wl = wI.map(i => { const t = QW[i]; return mk(qText(t[0], t[1], t[2]), q.wp[t[0] + ':' + t[1]], t[2], { gems: t[3], dust: t[4], art: t[5] }, q.wc.includes(i), i); }).sort((a, b) => a.gems - b.gems);
-  const xr = (arr, Pg, Cl) => (arr || []).filter(t => !t.off).map(t => Object.assign(mk(qText(t.m, t.md, t.need), Pg[t.m + ':' + t.md], t.need, t, Cl.includes(t.id), t.id), { ex: 1 }));
+  const xr = (arr, Pg, Cl) => (arr || []).filter(t => !t.off).map(t => Object.assign(mk(qText(t.m, t.md, t.need), Pg[t.m + ':' + t.md], t.need, t, Cl.includes(t.id), t.id), { ex: 1, raw: admin ? { m: t.m, md: t.md, need: t.need, gems: t.gems | 0, dust: t.dust | 0, art: t.art | 0, eb: t.eb || null } : undefined }));
   dl.push(...xr(QEX.d, q.dp, q.dc)); wl.push(...xr(QEX.w, q.wp, q.wc));
   const cl = (QCH || []).map(c => Object.assign(mk((c.name ? c.name + ' — ' : '') + qText(c.m, c.md, c.need), q.cp[c.id], c.need, c, q.ch.includes(c.id), c.id), { lim: c.lim | 0, cn: c.cn | 0, full: (c.lim | 0) > 0 && (c.cn | 0) >= (c.lim | 0) && !q.ch.includes(c.id) ? 1 : 0 }));
   const al = QACH.map(a => {
     const cur = a.m === 'st' ? ((d.pf && d.pf.st && d.pf.st.b) | 0) : (q.lt[a.m + ':' + a.md] | 0), t = q.ac[a.id] | 0;
-    if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0, ex: a.ex ? 1 : 0 };
-    const o = qAchR(t, a.md); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0, ex: a.ex ? 1 : 0 };
+    if (t >= a.tiers.length) return { id: a.id, ic: a.ic, tx: a.name, p: cur, n: a.tiers[a.tiers.length - 1], tier: a.tiers.length, of: a.tiers.length, done: 1, cl: 1, gems: 0, dust: 0, art: 0, ex: a.ex ? 1 : 0, raw: admin && a.ex ? { name: a.name, ic: a.ic, m: a.m, md: a.md, tiers: a.tiers } : undefined };
+    const o = qAchR(t, a.md); return { id: a.id, ic: a.ic, tx: a.name + ' — ' + qText(a.m, a.md, a.tiers[t]), p: Math.min(cur, a.tiers[t]), n: a.tiers[t], tier: t + 1, of: a.tiers.length, gems: o.gems, dust: o.dust, art: o.art, cl: 0, ex: a.ex ? 1 : 0, raw: admin && a.ex ? { name: a.name, ic: a.ic, m: a.m, md: a.md, tiers: a.tiers } : undefined };
   });
   const el = qEvRows(q, !!admin, 0), ce = qEvRows(q, !!admin, 1), rd = x => x.filter(y => !y.cl && !y.full && y.p >= y.n).length, R = { d: rd(dl), w: rd(wl), c: rd(cl) + ce.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length, a: rd(al), e: el.filter(y => !y.off && y.st === 'open' && !y.cl && !y.full && y.p >= y.n).length };
   const v = { d: dl, w: wl, c: cl.concat(ce), a: al, e: el, rd: R, red: R.d + R.w + R.c + R.a + R.e, rs: { d: T.dEnd, w: T.wEnd } };
@@ -453,8 +454,36 @@ async function dlHandle(ws, m) {
   return true;
 }
 const qEbIn = m => { const s = String(m.ebs || '').toUpperCase(); if (!s) return null; if (s !== 'ANY' && !EVENT_BOX_SETS.includes(s)) E('ไม่มีกล่องอีเวนต์ ' + s); return { set: s, n: Math.max(1, Math.min(20, m.ebn | 0 || 1)) }; };   // รางวัลกล่องอีเวนต์ของเควส (แอดมินเลือกกล่อง/สุ่มทุกกล่อง + จำนวนซอง)
+function qXFields(k, m) {   // อ่านค่าเควส รายวัน/รายสัปดาห์/ความสำเร็จ จากฟอร์มแอดมิน (ใช้ทั้งเพิ่มและแก้ไข)
+  const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md);
+  if (!QT[M] || (k !== 'a' && M === 'st') || (!QM[MD] && MD !== 'any')) E('ชนิดเควสไม่ถูกต้อง');
+  if (k === 'a') {
+    const tiers = [...new Set(String(m.tiers || '').split(/[\s,]+/).map(s => cl(s, 1e8)).filter(n => n > 0))].sort((x, y) => x - y).slice(0, 20); if (!tiers.length) E('ใส่ขั้นเป้าหมาย เช่น 5,20,50');
+    const name = String(m.name || '').trim().slice(0, 40); if (!name) E('ใส่ชื่อความสำเร็จ');
+    return { ic: String(m.ic || '🏅').trim().slice(0, 4) || '🏅', name, m: M, md: MD, tiers };
+  }
+  const need = cl(m.need, 1e7); if (!need) E('ใส่จำนวนเป้าหมาย');
+  return { m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), eb: qEbIn(m) };
+}
+function qEvFields(m, selfId) {   // อ่านค่าเควส Event/ชาเลนจ์ จากฟอร์มแอดมิน (ใช้ทั้งเพิ่มและแก้ไข)
+  const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), ts = v => { v = +v; return v > 0 && isFinite(v) ? Math.floor(v) : 0; };
+  const M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md); if (!QT[M] || M === 'st' || (!QM[MD] && MD !== 'any')) E('ชนิดเควสไม่ถูกต้อง');
+  const need = cl(m.need, 1e7); if (!need) E('ใส่จำนวนเป้าหมาย');
+  const start = ts(m.start), end = ts(m.end); if (start && end && end <= start) E('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
+  const cards = String(m.cards || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).slice(0, 10).map(s => {
+    const [id, r0, n0] = s.split(':').map(z => z.trim()), r = String(r0 || '').toUpperCase(); if (!B[id]) E('ไม่พบการ์ด ' + id);
+    if (!(B[id].v || []).includes(r)) E('การ์ด ' + id + ' ไม่มีความหายาก "' + r + '" (มี: ' + (B[id].v || []).join('/') + ')'); return { id, r, n: cl(n0 || 1, 20) || 1 };
+  });
+  const pre = String(m.pre || '');
+  if (pre) {
+    if (!QEV.some(z => z.id === pre)) E('ไม่พบเควสก่อนหน้า'); if (selfId && pre === selfId) E('ตั้งเควสก่อนหน้าเป็นตัวเองไม่ได้');
+    let z = QEV.find(x => x.id === pre), n = 0; while (selfId && z && z.pre && n++ < 50) { if (z.pre === selfId) E('เควสก่อนหน้าวนกลับมาที่เควสนี้ไม่ได้'); z = QEV.find(x => x.id === z.pre); }
+  }
+  return { name: String(m.name || '').trim().slice(0, 40), desc: String(m.desc || '').trim().slice(0, 120), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), eb: qEbIn(m), cards,
+    acc: m.acc ? 1 : 0, start, end, dur: cl(m.dur, 525600), pre, lim: cl(m.lim, 1e6), rep: m.rep ? 1 : 0 };
+}
 async function qHandle(ws, m) {   // ข้อความ WebSocket ของระบบเควส (คืน true ถ้าจัดการแล้ว)
-  if (!['qget', 'qclaim', 'qchadd', 'qchdel', 'qevacc', 'qevadd', 'qevdel', 'qevtog', 'qxadd', 'qxdel'].includes(m.t)) return false;
+  if (!['qget', 'qclaim', 'qchadd', 'qchdel', 'qevacc', 'qevadd', 'qevdel', 'qevtog', 'qxadd', 'qxdel', 'qxedit', 'qevedit'].includes(m.t)) return false;
   await qCh(); await qEv(); await qEx(); const d = await dbGet(ws.user), adm = ws.user === ADMIN, sendQ = () => ws.send(JSON.stringify({ t: 'qs', q: qView(d, adm) }));
   if (m.t === 'qget') { sendQ(); return true; }
   if (m.t === 'qclaim') {
@@ -471,38 +500,31 @@ async function qHandle(ws, m) {   // ข้อความ WebSocket ของ�
     q.ev[e.id] = { a: now, p: 0, cl: 0, day: qTH().day }; await dbPut(ws.user, d); sendQ(); ws.send(JSON.stringify({ note: '📥 รับเควสแล้ว เริ่มนับได้เลย' })); return true;
   }
   if (!adm) E('เฉพาะแอดมิน');
-  if (m.t === 'qxadd' || m.t === 'qxdel') {   // แอดมิน: เพิ่ม/ลบเควส รายวัน (d) / รายสัปดาห์ (w) / ความสำเร็จ (a)
+  if (m.t === 'qxadd' || m.t === 'qxdel' || m.t === 'qxedit') {   // แอดมิน: เพิ่ม/แก้ไข/ลบเควส รายวัน (d) / รายสัปดาห์ (w) / ความสำเร็จ (a)
     const k = String(m.k); if (!['d', 'w', 'a'].includes(k)) E('ประเภทเควสผิด');
     if (m.t === 'qxdel') {
       if (k === 'a') { const i = QACH.findIndex(a => a.ex && a.id === String(m.id)); if (i < 0) E('ไม่พบความสำเร็จที่เพิ่มเอง'); QACH.splice(i, 1); }
       else { const i = QEX[k].findIndex(t => t.id === String(m.id)); if (i < 0) E('ไม่พบเควส'); QEX[k].splice(i, 1); }
       await qExSave(); sendQ(); ws.send(JSON.stringify({ note: 'ลบเควสแล้ว' })); return true;
     }
-    const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md);
-    if (!QT[M] || (k !== 'a' && M === 'st') || (!QM[MD] && MD !== 'any')) E('ชนิดเควสไม่ถูกต้อง');
-    if (k === 'a') {
-      const tiers = [...new Set(String(m.tiers || '').split(/[\s,]+/).map(s => cl(s, 1e8)).filter(n => n > 0))].sort((x, y) => x - y).slice(0, 20); if (!tiers.length) E('ใส่ขั้นเป้าหมาย เช่น 5,20,50');
-      const name = String(m.name || '').trim().slice(0, 40); if (!name) E('ใส่ชื่อความสำเร็จ');
-      QACH.push({ id: 'ax' + Date.now().toString(36), ic: String(m.ic || '🏅').trim().slice(0, 4) || '🏅', name, m: M, md: MD, tiers, ex: 1 });
-    } else {
-      const need = cl(m.need, 1e7); if (!need) E('ใส่จำนวนเป้าหมาย');
-      QEX[k].push({ id: 'x' + k + Date.now().toString(36), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), eb: qEbIn(m), t: Date.now() });
+    const f = qXFields(k, m);
+    if (m.t === 'qxedit') {
+      const it = k === 'a' ? QACH.find(a => a.ex && a.id === String(m.id)) : QEX[k].find(t => t.id === String(m.id)); if (!it) E('ไม่พบเควสที่จะแก้ไข');
+      Object.assign(it, f); await qExSave(); sendQ(); ws.send(JSON.stringify({ note: 'บันทึกการแก้ไขแล้ว' })); return true;
     }
+    if (k === 'a') QACH.push({ id: 'ax' + Date.now().toString(36), ...f, ex: 1 });
+    else QEX[k].push({ id: 'x' + k + Date.now().toString(36), ...f, t: Date.now() });
     await qExSave(); sendQ(); ws.send(JSON.stringify({ note: 'เพิ่มเควสแล้ว' })); return true;
   }
   if (m.t === 'qevadd') {
-    const cl = (v, hi) => Math.min(hi, Math.max(0, +v | 0)), ts = v => { v = +v; return v > 0 && isFinite(v) ? Math.floor(v) : 0; };
-    const M = String(m.m), MD = QNOMODE.includes(M) ? 'any' : String(m.md); if (!QT[M] || M === 'st' || (!QM[MD] && MD !== 'any')) E('ชนิดเควสไม่ถูกต้อง');
-    const need = cl(m.need, 1e7); if (!need) E('ใส่จำนวนเป้าหมาย');
-    const start = ts(m.start), end = ts(m.end); if (start && end && end <= start) E('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
-    const cards = String(m.cards || '').split(/[\n,]+/).map(s => s.trim()).filter(Boolean).slice(0, 10).map(s => {
-      const [id, r0, n0] = s.split(':').map(z => z.trim()), r = String(r0 || '').toUpperCase(); if (!B[id]) E('ไม่พบการ์ด ' + id);
-      if (!(B[id].v || []).includes(r)) E('การ์ด ' + id + ' ไม่มีความหายาก "' + r + '" (มี: ' + (B[id].v || []).join('/') + ')'); return { id, r, n: cl(n0 || 1, 20) || 1 };
-    });
-    const pre = String(m.pre || ''); if (pre && !QEV.some(z => z.id === pre)) E('ไม่พบเควสก่อนหน้า');
-    QEV.push({ id: 'e' + Date.now().toString(36), name: String(m.name || '').trim().slice(0, 40), desc: String(m.desc || '').trim().slice(0, 120), m: M, md: MD, need, gems: cl(m.gems, 1e7), dust: cl(m.dust, 1e7), art: cl(m.art, 20), eb: qEbIn(m), cards,
-      ch: m.ch ? 1 : 0, acc: m.acc ? 1 : 0, start, end, dur: cl(m.dur, 525600), pre, lim: cl(m.lim, 1e6), cn: 0, rep: m.rep ? 1 : 0, off: 0, t: Date.now() });
+    const f = qEvFields(m, '');
+    QEV.push({ id: 'e' + Date.now().toString(36), ...f, ch: m.ch ? 1 : 0, cn: 0, off: 0, t: Date.now() });
     await qEvSave(); sendQ(); ws.send(JSON.stringify({ note: m.ch ? 'เพิ่มชาเลนจ์แล้ว' : 'เพิ่มเควส Event แล้ว' })); return true;
+  }
+  if (m.t === 'qevedit') {   // แก้ไขเควส Event/ชาเลนจ์ที่สร้างแล้ว (คงจำนวนคนรับ/สถานะซ่อน/ความคืบหน้าผู้เล่นไว้)
+    const e = QEV.find(z => z.id === String(m.id)); if (!e) E('ไม่พบเควสที่จะแก้ไข');
+    Object.assign(e, qEvFields(m, e.id));
+    await qEvSave(); sendQ(); ws.send(JSON.stringify({ note: 'บันทึกการแก้ไขแล้ว' })); return true;
   }
   if (m.t === 'qevdel' || m.t === 'qevtog') {
     const k = QEV.findIndex(c => c.id === String(m.id)); if (k < 0) E('ไม่พบเควส Event');
@@ -586,6 +608,46 @@ function evRates(set) {   // เรทต่อใบ/ต่อซอง + จ�
   return { set, cards: R.length, count: cnt, slots, perPack: per };
 }
 function grantEventBox(d, set, n) { const K = {}, out = []; for (let k = 0; k < (n || 1); k++) evPack(set, K).forEach(x => { add(d, x); out.push(x); }); return out; }
+/* ===== กล่องจดหมาย (✉️) =====
+   d.mail = [{ id, t, from, title, body, gems, dust, art, cards:[{id,r,n}], boxes:[{set,n}], rd (อ่านแล้ว), cl (รับของแล้ว), ct }]
+   ส่งเข้ากล่องจาก: แอดมิน (admgrant) · โค้ด (code) · รางวัลเควสรายวัน/สัปดาห์ที่ทำครบแต่ไม่ได้กดรับก่อนรีเซ็ต (qMiss)
+   boxes.set: ชื่อชุด (BT01.. / CC01.. / กล่องอีเวนต์) หรือ 'ANY' สุ่มทุกกล่อง · 'BT' สุ่มกล่องปกติ · 'EV' สุ่มกล่องอีเวนต์ — สุ่มซองตอนกดรับ (ไม่นับการันตี/เควสเปิดซอง) */
+const MAIL_MAX = 60, MAIL_KEEP = 7 * 864e5, MAIL_BUSY = new Set(), MAIL_LEG = { UBR: 'CBR', SCR: 'SEC' };
+const mailBt = () => SETS.filter(s => CARDS.some(c => c.id.startsWith(s + '-') && (c.v || []).length));
+const mailEv = () => EVENT_BOX_SETS.filter(s => evPool(s).length);
+const mailHas = x => (x.gems | 0) > 0 || (x.dust | 0) > 0 || (x.art | 0) > 0 || (x.cards || []).length > 0 || (x.boxes || []).length > 0;
+function mailPrune(d) {
+  const now = Date.now(); d.mail = (d.mail || []).filter(x => !(x.cl && now - (x.ct || x.t) > MAIL_KEEP));
+  while (d.mail.length > MAIL_MAX) { let k = -1; for (let i = d.mail.length - 1; i >= 0; i--) if (d.mail[i].cl || !mailHas(d.mail[i])) { k = i; break; } if (k < 0) break; d.mail.splice(k, 1); }
+}
+function mailAdd(d, o) {
+  const m = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t: Date.now(), from: String(o.from || 'ระบบ').slice(0, 40), title: String(o.title || 'จดหมาย').slice(0, 80), body: String(o.body || '').slice(0, 500),
+    gems: Math.max(0, o.gems | 0), dust: Math.max(0, o.dust | 0), art: Math.max(0, o.art | 0),
+    cards: (o.cards || []).filter(c => c && c.id && (c.n | 0) > 0).map(c => ({ id: c.id, r: c.r, n: c.n | 0 })), boxes: (o.boxes || []).filter(b => b && b.set && (b.n | 0) > 0).map(b => ({ set: b.set, n: b.n | 0 })), rd: 0, cl: 0 };
+  d.mail = d.mail || []; d.mail.unshift(m); mailPrune(d); return m;
+}
+function mailApply(d, x, out) {   // ใส่ของในจดหมายเข้าบัญชี · out = รายการการ์ดที่ได้ (เอาไปโชว์เปิดซอง)
+  d.gems += x.gems | 0; d.dust = (d.dust || 0) + (x.dust | 0);
+  for (let k = 0; k < (x.art | 0); k++) { const c = qArt(); if (c) { add(d, c); out.push(c); } }
+  (x.cards || []).forEach(c => { for (let k = 0; k < (c.n | 0); k++) { const o = { id: c.id, r: c.r }; add(d, o); out.push(o); } });
+  const KS = {};
+  (x.boxes || []).forEach(b => { for (let k = 0; k < (b.n | 0); k++) {
+    const set = b.set === 'ANY' ? pick([...mailBt(), ...mailEv()]) : b.set === 'BT' ? pick(mailBt()) : b.set === 'EV' ? pick(mailEv()) : b.set; if (!set) continue;
+    const K = KS[set] = KS[set] || {}, p = EVENT_BOX_SETS.includes(set) ? evPack(set, K) : pack(set, false, K); p.forEach(c => { add(d, c); out.push(c); }); } });
+}
+const mailView = d => (d.mail || []).map(x => ({ id: x.id, t: x.t, from: x.from, title: x.title, body: x.body, gems: x.gems | 0, dust: x.dust | 0, art: x.art | 0, cards: x.cards || [], boxes: x.boxes || [], rd: x.rd ? 1 : 0, cl: x.cl ? 1 : 0, has: mailHas(x) ? 1 : 0 }));
+async function mailSend(n, o) {   // ส่งจดหมายให้ผู้เล่น (บันทึกลงบัญชี + แจ้งคนที่ออนไลน์อยู่)
+  const d = await dbGet(n); mailAdd(d, o); await dbPut(n, d);
+  userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d), note: '✉️ มีจดหมายใหม่: ' + String(o.title || '') })); } catch (e) { } });
+  return d;
+}
+function qMiss(d, q, kind) {   // รางวัลเควสรายวัน/สัปดาห์ที่ทำครบแต่ไม่ได้กดรับตอนรีเซ็ต → ส่งเข้ากล่องจดหมาย
+  const D = kind === 'd', TB = D ? QD : QW, I = qPick(TB.length, D ? 10 : 30, D ? 'D' + q.day : 'W' + q.wk), P = (D ? q.dp : q.wp) || {}, Cl = (D ? q.dc : q.wc) || [];
+  const o = { gems: 0, dust: 0, art: 0, boxes: [] }, put = r => { o.gems += r.gems | 0; o.dust += r.dust | 0; o.art += r.art | 0; if (r.eb && r.eb.n > 0) o.boxes.push({ set: r.eb.set === 'ANY' ? 'EV' : r.eb.set, n: r.eb.n }); };
+  I.forEach(i => { const t = TB[i]; if (t && (P[t[0] + ':' + t[1]] | 0) >= t[2] && !Cl.includes(i)) put({ gems: t[3], dust: t[4], art: t[5] }); });
+  ((QEX && QEX[kind]) || []).forEach(t => { if (t && !t.off && (P[t.m + ':' + t.md] | 0) >= t.need && !Cl.includes(t.id)) put(t); });
+  if (o.gems || o.dust || o.art || o.boxes.length) mailAdd(d, { from: 'ระบบเควส', title: '📋 รางวัลเควส' + (D ? 'รายวัน' : 'รายสัปดาห์') + 'ที่ยังไม่ได้รับ', body: 'เควสทำครบแล้วแต่ยังไม่ได้กดรับก่อนรีเซ็ต จึงส่งมาไว้ที่นี่ให้', ...o });
+}
 const inst2 = (id, art) => { const c = inst(id); if (art && art[id]) c.ar = art[id]; return c; };
 function deckInsts(d) { const left = {}; Object.entries(d.vr || {}).forEach(([k, n]) => { const [i, r] = k.split('|'); (left[i] = left[i] || []).push(...Array(Math.max(0, n | 0)).fill(r)); });
   const mk = id => { const c = inst(id), a = (left[id] && left[id].shift()) || (d.art && d.art[id]); if (a) c.ar = a; return c; };
@@ -2156,6 +2218,22 @@ wss.on('connection', ws => {
       }
       if (await dlHandle(ws, m)) return;
       if (await qHandle(ws, m)) return;
+      if (m.t === 'mailget' || m.t === 'mailread' || m.t === 'mailclaim' || m.t === 'maildel') {   // กล่องจดหมาย
+        if (MAIL_BUSY.has(ws.user)) return; MAIL_BUSY.add(ws.user);
+        try {
+          const d = await dbGet(ws.user); d.mail = d.mail || []; const one = String(m.id || ''), pick1 = x => m.all || x.id === one, sendL = () => ws.send(JSON.stringify({ t: 'mail', list: mailView(d) }));
+          if (m.t === 'mailget') { const b = d.mail.length; mailPrune(d); if (d.mail.length !== b) await dbPut(ws.user, d); sendL(); return; }
+          if (m.t === 'mailread') { let ch = 0; d.mail.forEach(x => { if (pick1(x) && !x.rd && !mailHas(x)) { x.rd = 1; ch = 1; } }); if (ch) { await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) })); } sendL(); return; }
+          if (m.t === 'maildel') { const b = d.mail.length; d.mail = d.mail.filter(x => !(pick1(x) && (x.cl || !mailHas(x)))); if (d.mail.length === b) E('ลบได้เฉพาะจดหมายที่รับของแล้วหรือไม่มีของแนบ'); await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d) })); sendL(); return; }
+          const out = []; let n = 0, tg = 0, td = 0;
+          for (const x of d.mail) { if (!pick1(x) || x.cl || !mailHas(x)) continue; tg += x.gems | 0; td += x.dust | 0; mailApply(d, x, out); x.cl = 1; x.rd = 1; x.ct = Date.now(); n++; }
+          if (!n) E('ไม่มีของให้รับ');
+          mailPrune(d); await dbPut(ws.user, d); sendL();
+          const note = '🎁 รับของจากจดหมาย ' + n + ' ฉบับ' + (tg ? ' 💎 ' + tg.toLocaleString('en-US') : '') + (td ? ' ✨ ' + td.toLocaleString('en-US') : '') + (out.length ? ' 🃏 ' + out.length + ' ใบ' : '');
+          if (out.length) { const ps = []; for (let i = 0; i < out.length; i += 5) ps.push(out.slice(i, i + 5)); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note })); } else ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note }));
+        } finally { MAIL_BUSY.delete(ws.user); }
+        return;
+      }
       if (m.t === 'evbox') {   // แอดมิน: ดูเรทกล่องอีเวนต์หลังบ้าน + จำลองเปิด (ไม่บันทึกลงบัญชี)
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
         if (!EVENT_BOX_SETS.includes(m.set)) { ws.send(JSON.stringify({ t: 'evbox', sets: EVENT_BOX_SETS.map(evRates), note: 'กล่องอีเวนต์: ' + EVENT_BOX_SETS.join(' / ') })); return; }
@@ -2174,23 +2252,31 @@ wss.on('connection', ws => {
         console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
         pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
       }
-      if (m.t === 'admcardget' || m.t === 'admcard' || m.t === 'admgrant' || m.t === 'admnotice') {   // เมนูแอดมิน: แก้การ์ด / แจกของ / ประกาศอัปเดต
+      if (m.t === 'admgrant' || m.t === 'admmeta' || m.t === 'admnotice') {   // เมนูแอดมิน: แจก/หักของ (จดหมาย) / ประกาศอัปเดต
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
-        if (m.t === 'admcardget') { const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); ws.send(JSON.stringify({ t: 'admcard', c: { id: c.id, n: c.n, c: c.c, g: c.g, p: c.p, e: c.e || '' } })); return; }
-        if (m.t === 'admcard') {
-          const c = B[String(m.id || '').trim()]; if (!c) E('ไม่พบการ์ด ' + m.id); const f = m.f || {}, o = {};
-          if (typeof f.n === 'string' && f.n.trim() && f.n.length <= 80) o.n = f.n.trim();
-          if (typeof f.e === 'string' && f.e.length <= 3000) o.e = f.e;
-          ['c', 'g', 'p'].forEach(k => { if (f[k] !== '' && f[k] != null && c[k] != null || (f[k] !== '' && f[k] != null && c.t === 'Avatar')) { const v = +f[k]; if (!Number.isInteger(v) || v < 0 || v > 99) E('ค่า ' + k + ' ต้องเป็นเลข 0-99'); o[k] = v; } });
-          Object.assign(c, o); CEDIT[c.id] = { ...(CEDIT[c.id] || {}), ...o }; await dbPut('sys:cardedit', { m: CEDIT, upd: Date.now() });
-          console.log('admin แก้การ์ด', ws.user, c.id, JSON.stringify(o).slice(0, 120)); ws.send(JSON.stringify({ note: 'บันทึกการ์ด ' + c.id + ' แล้ว (ผู้เล่นรีเฟรชหน้าเกมเพื่อรับค่าใหม่)' })); return;
-        }
+        if (m.t === 'admmeta') { ws.send(JSON.stringify({ t: 'admmeta', bt: mailBt(), ev: mailEv() })); return; }
         if (m.t === 'admgrant') {
-          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น'); if (!gems && !dust) E('ใส่จำนวน Gem หรือผง');
-          const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex) E('ไม่พบผู้เล่น ' + n);
-          const d = await dbGet(n); d.gems = Math.max(0, (d.gems || 0) + gems); d.dust = Math.max(0, (d.dust || 0) + dust); await dbPut(n, d);
-          userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: '🎁 แอดมินส่งของให้: ' + (gems ? gems + ' Gem ' : '') + (dust ? dust + ' ผง' : '') })); } catch (e) { } });
-          ws.send(JSON.stringify({ note: 'ให้ ' + n + ' แล้ว: ' + gems + ' Gem, ' + dust + ' ผง' })); return;
+          const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น');
+          const gv = [], tk = [], bx = [], okSet = ['ANY', 'BT', 'EV', ...mailBt(), ...mailEv()];
+          for (const c of (Array.isArray(m.cards) ? m.cards : []).slice(0, 60)) {
+            const id = String((c && c.id) || '').trim(), cd = CARDS.find(x => x.id === id), q = Math.max(-999, Math.min(999, (c && c.n) | 0)); if (!id || !q) continue; if (!cd) E('ไม่พบการ์ด ' + id);
+            const r = MAIL_LEG[c.r] || String(c.r || '').toUpperCase(); if (!(cd.v || []).includes(r)) E(id + ' ไม่มีระดับ ' + (c.r || '?') + ' (มี: ' + (cd.v || []).join(', ') + ')');
+            (q > 0 ? gv : tk).push({ id, r, n: Math.abs(q) });
+          }
+          for (const b of (Array.isArray(m.boxes) ? m.boxes : []).slice(0, 30)) { const set = String((b && b.set) || '').toUpperCase(), q = Math.max(0, Math.min(50, (b && b.n) | 0)); if (!set || !q) continue; if (!okSet.includes(set)) E('ไม่มีกล่อง ' + set); bx.push({ set, n: q }); }
+          const txt = !!(String(m.title || '').trim() || String(m.body || '').trim()); if (!gems && !dust && !gv.length && !tk.length && !bx.length && !txt) E('ใส่ของที่จะแจก/หัก หรือข้อความอย่างน้อย 1 อย่าง');
+          const ex = SB ? ((await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=name`, { headers: H })).json()) || []).length > 0 : !!mem[n]; if (!ex || n.startsWith('sys:')) E('ไม่พบผู้เล่น ' + n);
+          const d = await dbGet(n), sum = [], cut = [];
+          if (gems < 0) { const x = Math.min(d.gems || 0, -gems); d.gems -= x; cut.push('Gem -' + x); } if (dust < 0) { const x = Math.min(d.dust || 0, -dust); d.dust = (d.dust || 0) - x; cut.push('ผง -' + x); }
+          tk.forEach(c => { const k = c.id + '|' + c.r, have = d.cards[k] | 0, x = Math.min(have, c.n); if (x) { d.cards[k] = have - x; if (!d.cards[k]) delete d.cards[k]; } cut.push((B[c.id] ? B[c.id].n : c.id) + ' [' + c.r + '] -' + x + (x < c.n ? ' (มีแค่ ' + have + ')' : '')); });
+          const o = { from: 'แอดมิน', title: String(m.title || '').trim().slice(0, 80) || '🎁 ของขวัญจากแอดมิน', body: String(m.body || '').slice(0, 500), gems: Math.max(0, gems), dust: Math.max(0, dust), cards: gv, boxes: bx };
+          if (mailHas(o)) {
+            sum.push((o.gems ? o.gems + ' Gem' : ''), (o.dust ? o.dust + ' ผง' : ''), (gv.length ? 'การ์ด ' + gv.reduce((a, c) => a + c.n, 0) + ' ใบ' : ''), (bx.length ? 'กล่อง ' + bx.reduce((a, c) => a + c.n, 0) + ' ซอง' : ''));
+            if (m.direct) { mailApply(d, o, []); if (txt) mailAdd(d, { ...o, gems: 0, dust: 0, cards: [], boxes: [] }); } else mailAdd(d, o);
+          } else if (txt) { mailAdd(d, o); sum.push('ข้อความ'); }
+          await dbPut(n, d);
+          userWs(n).forEach(w => { try { w.send(JSON.stringify({ t: 'me', me: prof(n, d) })); w.send(JSON.stringify({ note: !mailHas(o) && !txt ? '⚠ แอดมินปรับของในบัญชี' : (m.direct && mailHas(o) && !txt ? '🎁 แอดมินใส่ของเข้าบัญชีให้แล้ว' : '✉️ มีจดหมายจากแอดมิน — เปิดที่ปุ่ม ✉️') })); } catch (e) { } });
+          ws.send(JSON.stringify({ note: 'ถึง ' + n + (sum.length ? (m.direct && mailHas(o) ? ' ใส่เข้าบัญชีทันที: ' : ' ส่งจดหมาย: ') + sum.filter(Boolean).join(' · ') : '') + (cut.length ? ' · หัก: ' + cut.join(', ') : '') })); return;
         }
         if (m.t === 'admnotice') { const t = String(m.text || '').trim().slice(0, 300); if (!t) E('ใส่ข้อความ'); wss.clients.forEach(w => { if (w.user && w.readyState === 1) w.send(JSON.stringify({ note: '📢 ' + t })); }); ws.send(JSON.stringify({ note: 'ประกาศแล้ว' })); return; }
       }
@@ -2371,9 +2457,8 @@ wss.on('connection', ws => {
       if (m.t === 'code') { await codeLock(async () => { let SC;
         const d = await dbGet(ws.user), c = String(m.c || '').trim().toUpperCase();
         const K = { BOTFANMADE: { gems: 5555 }, SOCOOL: { art: 5 }, AMUJI: { gems: 111111 }, RATEDOWN: { gems: 555 }, SKINCARD: { gems: 2500 }, SKINBOARD: { gems: 2500 }, WUPDATE: { gems: 1000 }, DUST: { dust: 555 }, QUEST: { gems: 500, dust: 150 }, PROFILE: { art: 1 }, ...(SC = (await dbGet('sys:codes')) || {}) }, X = K[c]; if (!X) E('โค้ดผิด'); if (d.codes.includes(c)) E('ใช้แล้ว'); if (SC[c]) { if (X.exp && Date.now() > X.exp) E('โค้ดนี้หมดอายุแล้ว'); if (X.max > 0 && (X.u | 0) >= X.max) E('โค้ดนี้มีผู้รับครบจำนวนแล้ว'); X.u = (X.u | 0) + 1; await dbPut('sys:codes', SC); } d.codes.push(c);
-        let ps = []; d.gems += X.gems || 0; d.dust = (d.dust || 0) + (X.dust || 0);
-        if (X.art) { const A = []; CARDS.forEach(x => x.v.forEach(r => ['PR','CBR','SEC'].includes(r) && A.push({ id: x.id, r }))); const p = []; for (let k = 0; k < X.art; k++) { const x = pick(A); add(d, x); p.push(x); } for (let k = 0; k < p.length; k += 5) ps.push(p.slice(k, k + 5)); }
-        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'packs', ps, me: prof(ws.user, d), note: [X.gems ? 'ได้ ' + X.gems + ' Gem' : '', X.dust ? 'ได้ ' + X.dust + ' ผง' : ''].filter(Boolean).join(' · ') })); return;
+        mailAdd(d, { from: 'โค้ด', title: '🎟 รางวัลโค้ด ' + c, body: 'ใช้โค้ด ' + c + ' สำเร็จ กดรับของรางวัลได้เลย', gems: X.gems | 0, dust: X.dust | 0, art: X.art | 0 });   // รางวัลโค้ดเข้ากล่องจดหมาย (✉️) ให้กดรับเอง
+        await dbPut(ws.user, d); ws.send(JSON.stringify({ t: 'me', me: prof(ws.user, d), note: '🎟 ใช้โค้ดสำเร็จ — กดรับรางวัลที่ ✉️ กล่องจดหมาย' })); return;
       }); return;
       }
       if (m.t === 'chinfo') { ws.send(JSON.stringify(chInfo())); return; }
