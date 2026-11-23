@@ -2312,6 +2312,15 @@ wss.on('connection', ws => {
             out(L.length ? L : ['ไม่พบบัญชีชื่อ "' + raw + '" หรือชื่อใกล้เคียง — ลองพิมพ์ส่วนของชื่อ'], L.length ? '🔍 ตรวจแล้ว' : 'ไม่พบบัญชี'); return;
           }
           let d = await dbRaw(raw); if (!d) E('ไม่พบบัญชี "' + raw + '" (ใช้ปุ่มตรวจสอบเพื่อดูชื่อจริงในระบบ)');
+          if (op === 'view') {   // ดูข้อมูลบัญชีทั้งหมด (รหัสผ่านถูกเข้ารหัสทางเดียวไว้ จึงแสดงได้แค่ค่าแฮชย่อ ไม่ใช่รหัสจริง)
+            const safe = JSON.parse(JSON.stringify(d)), hs = d.h ? String(d.h).slice(0, 12) + '…' : '(ไม่มี)';
+            if (safe.h) safe.h = hs + ' (แฮช — ย้อนกลับเป็นรหัสไม่ได้)'; if (safe.s) safe.s = String(safe.s).slice(0, 6) + '…';
+            const cs = Object.entries(d.cards || {}), tot = cs.reduce((a, [, v]) => a + (v | 0), 0), by = {}; cs.forEach(([k, v]) => { const r = k.split('|')[1] || '?'; by[r] = (by[r] || 0) + (v | 0); });
+            const L = ['👁 บัญชี "' + raw + '"', 'รหัสผ่าน: เก็บแบบแฮช (' + hs + ') ดูรหัสจริงไม่ได้ — ถ้าต้องการให้เข้าได้ใช้ 🔑 รีเซ็ตรหัส', 'Gem ' + (d.gems | 0) + ' · ผง ' + (d.dust | 0) + ' · การ์ดรวม ' + tot + ' ใบ (' + cs.length + ' แบบ) · ' + Object.entries(by).map(([r, n]) => r + ' ' + n).join(' · '),
+              'เด็ค ' + Object.keys(d.decks || {}).length + ' · เพื่อน ' + (d.fr || []).length + ' · จดหมาย ' + (d.mail || []).length + ' (ยังไม่รับ ' + (d.mail || []).filter(x => x && !x.cl && mailHas(x)).length + ') · โค้ดที่ใช้แล้ว ' + (d.codes || []).length, 'ปัญหา: ' + (accDiag(raw, d).join(' | ') || 'ไม่พบ'), '──── ข้อมูลดิบ (JSON) ────'];
+            let j = JSON.stringify(safe, null, 1); if (j.length > 90000) j = j.slice(0, 90000) + '\n…(ตัดที่ 90,000 ตัวอักษร)';
+            out([...L, j], '👁 โหลดข้อมูลบัญชีแล้ว'); return;
+          }
           if (op === 'repair') { accRepair(d); await dbPut(raw, d); out(['🩹 ซ่อมข้อมูลของ "' + raw + '" แล้ว', ...accDiag(raw, d).map(p => '   ยังเหลือ: ' + p)], '🩹 ซ่อมข้อมูลแล้ว'); return; }
           if (op === 'resetpw') {
             const pw = String(m.pw || ''); if (pw.length < 4) E('รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัว');
