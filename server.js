@@ -190,6 +190,7 @@ const H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'applic
 const RMAP = { UBR: 'CBR', SCR: 'SEC' };
 // แปลงชื่อระดับเก่าในข้อมูลผู้เล่น: CBR → CBR (และ SCR → SEC กรณีมีข้อมูลที่เคยย้ายไว้)
 const fixR = (id, r) => RMAP[r] || r;
+const toArr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : (v == null || v === '' ? [] : [v]));   // กันข้อมูลที่ควรเป็น array แต่เป็น object/ค่าเดี่ยว (เช่น decks[].tk)
 function mig(d) {
   if (!d || typeof CARDS === 'undefined') return d;
   const CI = new Set(CARDS.map(c => c.id));
@@ -199,13 +200,13 @@ function mig(d) {
       const own = {}; Object.entries(d.cards).forEach(([k, v]) => { const i = k.split('|')[0]; own[i] = (own[i] || 0) + v; });
       ST[s].main.concat(ST[s].life).forEach(([id, n, r]) => { if (!B[id]) return; const miss = n - (own[id] || 0); for (let j = 0; j < miss; j++) add(d, { id, r: (B[id].v || []).includes(r) ? r : (B[id].v || ['C'])[0] }); });
       d.stg.push(s); }); }
-  if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = x.main.filter(i => CI.has(i)); if (x && x.life) x.life = x.life.filter(i => CI.has(i));
+  if (d.decks) for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (x && x.main) x.main = toArr(x.main).filter(i => CI.has(i)); if (x && x.life) x.life = toArr(x.life).filter(i => CI.has(i));
     if (x && x.art) for (const i of Object.keys(x.art)) x.art[i] = fixR(i, x.art[i]);
     if (x && x.vr) { const o = {}; for (const [kk, n] of Object.entries(x.vr)) { const [i, r] = kk.split('|'), nk = i + '|' + fixR(i, r); o[nk] = (o[nk] || 0) + n; } x.vr = o; }
     if (x) { delete x.side; delete x.so; }   /* Side แยกเป็นชุดของตัวเอง (d.sides) — ล้าง Side เก่าที่ผูกกับเด็ค */
-    if (x && x.tk) x.tk = x.tk.map(String).filter(i => B[i] && B[i].t === 'Token'); }
+    if (x && x.tk) x.tk = toArr(x.tk).map(String).filter(i => B[i] && B[i].t === 'Token'); }
   if (d.sides) for (const k of Object.keys(d.sides)) { const x = d.sides[k]; if (!x || typeof x !== 'object') { delete d.sides[k]; continue; }
-    x.side = (x.side || []).map(String).map(kk => { const [i, r] = kk.split('|'); return i + '|' + fixR(i, r); }).filter(kk => CI.has(kk.split('|')[0]));
+    x.side = toArr(x.side).map(String).map(kk => { const [i, r] = kk.split('|'); return i + '|' + fixR(i, r); }).filter(kk => CI.has(kk.split('|')[0]));
     if (x.so) { const [i, r] = String(x.so).split('|'); x.so = CI.has(i) ? i + '|' + fixR(i, r) : null; } else x.so = null; }
   if (typeof d.pic === 'string' && d.pic.includes('|')) { const [i, r] = d.pic.split('|'); d.pic = i + '|' + fixR(i, r); }
   return d;
@@ -225,6 +226,7 @@ function accRepair(d) {   // เติมค่าที่ขาด/แก้�
   for (const k of ['codes', 'fr', 'rq', 'bought', 'skins', 'mail']) if (!Array.isArray(d[k])) d[k] = [];
   for (const k of ['decks', 'sides', 'eq', 'ru']) if (!d[k] || typeof d[k] !== 'object' || Array.isArray(d[k])) d[k] = {};
   d.mail = d.mail.filter(x => x && typeof x === 'object');
+  for (const k of Object.keys(d.decks)) { const x = d.decks[k]; if (!x || typeof x !== 'object') { delete d.decks[k]; continue; } for (const f of ['main', 'life', 'tk']) if (x[f] != null) x[f] = toArr(x[f]); }
   return d;
 }
 function accDiag(n, d) {   // คืนรายการปัญหา (ว่าง = ปกติ)
