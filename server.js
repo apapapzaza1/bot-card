@@ -870,7 +870,7 @@ function ask(r, who, o) {
   if (!o.yn && !o.choices && !opts.length) { o.none && o.none(); return false; }
   const n = Math.min(o.n || 1, opts.length), min = Math.min(o.min == null ? n : o.min, n);
   r.g.ask = { src: HAND_SRC, who, text: o.text, hint: o.hint, rps: !!o.rps, rx: o.rx || null, opts, n, min, cancel: !!o.cancel, yn: !!o.yn, choices: o.choices || null, cb: o.cb, onCancel: o.onCancel,
-    cards: opts.map(u => { const f = allCards(r, u); return f ? { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z } : { u }; }) };
+    cards: (opts.length ? opts : (o.pool || []).map(c => c.u)).map(u => { const f = allCards(r, u); if (f) return { u, id: f.c.kd || f.c.id, ar: f.c.ar, tk: f.c.tk ? f.c.tk.n : null, i: f.i, z: f.z }; const c = (o.pool || []).find(x => x.u === u); return c ? { u, id: c.kd || c.id, ar: c.ar, tk: c.tk ? c.tk.n : null, i: who, z: 'deck' } : { u }; }) };   // o.pool = การ์ดที่ถูกดึงออกจากโซนชั่วคราว (เช่น ตอนสอดแนมเรียง Deck) ให้ client ยังเห็นภาพ
   return true;
 }
 // ===== ไพรมอล รัททาทุย (SD08-001) สกิล 2: อัตโนมัติ เทิร์นละครั้ง เมื่อจะออกจากสนาม เนรเทศ {รัททาทุย} ในนรก 5 ใบ → ไม่ออกจากสนาม =====
@@ -3492,10 +3492,10 @@ function bt4Arrange(r, i, cs, done) {   // เรียงการ์ดที�
   const top = [], bot = [], rem = () => cs.filter(c => !top.includes(c) && !bot.includes(c));
   const fin = () => { bot.slice().reverse().forEach(c => p.deck.unshift(c)); top.slice().reverse().forEach(c => p.deck.push(c)); log(r, '🔎 ' + p.name + ': เรียงการ์ดที่สอดแนม บนสุด ' + top.length + ' ใบ / ใต้ Deck ' + bot.length + ' ใบ'); done && done(); };
   const botStep = () => { const R = rem(); if (!R.length) return fin(); if (R.length === 1) { bot.push(R[0]); return fin(); }
-    ask(r, i, { text: 'สอดแนม: เลือกการ์ดที่จะวางเป็น "ใบล่างสุด" ลำดับที่ ' + (bot.length + 1) + ' ของ Deck (นับขึ้นมาจากล่างสุด)', opts: R.map(c => c.u), cb: us => { bot.push(cs.find(c => c.u === us[0])); botStep(); } }); };
+    ask(r, i, { text: 'สอดแนม: เลือกการ์ดที่จะวางเป็น "ใบล่างสุด" ลำดับที่ ' + (bot.length + 1) + ' ของ Deck (นับขึ้นมาจากล่างสุด)', opts: R.map(c => c.u), pool: cs, cb: us => { bot.push(cs.find(c => c.u === us[0])); botStep(); } }); };
   const topStep = () => { const R = rem(); if (!R.length) return fin();
-    if (R.length === 1) return ask(r, i, { text: 'สอดแนม: ' + B[R[0].id].n + ' — วางไว้ที่ไหน?', choices: ['บนสุดของ Deck (ใบที่ ' + (top.length + 1) + ')', 'ใต้ Deck'], cb: k => { (k === 0 ? top : bot).push(R[0]); fin(); } });
-    ask(r, i, { text: 'สอดแนม: เลือกการ์ดที่จะวางเป็น "ใบบนสุด" ลำดับที่ ' + (top.length + 1) + ' ของ Deck (ยกเลิก = ที่เหลือทั้งหมดไปใต้ Deck)', opts: R.map(c => c.u), cancel: true, cb: us => { top.push(cs.find(c => c.u === us[0])); topStep(); }, onCancel: botStep }); };
+    if (R.length === 1) return ask(r, i, { text: 'สอดแนม: ' + B[R[0].id].n + ' — วางไว้ที่ไหน?', choices: ['บนสุดของ Deck (ใบที่ ' + (top.length + 1) + ')', 'ใต้ Deck'], pool: R, cb: k => { (k === 0 ? top : bot).push(R[0]); fin(); } });
+    ask(r, i, { text: 'สอดแนม: เลือกการ์ดที่จะวางเป็น "ใบบนสุด" ลำดับที่ ' + (top.length + 1) + ' ของ Deck (ยกเลิก = ที่เหลือทั้งหมดไปใต้ Deck)', opts: R.map(c => c.u), pool: cs, cancel: true, cb: us => { top.push(cs.find(c => c.u === us[0])); topStep(); }, onCancel: botStep }); };
   topStep();
 }
 const frogsOf = (r, i) => r.p[i].av.filter(a => isAv(a) && a.id !== 'BT04-005' && nmOf(a).includes('กบ') && !nmOf(a).includes('กบฏ') && (a.bc || 0) >= 3);
@@ -4205,7 +4205,7 @@ function bt6Bottom(r, i, cs, done) {   // เรียงการ์ดไว�
   const step = () => { const R = cs.filter(c => !ord.includes(c));
     if (!R.length) { ord.slice().reverse().forEach(c => p.deck.unshift(c)); if (ord.length) log(r, '⬇ ' + p.name + ': นำการ์ดที่เหลือ ' + ord.length + ' ใบ เรียงไว้ใต้ Deck'); return done && done(); }
     if (R.length === 1) { ord.push(R[0]); return step(); }
-    ask(r, i, { text: 'เรียงการ์ดไว้ใต้ Deck: เลือกการ์ดที่จะวางเป็น "ใบล่างสุด" ลำดับที่ ' + (ord.length + 1), opts: R.map(c => c.u), cb: us => { ord.push(cs.find(c => c.u === us[0])); step(); } }); };
+    ask(r, i, { text: 'เรียงการ์ดไว้ใต้ Deck: เลือกการ์ดที่จะวางเป็น "ใบล่างสุด" ลำดับที่ ' + (ord.length + 1), opts: R.map(c => c.u), pool: cs, cb: us => { ord.push(cs.find(c => c.u === us[0])); step(); } }); };
   step();
 }
 function bt6Kay(r, i, f) {   // 007 เคย์ (ตอบโต้ตอนอัศวินโต๊ะกลมถูกโจมตี)
@@ -5574,7 +5574,7 @@ function bt10Bottom(r, i, cs, done) {
   const bot = [], rem = () => cs.filter(c => !bot.includes(c));
   const fin = () => { bot.slice().reverse().forEach(c => p.deck.unshift(c)); if (cs.length) log(r, '⬇ ' + p.name + ': เรียงการ์ดที่เหลือ ' + cs.length + ' ใบ นำไว้ใต้ Deck'); done && done(); };
   const step = () => { const R = rem(); if (!R.length) return fin(); if (R.length === 1) { bot.push(R[0]); return fin(); }
-    ask(r, i, { text: 'สอดแนม: เลือกการ์ดที่จะวางเป็น "ใบล่างสุด" ลำดับที่ ' + (bot.length + 1) + ' ของ Deck (นับขึ้นมาจากล่างสุด)', opts: R.map(c => c.u), cb: us => { bot.push(cs.find(c => c.u === us[0])); step(); } }); };
+    ask(r, i, { text: 'สอดแนม: เลือกการ์ดที่จะวางเป็น "ใบล่างสุด" ลำดับที่ ' + (bot.length + 1) + ' ของ Deck (นับขึ้นมาจากล่างสุด)', opts: R.map(c => c.u), pool: cs, cb: us => { bot.push(cs.find(c => c.u === us[0])); step(); } }); };
   step();
 }
 const bt10Hand = (r, i) => r.p[i].hand.map(c => c.u);
@@ -7790,8 +7790,8 @@ Object.assign(SUM, {
     const d = 1 + Math.floor(Math.random() * 6); log(r, '🎲 โกลัส ทอยลูกเต๋าได้ ' + d); b11Say(x, '🎲 ' + d, '#facc15'); const o = r.p[1 - i];
     if (d % 2 === 0) { if (o.hand.length) ask(r, 1 - i, { text: 'โกลัส (ออกคู่): ทิ้งการ์ดบนมือ 1 ใบ', opts: o.hand.map(c => c.u), cb: us => sendHell(r, us[0]) }); else { draw(r, p, 1); log(r, '🃏 ฝ่ายตรงข้ามไม่มีการ์ดบนมือ — เราจั่ว 1 ใบ'); } }
     else { const foes = o.av.map(a => a.u), mine = p.av.filter(a => b11Has(a, 'ปาร์ตี้ผู้กล้า')).map(a => a.u);
-      if (foes.length) b12Pick(r, i, 'โกลัส (ออกคี่): เลือก Avatar ฝ่ายตรงข้าม POWER -1', foes, us => { const t = find(r, us[0]); t && addTp(t.c, -1); });
-      else b12Pick(r, i, 'โกลัส (ออกคี่): เลือก \"ปาร์ตี้ผู้กล้า\" ของเรา POWER +1', mine, us => { const t = find(r, us[0]); t && addTp(t.c, 1); }); } },
+      if (foes.length) b12Pick(r, i, 'โกลัส (ออกคี่): เลือก Avatar ฝ่ายตรงข้าม POWER -1 ถาวร', foes, us => { const t = find(r, us[0]); if (t) { addPw(t.c, -1); vfx(t.c.u, 'aura', 'POWER -1 ถาวร', '#ef4444'); } });
+      else b12Pick(r, i, 'โกลัส (ออกคี่): เลือก \"ปาร์ตี้ผู้กล้า\" ของเรา POWER +1 ถาวร', mine, us => { const t = find(r, us[0]); if (t) { addPw(t.c, 1); vfx(t.c.u, 'aura', 'POWER +1 ถาวร', '#22c55e'); } }); } },
   // 024 ดอกเตอร์เต้ — จุติ: เนรเทศ {กะปอม} จากนรก แล้วอัญเชิญ {กะปอม} Cost<=5 จากนรก
   'BT12-024': (r, i, x) => { const p = r.p[i], dino = c => b11Av(c) && B[c.id].s === 'กะปอม';
     b12Pick(r, i, 'จุติ เต้: เนรเทศ Avatar {กะปอม} 1 ใบจากนรก', p.hell.filter(dino).map(c => c.u), us => { const c = p.hell.find(h => h.u === us[0]); if (!c) return; b11Exile(r, i, c, 'hell');
