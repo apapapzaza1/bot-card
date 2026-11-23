@@ -213,6 +213,30 @@ function mig(d) {
 const dbGet = async n => { if (!SB) return mig(mem[n]); const a = await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=d`, { headers: H })).json(); return mig(a[0] && a[0].d); };
 const dbPut = async (n, d) => { if (!SB) { mem[n] = d; return; } const r = await fetch(`${SB}/rest/v1/users`, { method: 'POST', headers: { ...H, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ name: n, d }) }); if (!r.ok) throw 'บันทึกข้อมูลไม่สำเร็จ'; };
 const hash = (pw, s) => crypto.scryptSync(pw, s, 32).toString('hex');
+// ===== ซ่อมบัญชีที่เข้าไม่ได้ (ใช้กับเมนูแอดมิน + ซ่อมอัตโนมัติตอนล็อกอิน) =====
+const NAME_OK = /^[a-z0-9_\u0E00-\u0E7F]{3,16}$/;
+const dbRaw = async n => { if (!SB) return mem[n] || null; const a = await (await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}&select=d`, { headers: H })).json(); return (a[0] && a[0].d) || null; };   // อ่านดิบ ไม่ผ่าน mig
+const dbDel = async n => { if (!SB) { delete mem[n]; return; } const r = await fetch(`${SB}/rest/v1/users?name=eq.${encodeURIComponent(n)}`, { method: 'DELETE', headers: H }); if (!r.ok) throw 'ลบบัญชีเก่าไม่สำเร็จ'; };
+function accRepair(d) {   // เติมค่าที่ขาด/แก้ชนิดข้อมูลที่เสีย โดยไม่แตะการ์ด/เด็คที่ใช้งานได้
+  d = d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+  const num = v => Number.isFinite(+v) ? +v : 0;
+  d.gems = Math.max(0, num(d.gems)); d.dust = Math.max(0, num(d.dust));
+  const cards = {}; if (d.cards && typeof d.cards === 'object') for (const [k, v] of Object.entries(d.cards)) { const q = num(v) | 0; if (q > 0) cards[k] = q; } d.cards = cards;
+  for (const k of ['codes', 'fr', 'rq', 'bought', 'skins', 'mail']) if (!Array.isArray(d[k])) d[k] = [];
+  for (const k of ['decks', 'sides', 'eq', 'ru']) if (!d[k] || typeof d[k] !== 'object' || Array.isArray(d[k])) d[k] = {};
+  d.mail = d.mail.filter(x => x && typeof x === 'object');
+  return d;
+}
+function accDiag(n, d) {   // คืนรายการปัญหา (ว่าง = ปกติ)
+  const P = [];
+  if (!NAME_OK.test(n)) P.push('ชื่อ "' + n + '" ไม่ตรงรูปแบบล็อกอิน (พิมพ์เล็ก/ตัวเลข/_/ไทย 3-16 ตัว) — ล็อกอินแล้วหาบัญชีไม่เจอ');
+  if (!d || typeof d !== 'object') { P.push('ข้อมูลบัญชีว่างหรือเสีย'); return P; }
+  if (!d.s || !d.h || typeof d.s !== 'string') P.push('ไม่มีรหัสผ่านในบัญชี (s/h) → ต้องรีเซ็ตรหัส');
+  let c; try { c = JSON.parse(JSON.stringify(d)); } catch (e) { P.push('ข้อมูลอ่านไม่ได้ (JSON)'); return P; }
+  try { mig(c); } catch (e) { P.push('อัปเกรดข้อมูล (mig) ล้มเหลว: ' + (e && e.message || e)); }
+  try { prof(n, c); } catch (e) { P.push('โหลดโปรไฟล์ล้มเหลว: ' + (e && e.message || e)); }
+  return P;
+}
 const sign = n => { const p = n + '|' + (Date.now() + 90 * 864e5); return Buffer.from(p).toString('base64') + '.' + crypto.createHmac('sha256', SEC).update(p).digest('hex'); };
 const unsign = t => { try { const [b, s] = t.split('.'), p = Buffer.from(b, 'base64').toString(); if (crypto.createHmac('sha256', SEC).update(p).digest('hex') !== s) return; const [n, e] = p.split('|'); return +e > Date.now() ? n : null; } catch (e) { } };
 // ===== ระบบโปรไฟล์ / เลเวล / ประวัติ / สถิติ =====
@@ -2168,15 +2192,16 @@ wss.on('connection', ws => {
         let n = String(m.name || '').trim().toLowerCase().slice(0, 16), d;
         if (m.t === 'tok') { n = unsign(String(m.tok)); if (!n) E('เซสชันหมดอายุ'); d = await dbGet(n); if (!d) E('ไม่พบบัญชี'); }
         else {
-          if (!/^[a-z0-9_\u0E00-\u0E7F]{3,16}$/.test(n)) E('ชื่อ 3-16 ตัว'); d = await dbGet(n); const pw = String(m.pw || '');
+          if (m.t === 'reg' ? !NAME_OK.test(n) : !n) E('ชื่อ 3-16 ตัว'); try { d = await dbGet(n); } catch (e) { console.log('login: อ่านบัญชีไม่ได้', n, e); E('ข้อมูลบัญชีนี้มีปัญหา — แจ้งแอดมินให้ใช้เครื่องมือ "ซ่อมบัญชี"'); } const pw = String(m.pw || '');
           if (m.t === 'reg') {
             if (d) E('ชื่อถูกใช้'); if (pw.length < 4) E('รหัสผ่าน ≥ 4 ตัว');
             const s = crypto.randomBytes(8).toString('hex'); d = { s, h: hash(pw, s), gems: 0, cards: {}, codes: [] };
             ['SD01','SD02','SD03'].forEach(x => giveSt(d, x)); d.stg = ['SD01','SD02','SD03'];
             await dbPut(n, d);
-          } else if (!d || d.h !== hash(pw, d.s)) E('ชื่อ/รหัสผิด');
+          } else if (!d) E('ชื่อ/รหัสผิด'); else if (!d.s || !d.h || typeof d.s !== 'string') E('บัญชีนี้ไม่มีรหัสผ่านในระบบ — แจ้งแอดมินให้รีเซ็ตรหัส'); else if (d.h !== hash(pw, d.s)) E('ชื่อ/รหัสผิด');
         }
-        ws.user = n; ws.fr = new Set(d.fr || []); ws.lastF = null; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: prof(n, d) })); rjStatus(ws); return;
+        let me0; try { me0 = prof(n, d); } catch (e) { console.log('login: โปรไฟล์เสีย → ซ่อมอัตโนมัติ', n, e); accRepair(d); await dbPut(n, d); me0 = prof(n, d); }
+        ws.user = n; ws.fr = new Set(d.fr || []); ws.lastF = null; ws.send(JSON.stringify({ t: 'auth', tok: sign(n), me: me0 })); rjStatus(ws); return;
       }
       if (!ws.user) E('ต้องล็อกอินก่อน');
       if (m.t === 'rjq') { rjStatus(ws); return; }
@@ -2266,8 +2291,40 @@ wss.on('connection', ws => {
         console.log('banlist แก้โดย', ws.user, m.t, 'ban', BAN.ban.length, 'lim', Object.keys(BAN.lim).length);
         pushBan(); ws.send(JSON.stringify({ note: m.t === 'banreset' ? 'รีเซ็ตแบนลิสต์เป็นไฟล์ banlist.json แล้ว' : 'บันทึกแบนลิสต์ (' + (BAN.asof || 'ไม่ระบุเดือน') + ') และประกาศให้ผู้เล่นแล้ว' })); return;
       }
-      if (m.t === 'admgrant' || m.t === 'admgrantall' || m.t === 'admmeta' || m.t === 'admnotice') {   // เมนูแอดมิน: แจก/หักของ (จดหมาย) / ประกาศอัปเดต
+      if (m.t === 'admgrant' || m.t === 'admgrantall' || m.t === 'admacc' || m.t === 'admmeta' || m.t === 'admnotice') {   // เมนูแอดมิน: แจก/หักของ (จดหมาย) / ประกาศอัปเดต
         if (ws.user !== ADMIN) E('เฉพาะแอดมิน');
+        if (m.t === 'admacc') {   // เครื่องมือซ่อมบัญชี: check / repair / resetpw / rename / scan
+          const op = String(m.op || ''), raw = String(m.name || '').trim(), out = (lines, note) => ws.send(JSON.stringify({ t: 'admacc', lines, note }));
+          if (op === 'scan') {
+            let rows = [];
+            if (SB) { for (let off = 0; off < 200000; off += 500) { const r = await (await fetch(`${SB}/rest/v1/users?select=name,d&order=name&limit=500&offset=${off}`, { headers: H })).json(); if (!Array.isArray(r)) break; rows.push(...r); if (r.length < 500) break; } }
+            else rows = Object.entries(mem).map(([name, d]) => ({ name, d }));
+            const bad = []; let tot = 0;
+            for (const r of rows) { if (!r || String(r.name).startsWith('sys:')) continue; tot++; const P = accDiag(String(r.name), r.d); if (P.length) bad.push('• ' + r.name + ' — ' + P.join(' | ')); }
+            out(['สแกน ' + tot + ' บัญชี · พบปัญหา ' + bad.length + ' บัญชี', ...bad.slice(0, 200), ...(bad.length > 200 ? ['…(แสดง 200 แรก)'] : [])], '📋 สแกนเสร็จ — พบปัญหา ' + bad.length + ' บัญชี'); return;
+          }
+          if (!raw) E('ใส่ชื่อบัญชี');
+          if (op === 'check') {
+            let keys = [raw]; if (raw.toLowerCase() !== raw) keys.push(raw.toLowerCase());
+            try { if (SB) { const a = await (await fetch(`${SB}/rest/v1/users?name=ilike.${encodeURIComponent('*' + raw.replace(/[*%,()]/g, '') + '*')}&select=name&limit=10`, { headers: H })).json(); if (Array.isArray(a)) a.forEach(x => keys.push(x.name)); } else Object.keys(mem).filter(k => k.toLowerCase().includes(raw.toLowerCase())).slice(0, 10).forEach(k => keys.push(k)); } catch (e) { }
+            keys = [...new Set(keys)]; const L = [];
+            for (const k of keys) { const d = await dbRaw(k); if (!d) continue; const P = accDiag(k, d); L.push((P.length ? '⚠ ' : '✔ ') + '"' + k + '"' + (P.length ? ':' : ' ปกติ (ล็อกอินได้ ถ้ารหัสถูก)')); P.forEach(p => L.push('   - ' + p)); L.push('   gem ' + (d.gems | 0) + ' · การ์ด ' + Object.keys(d.cards || {}).length + ' แบบ · เด็ค ' + Object.keys(d.decks || {}).length); }
+            out(L.length ? L : ['ไม่พบบัญชีชื่อ "' + raw + '" หรือชื่อใกล้เคียง — ลองพิมพ์ส่วนของชื่อ'], L.length ? '🔍 ตรวจแล้ว' : 'ไม่พบบัญชี'); return;
+          }
+          let d = await dbRaw(raw); if (!d) E('ไม่พบบัญชี "' + raw + '" (ใช้ปุ่มตรวจสอบเพื่อดูชื่อจริงในระบบ)');
+          if (op === 'repair') { accRepair(d); await dbPut(raw, d); out(['🩹 ซ่อมข้อมูลของ "' + raw + '" แล้ว', ...accDiag(raw, d).map(p => '   ยังเหลือ: ' + p)], '🩹 ซ่อมข้อมูลแล้ว'); return; }
+          if (op === 'resetpw') {
+            const pw = String(m.pw || ''); if (pw.length < 4) E('รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัว');
+            accRepair(d); d.s = crypto.randomBytes(8).toString('hex'); d.h = hash(pw, d.s); await dbPut(raw, d);
+            out(['🔑 รีเซ็ตรหัสของ "' + raw + '" แล้ว — แจ้งรหัสใหม่ให้ผู้เล่น (ล็อกอินด้วยชื่อ ' + raw.toLowerCase() + ')', ...(raw !== raw.toLowerCase() ? ['⚠ ชื่อในระบบมีตัวพิมพ์ใหญ่ ให้กด "แก้ชื่อเป็นพิมพ์เล็ก" ด้วย'] : [])], '🔑 รีเซ็ตรหัสแล้ว'); return;
+          }
+          if (op === 'rename') {
+            const to = raw.toLowerCase(); if (to === raw) E('ชื่อนี้เป็นพิมพ์เล็กอยู่แล้ว'); if (!NAME_OK.test(to)) E('ชื่อ "' + to + '" ยังไม่ผ่านรูปแบบล็อกอิน (ต้อง 3-16 ตัว: a-z 0-9 _ ไทย)');
+            if (await dbRaw(to)) E('มีบัญชี "' + to + '" อยู่แล้ว — รวมบัญชีอัตโนมัติไม่ได้');
+            await dbPut(to, d); await dbDel(raw); out(['🔤 ย้ายบัญชี "' + raw + '" → "' + to + '" แล้ว (เพื่อน/ประวัติที่อ้างชื่อเดิมอาจต้องเพิ่มใหม่)'], '🔤 แก้ชื่อแล้ว'); return;
+          }
+          E('คำสั่งไม่ถูกต้อง');
+        }
         if (m.t === 'admmeta') { ws.send(JSON.stringify({ t: 'admmeta', bt: mailBt(), ev: mailEv() })); return; }
         if (m.t === 'admgrant') {
           const n = String(m.u || '').trim(), gems = Math.max(-1e7, Math.min(1e7, +m.gems | 0)), dust = Math.max(-1e6, Math.min(1e6, +m.dust | 0)); if (!n) E('ใส่ชื่อผู้เล่น');
