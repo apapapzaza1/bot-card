@@ -10,10 +10,13 @@ FORCE_LIM && Object.entries(FORCE_LIM).forEach(([id, n]) => { if (B[id]) B[id].l
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.10.3';
+const VERSION = process.env.APP_VERSION || 'v1.10.4';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.10.4', d: '2026-11-25', items: [
+    'ปรับ น้ำซุปชาบู: Avatar ที่สวมใส่แล้วโจมตี จะนอนตลอดไป ไม่ตื่นอีกเลยไม่ว่าจะด้วยวิธีใด (สกิลตัวเอง สกิลการ์ดอื่น Magic อาวุธ ทอยเต๋า Draw Phase / End Phase) จนกว่าจะออกจากสนาม · ข้อความการ์ดอัปเดตตามแล้ว',
+  ] },
   { v: 'v1.10.3', d: '2026-11-25', items: [
     'แบนลิสต์: เปลี่ยนจากรายชื่อข้อความเป็นรูปการ์ด (กรอบแดง = การ์ดในเด็คที่ติดแบน · ป้าย ×1 ×2 ×3 = จำนวนที่ใส่ได้ · แตะรูปเพื่อดูขยาย)',
     'แก้บัค น้ำซุปชาบู: Avatar ที่โจมตีแล้วจะไม่ตื่นจนจบ End Phase ถัดไปของเราจริงทุกกรณี — ไม่ว่าจะตื่นจากสกิลตัวเอง (เช่น สไปรท์ตอน End Phase) สกิลการ์ดอื่น Magic อาวุธ หรือทอยเต๋า ก็ถูกล็อกให้กลับเป็นสภาพนอน',
@@ -746,10 +749,12 @@ const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
 let CR = null, FXN = 0;
 const fx = o => { if (!CR || !CR.g) return; const g = CR.g; (g.fxl = g.fxl || []).push({ n: ++FXN, ...o }); if (g.fxl.length > 20) g.fxl.shift(); };
-// 🍲 น้ำซุปชาบู (KD03-018): Avatar ที่โจมตีจะ "ไม่ตื่นจนจบ End Phase ถัดไปของเรา" — ล็อกทุกกรณี (Draw Phase / สกิลตัวเอง / สกิลการ์ดอื่น / Magic / อาวุธ / ทอยเต๋า ฯลฯ)
-// a.hold = เลขเทิร์น (g.n) สุดท้ายที่ยังล็อกอยู่ ; soupSweep() รันทุกครั้งหลังจบแอ็คชัน (ผ่าน sweep ← runQ) และคืนสภาพนอนให้ถ้ามีอะไรทำให้ตื่น
+// 🍲 น้ำซุปชาบู (KD03-018 / CC01-048): Avatar ที่สวมใส่แล้วโจมตี จะ "นอนตลอดไป ไม่ตื่นอีก" — ล็อกทุกกรณี (Draw Phase / สกิลตัวเอง / สกิลการ์ดอื่น / Magic / อาวุธ / ทอยเต๋า ฯลฯ)
+// a.hold = เลขเทิร์น (g.n) สุดท้ายที่ยังล็อกอยู่ ; น้ำซุป = SOUP_FOREVER (ไม่มีวันหมด) ล็อกหลุดเฉพาะตอน Avatar ออกจากสนาม (take() ลบ hold) ; เปลี่ยนการควบคุมแล้วล็อกยังอยู่
+// soupSweep() รันทุกครั้งหลังจบแอ็คชัน (ผ่าน sweep ← runQ) และคืนสภาพนอนให้ถ้ามีอะไรทำให้ตื่น
+const SOUP_FOREVER = 1e9;
 function soupLk(r, a) { return !!(a && a.hold && r.g && a.hold >= r.g.n); }
-function soupSweep(r) { if (!r.g) return; r.p.forEach(q => q.av.forEach(a => { if (soupLk(r, a) && !a.tired) { a.tired = true; vfx(a.u, 'aura', '🍲 ไม่ตื่น', '#f97316'); log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' ไม่สามารถเปลี่ยนเป็นสภาพตื่นได้จนจบ End Phase ถัดไปของเรา'); } })); }
+function soupSweep(r) { if (!r.g) return; r.p.forEach(q => q.av.forEach(a => { if (soupLk(r, a) && !a.tired) { a.tired = true; vfx(a.u, 'aura', '🍲 ไม่ตื่น', '#f97316'); log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' ไม่สามารถเปลี่ยนเป็นสภาพตื่นได้อีก (นอนตลอดไป)'); } })); }
 function sweep(r) { if (r.g && !r.g.land && r.g.land2) { r.g.land = r.g.land2; r.g.land2 = null; } chk052(r); soupSweep(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); mgHellTrig(r, p, m); } } }); }
 function mgHellTrig(r, p, m) { if (['ตีแม่', 'ตีพ่อ'].includes(B[m.id].n.trim())) { const pi = r.p.indexOf(p); fx({ k: 'say', id: m.id, t: 'หงาย LIFE' }); log(r, '🪓 ' + B[m.id].n.trim() + ' ตกนรก: หงาย LIFE ใบบนสุดของ ' + p.name); lifeUp(r, pi); } }
 
@@ -2699,7 +2704,7 @@ function fxPaid03(r, i, pc, summoned) {
     one(0); });
 }
 function fxAtk03(r, i, a, tg, tk) {
-  if (hasEq(r, a, 'KD03-018')) { a.hold = r.g.n + 2; log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' จะไม่ตื่นจนจบ End Phase ถัดไปของเรา'); }
+  if (hasEq(r, a, 'KD03-018')) { a.hold = SOUP_FOREVER; log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' โจมตีแล้ว — นอนตลอดไป ไม่สามารถตื่นได้อีกทุกกรณี (จนกว่าจะออกจากสนาม)'); }
   if (hasEq(r, a, 'BT03-055')) { draw(r, r.p[i], 1); vfx(a.u, 'aura', 'ขวานทอง: จั่ว 1', '#fde047'); log(r, '🪓 ขวานทอง: ' + r.p[i].name + ' จั่ว 1 ใบ'); }
   if (hasEq(r, a, 'BT03-056') && tk === 'av') { const d = r.p[1 - i].av.find(x => x.u === tg); if (d) { vfx(a.u, 'shake'); vfx(d.u, 'burst', 'วัชระ!', '#38bdf8'); log(r, '⚡ สายฟ้า วัชระ: ทำลาย ' + nmOf(d)); destroyAv(r, d.u); } }
   if (a.id === 'BT03-002') vfx(a.u, 'aura', 'ศัตรูใช้ React ไม่ได้', '#a78bfa');
