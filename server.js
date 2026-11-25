@@ -728,9 +728,10 @@ async function pickDeck(m, user, ban) {
   if (!process.env.BOT_TEST) E('ปิดใช้งานเด็ควางลิสต์/เด็คทดสอบแล้ว');
   return mkDeck(m.text || '', m.rand, m.skip, ban);
 }
+const EV_END_BOT = 0.10, EV_END_PVP = 0.25;   // โอกาสได้กล่องอีเวนต์พิเศษ 1 ซอง หลังเล่นจบ: เล่นกับบอท 10% · เล่นกับเพื่อน (PvP) 25% — ปรับตรงนี้ที่เดียว
 async function settle(r) { const g = r.g; if (!g.over || g.paid || g.win == null) return; g.paid = 1;
   await qCh().catch(() => { });
-  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx })); } }
+  for (let k = 0; k < 2; k++) { const w = r.p[k].ws; if (!w || !w.user) continue; const gn = r.bot ? (k === g.win ? BOT_LV[r.bot.lv].win : BOT_LOSE) : (k === g.win ? 750 : 250); const d = await dbGet(w.user); d.gems += gn; let box = null; if (Math.random() < (r.bot ? EV_END_BOT : EV_END_PVP)) { try { const set = evAnyPick(EVENT_BOX_SETS.filter(q => evPool(q).length)), cs = set ? grantEventBox(d, set, 1) : []; if (cs.length) box = { set, cards: cs.map(x => ({ id: x.id, r: x.r })) }; } catch (e) { console.log('end box err', e); } } const pfx = pfGain(d, k === g.win, !!r.bot, r.p[1 - k].name); try { qGame(d, r, k, k === g.win); } catch (e) { console.log('quest err', e); } await dbPut(w.user, d); w.send(JSON.stringify({ t: 'me', me: prof(w.user, d), gain: gn, pfx, box })); } }
 const wss = new WebSocketServer({ server: srv });
 const rooms = {}; let UID = 1, DRN = 0, BTN = 0, DCN = 0;
 const shuf = a => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
