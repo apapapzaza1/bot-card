@@ -10,10 +10,17 @@ FORCE_LIM && Object.entries(FORCE_LIM).forEach(([id, n]) => { if (B[id]) B[id].l
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.10.2';
+const VERSION = process.env.APP_VERSION || 'v1.10.3';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.10.3', d: '2026-11-25', items: [
+    'แบนลิสต์: เปลี่ยนจากรายชื่อข้อความเป็นรูปการ์ด (กรอบแดง = การ์ดในเด็คที่ติดแบน · ป้าย ×1 ×2 ×3 = จำนวนที่ใส่ได้ · แตะรูปเพื่อดูขยาย)',
+    'แก้บัค น้ำซุปชาบู: Avatar ที่โจมตีแล้วจะไม่ตื่นจนจบ End Phase ถัดไปของเราจริงทุกกรณี — ไม่ว่าจะตื่นจากสกิลตัวเอง (เช่น สไปรท์ตอน End Phase) สกิลการ์ดอื่น Magic อาวุธ หรือทอยเต๋า ก็ถูกล็อกให้กลับเป็นสภาพนอน',
+    'บอท: ใช้สกิลที่สั่งใช้จากมือและจากนรกเป็นแล้ว (เช่น อัญเชิญตัวเองด้วยการทิ้ง/ส่งการ์ดเป็น Cost, ลุงไนท์จากนรก, จั่วจากสกิลบนมือ) โดยประเมินความคุ้มก่อนใช้',
+    'บอท: ใช้สามัคคี/แทงหลังฉลาดขึ้น — เลือกชุดตัวช่วยที่เสียน้อยที่สุดแต่ POWER พอชนะ, ใช้ได้ตั้งแต่ระดับกลาง, ใช้กับ Construct ที่แรง และวางแผนโจมตีทั้งเทิร์นโดยนับ POWER ที่ได้จากสามัคคีและนับว่าตัวช่วยจะนอน',
+    'บอท: เวลาเลือกส่ง Avatar ศัตรูลงนรก จะเลือกตัวที่แรงที่สุดแทนตัวที่อ่อนที่สุด',
+  ] },
   { v: 'v1.10.2', d: '2026-11-20', items: [
     'อัปเดตแบนลิสต์ (2026-11): งี่เง่ากับงอแง จำกัด 1 ใบ · ศาสตราจารย์วานร, นินจาไร้นาม, มณโฑ ราชินีเหล่ายักษ์, เซอร์นัท ดาบแห่งแสงอรุณ, มนุษย์ดัดแปลง จำกัด 2 ใบ · แมลงปอมีพิษ, มยุราซัง, พี่หน่วง พิธีกรผมสวย ขยับเป็น 4 ใบ',
     'เงื่อนไขพิเศษใหม่: ถ้าใส่ อีสานสลิงเกอร์ ปิ๊ก Avatar ทั้งเด็คต้องมีคำว่า \"อีสานสลิงเกอร์\" ในชื่อหรือ Text box',
@@ -738,7 +745,11 @@ const ZN = ['hand','hell','av','mg','co','dk'];
 const E = s => { throw s; };
 let CR = null, FXN = 0;
 const fx = o => { if (!CR || !CR.g) return; const g = CR.g; (g.fxl = g.fxl || []).push({ n: ++FXN, ...o }); if (g.fxl.length > 20) g.fxl.shift(); };
-function sweep(r) { if (r.g && !r.g.land && r.g.land2) { r.g.land = r.g.land2; r.g.land2 = null; } chk052(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); mgHellTrig(r, p, m); } } }); }
+// 🍲 น้ำซุปชาบู (KD03-018): Avatar ที่โจมตีจะ "ไม่ตื่นจนจบ End Phase ถัดไปของเรา" — ล็อกทุกกรณี (Draw Phase / สกิลตัวเอง / สกิลการ์ดอื่น / Magic / อาวุธ / ทอยเต๋า ฯลฯ)
+// a.hold = เลขเทิร์น (g.n) สุดท้ายที่ยังล็อกอยู่ ; soupSweep() รันทุกครั้งหลังจบแอ็คชัน (ผ่าน sweep ← runQ) และคืนสภาพนอนให้ถ้ามีอะไรทำให้ตื่น
+function soupLk(r, a) { return !!(a && a.hold && r.g && a.hold >= r.g.n); }
+function soupSweep(r) { if (!r.g) return; r.p.forEach(q => q.av.forEach(a => { if (soupLk(r, a) && !a.tired) { a.tired = true; vfx(a.u, 'aura', '🍲 ไม่ตื่น', '#f97316'); log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' ไม่สามารถเปลี่ยนเป็นสภาพตื่นได้จนจบ End Phase ถัดไปของเรา'); } })); }
+function sweep(r) { if (r.g && !r.g.land && r.g.land2) { r.g.land = r.g.land2; r.g.land2 = null; } chk052(r); soupSweep(r); bt4Sweep(r); r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) { const m = p.mg[k]; if (m.at != null && !r.p.some(q => q.av.some(a => a.u === m.at))) { p.mg.splice(k, 1); delete m.at; p.hell.push(m); mgHellTrig(r, p, m); } } }); }
 function mgHellTrig(r, p, m) { if (['ตีแม่', 'ตีพ่อ'].includes(B[m.id].n.trim())) { const pi = r.p.indexOf(p); fx({ k: 'say', id: m.id, t: 'หงาย LIFE' }); log(r, '🪓 ' + B[m.id].n.trim() + ' ตกนรก: หงาย LIFE ใบบนสุดของ ' + p.name); lifeUp(r, pi); } }
 
 /* ===== ENGINE: กฎ v3.2 + สกิล SD01-08 + BT01-02 ===== */
@@ -1696,7 +1707,7 @@ const draw = (r, p, n) => { DRAWING++; try { for (let k = 0; k < n && p.deck.len
 const pw = x => (x.tk ? x.tk.p : B[x.id].p) + x.pw;
 const find = (r, u) => { for (let i = 0; i < 2; i++) for (const z of ZN) { const k = r.p[i][z].findIndex(c => c.u === u); if (k >= 0) return { i, z, k, c: r.p[i][z][k] }; } return null; };
 const release = (r, u) => r.p.forEach(p => { for (let k = p.mg.length - 1; k >= 0; k--) if (p.mg[k].at === u) { const [g] = p.mg.splice(k, 1); if (g.id === 'BT11-068' && b11Move68(r, p, g, u)) continue; delete g.at; p.hell.push(g); mgHellTrig(r, p, g); } });
-const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); if (f.z === 'hell' && f.c.h40) E('การ์ดใบนี้ไม่สามารถถูกนำออกจากนรกได้ (หมอเลิฟ ฟันเหยิน)'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') { delete f.c.half; delete f.c.kdSwap; delete f.c.pc; release(r, u); if (f.c.wr && f.c.wr.length) { f.c.wr.forEach(w => { delete w.nmo; if (ccWoo(r, f, w)) return; r.p[f.i].hell.push(w); }); f.c.wr = []; } } if (f.z === 'mg' && f.c.id === 'BT10-060' && f.c.at) { const u60 = f.c.at; r.g.q.push(() => { const t = find(r, u60); if (t && t.z === 'av') { log(r, '🛸 ผู้มาเยือนออกจากสนาม: ส่ง ' + nmOf(t.c) + ' ลงนรก'); sendHell(r, u60); } }); } if (f.z === 'mg' && f.c.id === 'BT01-042' && f.c.at) { const ua = f.c.at; r.g.q.push(() => { const t = find(r, ua); if (!t || t.z !== 'av') return; const o = t.c.oo != null ? t.c.oo : 1 - t.i; const x = take(r, ua).c; delete x.oo; Object.assign(x, { pw: 0, tp: 0, bp: 0, tired: false }); if (!x.tk) r.p[o].hand.push(x); log(r, '🎭 ริกกี้ นักปลอมแปลง ถูกทำลาย: ' + nmOf(x) + ' กลับขึ้นมือเจ้าของ'); }); }
+const take = (r, u) => { const f = find(r, u); if (!f) E('ไม่พบการ์ด'); if (f.z === 'hell' && f.c.h40) E('การ์ดใบนี้ไม่สามารถถูกนำออกจากนรกได้ (หมอเลิฟ ฟันเหยิน)'); r.p[f.i][f.z].splice(f.k, 1); if (f.z === 'av') { delete f.c.half; delete f.c.kdSwap; delete f.c.pc; delete f.c.hold; release(r, u); if (f.c.wr && f.c.wr.length) { f.c.wr.forEach(w => { delete w.nmo; if (ccWoo(r, f, w)) return; r.p[f.i].hell.push(w); }); f.c.wr = []; } } if (f.z === 'mg' && f.c.id === 'BT10-060' && f.c.at) { const u60 = f.c.at; r.g.q.push(() => { const t = find(r, u60); if (t && t.z === 'av') { log(r, '🛸 ผู้มาเยือนออกจากสนาม: ส่ง ' + nmOf(t.c) + ' ลงนรก'); sendHell(r, u60); } }); } if (f.z === 'mg' && f.c.id === 'BT01-042' && f.c.at) { const ua = f.c.at; r.g.q.push(() => { const t = find(r, ua); if (!t || t.z !== 'av') return; const o = t.c.oo != null ? t.c.oo : 1 - t.i; const x = take(r, ua).c; delete x.oo; Object.assign(x, { pw: 0, tp: 0, bp: 0, tired: false }); if (!x.tk) r.p[o].hand.push(x); log(r, '🎭 ริกกี้ นักปลอมแปลง ถูกทำลาย: ' + nmOf(x) + ' กลับขึ้นมือเจ้าของ'); }); }
  delete f.c.at; delete f.c.cx; delete f.c.jt; delete f.c.fh; if (f.z === 'hand') delete f.c.stl; if (f.z === 'av' && f.c.id === 'BT05-054A') { f.c.id = 'BT05-054'; delete f.c.kd; } return f; };
 let DRNO = 0;
 const isDoc = c => !!c && !c.tk && B[c.id] && B[c.id].t === 'Magic' && B[c.id].n.trim() === 'หมอมาแล้วววว';
@@ -5329,7 +5340,7 @@ bt6Bs = function (r) {   // เริ่ม Battle Phase: กัณหา POWER 
 };
 const _e94 = bt7End;
 bt7End = function (r, i) {   // เข้า End Phase ของเรา
-  _e94(r, i); r.p[i].av.forEach(a => { if (a.id === 'BT09-009' && !noFx(r, a) && linked9(r, a)) { if (a.tired) { a.tired = false; vfx(a.u, 'aura', '☀ ตื่น', '#38bdf8'); } (a.hd = a.hd || []).push({ v: 2, until: r.g.n + 1 }); vfx(a.u, 'aura', 'POWER +2', '#38bdf8'); log(r, '🐶 สไปรท์: End Phase — เปลี่ยนเป็นสภาพตื่น และ POWER +2 จนถึง Draw Phase ถัดไป'); } });
+  _e94(r, i); r.p[i].av.forEach(a => { if (a.id === 'BT09-009' && !noFx(r, a) && linked9(r, a)) { if (a.tired && !soupLk(r, a)) { a.tired = false; vfx(a.u, 'aura', '☀ ตื่น', '#38bdf8'); } else if (a.tired) log(r, '🍲 น้ำซุปชาบู: ' + nmOf(a) + ' ยังตื่นไม่ได้ — ข้ามการตื่นของสไปรท์'); (a.hd = a.hd || []).push({ v: 2, until: r.g.n + 1 }); vfx(a.u, 'aura', 'POWER +2', '#38bdf8'); log(r, '🐶 สไปรท์: End Phase — ' + (soupLk(r, a) ? '' : 'เปลี่ยนเป็นสภาพตื่น และ ') + 'POWER +2 จนถึง Draw Phase ถัดไป'); } });
 };
 const _be94 = bt6End;
 bt6End = function (r, prev) {   // นับ End Phase สำหรับ กระสอบ / สวนกล้วยหนีภาษี
@@ -6276,9 +6287,13 @@ function botPlanAtk(r, k, opts, W) {
     return [null, ...rest, ...(lf ? [lf] : [])];
   });
   const evalSeq = (order, pick) => {
-    const dead = new Set(), deadCo = new Set(), deadMine = new Set(); let val = 0, hits = 0, mine = me.av.length, first = null, nat = 0;
+    const dead = new Set(), deadCo = new Set(), deadMine = new Set(), tapped = new Set(), acted = new Set(); let val = 0, hits = 0, mine = me.av.length, first = null, nat = 0;
     for (let n = 0; n < order.length; n++) {
-      const ch = pick[n]; if (!ch) continue; const a = order[n], pa = P(r, a), my = botCv(r, a), v0 = val;
+      const ch = pick[n]; if (!ch) continue; const a = order[n], sup = (ch.o && ch.o.sup) || [];
+      if (tapped.has(a.u) || sup.some(u => acted.has(u) || tapped.has(u))) return null;   // ตัวที่ถูกใช้เป็นตัวช่วยสามัคคีแล้วตีไม่ได้ · ตัวที่ตีไปแล้วช่วยไม่ได้
+      sup.forEach(u => tapped.add(u)); acted.add(a.u);
+      const pa = P(r, a) + ((ch.o && ch.o.bn) || 0), my = botCv(r, a), v0 = val;   // pa รวม POWER ที่ได้จากสามัคคี/แทงหลัง
+      if (sup.length) val -= sup.length * .5;
       if (ch.tg === 'life') {
         if (!ch.o && oav.some(x => !dead.has(x.u))) return null;   // ยังมี Avatar ขวางอยู่ → ตี LIFE ไม่ได้
         hits++; val += 8 * W.life + pa;
@@ -6328,6 +6343,55 @@ function botBait(r, k, inBattle) {
   }
   return true;
 }
+// ===== บอท: สกิลที่สั่งใช้ "จากมือ / จากนรก" (ABIL zone hand|hell + ลุงไนท์ BT05-033 + อาลอนไดร์ท BT05-064) =====
+// เดิมบอทไล่ใช้สกิลเฉพาะการ์ดบนสนาม (Avatar/Magic/Construct) → สกิลบนมือ/ในนรกไม่เคยถูกใช้เลย
+function botZoneOk(r, k, c, z, anyOnly) {   // เช็กว่า "กดใช้ได้จริงตอนนี้" (ไม่มีผลข้างเคียง) — ซ้ำเงื่อนไขกับ case 'use' / kdHandAb / kdHellAb
+  try {
+    const g = r.g; if (!g || g.over || g.ask || g.pend) return false;
+    if (z === 'hell' && c.id === 'BT05-033') return !anyOnly && !!hell33OK(r, k, c);
+    if (z === 'hell' && c.id === 'BT05-064') return !anyOnly && !!hell64OK(r, k);
+    const a2 = ABIL[c.id]; if (!a2 || a2.zone !== z || a2.end || a2.react) return false;
+    if (anyOnly) { if (!a2.any || !['main', 'battle', 'end'].includes(g.phase)) return false; }
+    else if (!(g.turn === k && g.phase === 'main')) return false;
+    if (a2.once && c.ou === g.n) return false;
+    if (!hospOK(r, k, c)) return false;
+    if (a2.cond && !a2.cond(r, k, c)) return false;
+    return true;
+  } catch (e) { return false; }
+}
+function botZoneOps(r, k, W, lv, anyOnly) {   // รายการสกิลมือ/นรกที่คุ้มจะใช้ เรียงจากคุ้มสุด
+  const g = r.g, me = r.p[k], op = r.p[1 - k], T = r.bot.tried, out = [];
+  const add = (c, z) => {
+    if (!c || c.tk || T.has('z' + c.u) || !B[c.id] || !botZoneOk(r, k, c, z, anyOnly)) return;
+    const d = B[c.id], a2 = ABIL[c.id] || {}, lbl = a2.label || (c.id === 'BT05-033' ? 'ทิ้งมือ 1 ใบ อัญเชิญตัวเองจากนรก' : c.id === 'BT05-064' ? 'ธรณีสูบ 1 ใบ แล้วสวมใส่ อัศวินโต๊ะกลม' : '');
+    const selfSum = d.t === 'Avatar' && /อัญเชิญ/.test(lbl), draw = /จั่ว/.test(lbl), scout = /สอดแนม/.test(lbl), equip = /สวมใส่/.test(lbl);
+    let gain;
+    if (selfSum) gain = botCv(r, c) * W.dv + 2 + (me.av.length < 2 ? 1.5 : 0);   // ได้ตัวลงสนามฟรี/ถูกกว่าจ่าย Cost ปกติ
+    else if (draw) gain = 1.2;
+    else if (equip && z === 'hell') gain = 1.5 + (c.id === 'BT05-064' ? 1 : 0);
+    else if (scout) gain = .6;
+    else return;   // บัฟชั่วคราว/อย่างอื่น: ไม่ใช้ตอน Main Phase
+    gain -= (lbl.match(/ทิ้ง/g) || []).length * 1.2;                                              // ทิ้งการ์ดเป็น Cost
+    if (/ทิ้ง/.test(lbl) && me.hand.length <= 2) gain -= 1.5;                                      // มือเหลือน้อย ไม่ควรทิ้ง
+    if (/ส่ง.*ลงนรก|ส่ง\s*Avatar|เนรเทศ.*แล้วอัญเชิญ/.test(lbl) && !/ฝ่ายตรงข้าม/.test(lbl)) gain -= 2.2;   // เสียการ์ดของเราบนสนาม
+    if (/นำ.*กลับมือ/.test(lbl)) gain -= 1;
+    if (/ฝ่ายตรงข้าม/.test(lbl) && /ลงนรก/.test(lbl)) { if (!op.av.length) return; gain += 3; }    // ส่ง Avatar ศัตรูลงนรกแล้วอัญเชิญ = กำไรสองต่อ
+    if (z === 'hell' && /เนรเทศใบนี้|เนรเทศ:/.test(lbl) && !selfSum) gain -= .8;
+    if (/ธรณีสูบ/.test(lbl)) { const mm = lbl.match(/ธรณีสูบ\s*(\d+)/), n = mm ? +mm[1] : 1; if (me.deck.length <= n + 8) return; gain -= n * .1; }   // ไม่ธรณีสูบจน Deck เกือบหมด
+    if (c.id === 'BT12-012' && me.hand.length > 6) gain -= .5;
+    out.push({ c, z, gain, lbl });
+  };
+  if (anyOnly) { me.hand.forEach(c => add(c, 'hand')); }
+  else { me.hand.forEach(c => add(c, 'hand')); me.hell.forEach(c => add(c, 'hell')); }
+  return out.sort((x, y) => y.gain - x.gain);
+}
+function botZonePick(r, k, W, lv, best, anyOnly) {   // best = ตัวเลือกลงการ์ดปกติที่ดีสุด (ถ้ามี) — สกิลมือ/นรกต้องคุ้มกว่าถึงจะใช้ก่อน
+  if (lv < 2) return null;
+  const th = lv >= 3 ? .3 : 1.2, z = botZoneOps(r, k, W, lv, anyOnly)[0];
+  if (!z || z.gain <= th) return null;
+  if (best && best.gain > z.gain) return null;
+  return z;
+}
 function botMain(r, k) {
   const g = r.g, me = r.p[k], bt = r.bot, lv = Math.min(bt.lv, 3), W = bt.w || CHW0, T = bt.tried, ops = [];
   if (bt.lv === 4) { for (const [x, z] of chZones(me)) { if (T.has('u' + x.u) || !abOf(r, k, x, z) || !chAbilEarly(r, k, x)) continue; T.add('u' + x.u); if (botAct(r, k, { t: 'use', u: x.u })) return true; } }   // ท้าทาย: สกิลจั่ว/ค้นหา ใช้ก่อนลงการ์ด
@@ -6346,6 +6410,7 @@ function botMain(r, k) {
   ops.sort((a, b) => b.gain - a.gain);
   bt.rsv = null;
   const o = bt.lv === 4 ? chPlanPick(r, k, ops.filter(x => x.gain > -1.5 + W.th)) : lv === 1 ? (ops.length && Math.random() < .75 ? pick(ops) : null) : ops.find(x => x.gain > (lv === 3 ? -1.5 + W.th : -2.5));
+  { const zb = botZonePick(r, k, W, lv, o, false); if (zb) { T.add('z' + zb.c.u); if (botAct(r, k, { t: 'use', u: zb.c.u })) return true; } }   // สกิลสั่งใช้จากมือ/นรก (คุ้มกว่าลงการ์ดปกติ → ใช้ก่อน)
   if (o) { T.add('s' + o.h.u); (bt.played = bt.played || []).push(o.h.id); return botAct(r, k, { t: o.d.t === 'Avatar' ? 'summon' : 'build', u: o.h.u, pay: o.pay.us }); }
   if (lv >= 2) {
     for (const h of me.hand) {   // ร่าย Magic (เฉพาะที่ระบบรองรับ ไม่ใช่ React)
@@ -6367,7 +6432,15 @@ function botBattle(r, k) {
   const ready = me.av.filter(a => !a.tired && !T.has('a' + a.u)).length;   // ตัวที่ยังตีได้ในเทิร์นนี้
   const stall = g.n >= 14;                                                  // เกมนิ่งนานแล้ว -> ต้องกดดัน
   const ahead = me.av.length > op.av.length;                                // เรามี Avatar มากกว่า -> แลกได้
-  const supOk = q => !q.tired && !q.tk && !T.has('a' + q.u) && (/สามัคคี|แทงหลัง/.test(B[q.id].e || '') || hasKw(r, q, 'สามัคคี')) && (/แทงหลัง/.test(B[q.id].e || '') || !op.co.some(x => x.id === 'SD07-020'));
+  const stab = q => /แทงหลัง/.test(B[q.id].e || '');
+  const supOk = (q, a) => !q.tired && !q.tk && q.u !== a.u && !T.has('a' + q.u) && (hasKw(r, q, 'สามัคคี') || stab(q)) && (stab(q) || !op.co.some(x => x.id === 'SD07-020')) && !bt9SupBlock(r, q, a);   // ตัวช่วยสามัคคี/แทงหลัง ที่ตรวจเหมือนเซิร์ฟเวอร์ (รวมโลกิ ช่วยได้เฉพาะ ธอร์ / ด่านเฮาโลก๋วน)
+  // เลือกชุดตัวช่วยสามัคคี "คุ้มที่สุด": POWER รวมต้องถึง need แต่เสียตัวน้อยที่สุด/เสียโอกาสตีน้อยที่สุด (ตัวช่วยจะนอน ตีต่อไม่ได้ในเทิร์นนี้)
+  const bestSup = (a, need) => {
+    const S = me.av.filter(q => supOk(q, a)).map(q => ({ q, b: P(r, q) + (stab(q) ? 1 : 0), uc: .9 + Math.max(0, P(r, q)) * .2 })).filter(x => x.b > 0).sort((x, y) => y.b - x.b).slice(0, 6);
+    let best = null; const n = S.length;
+    for (let m = 1; m < (1 << n); m++) { let tot = 0, cost = 0; const us = []; for (let j = 0; j < n; j++) if (m & (1 << j)) { tot += S[j].b; cost += S[j].uc; us.push(S[j].q.u); } if (tot < need) continue; if (!best || cost < best.cost - 1e-9 || (Math.abs(cost - best.cost) < 1e-9 && us.length < best.us.length)) best = { us, tot, cost }; }
+    return best;
+  };
   me.av.forEach(a => {
     if (a.tired || T.has('a' + a.u)) return;
     if (((a.id === 'BT02-024' || a.id === 'BT06-034' || a.id === 'BT06-038') && !noFx(r, a)) || ((a.id === 'BT02-029' || a.id === 'SD04-004') && !(a.wr && a.wr.length))) return;
@@ -6379,13 +6452,13 @@ function botBattle(r, k) {
       if (pa > pd) opts.push({ a, tg: d.u, sc: 2 + dv * W.dv + clear - (lv === 3 ? (pa - pd) * .15 : 0) });   // ยาก: ใช้ตัวที่แรงพอดี เก็บตัวแรงไว้ตีเป้าใหญ่/LIFE                                  // ชนะและไม่ตาย
       else if (pa === pd && pa > 0 && lv >= 2 && (dv + W.tr >= my - .5 || ahead || stall || (lv === 3 && clear))) opts.push({ a, tg: d.u, sc: 1 + dv * W.dv - my * .5 * W.keep + clear - botRisk(r, k, a, d, W) });  // กลาง/ยาก: แลกเมื่อคุ้ม/ได้เปรียบ/เกมนิ่ง
       else if (lv === 1 && Math.random() < .3) opts.push({ a, tg: d.u, sc: .1 });                 // ง่าย: บางทีก็ตีมั่ว
-      if (lv === 3 && pa <= pd && dv >= 2.5) {   // ยาก: เรียกสามัคคี/แทงหลังมารวมพลัง ถ้าทำให้ชนะเป้าที่มีค่าได้
-        const S2 = me.av.filter(q => q.u !== a.u && supOk(q)).map(q => ({ q, b: P(r, q) + (/แทงหลัง/.test(B[q.id].e || '') ? 1 : 0) })).sort((x, y) => y.b - x.b);
-        let tot = 0; const us = []; for (const s2 of S2) { if (pa + tot > pd) break; tot += s2.b; us.push(s2.q.u); }
-        if (us.length && pa + tot > pd) opts.push({ a, tg: d.u, sup: us, sc: 2 + dv - us.length * 1.2 });
+      if (lv >= 2 && pa > 0 && pa <= pd && (dv >= (lv >= 3 ? 1.2 : 3) || clear)) {   // กลาง/ยาก: เรียกสามัคคี/แทงหลังมารวมพลัง ถ้าทำให้ "ชนะ และตัวเองไม่ตาย" เป้าที่มีค่าได้ (เสมอกัน = ใช้แทนการแลกตาย)
+        const bs = bestSup(a, pd - pa + 1);
+        if (bs) opts.push({ a, tg: d.u, sup: bs.us, bn: bs.tot, sc: 2 + dv * W.dv + clear - bs.cost });
       }
     });
-    op.co.forEach(d => { const pd = (B[d.id].p || 0) + (d.pw || 0); if (pa > pd) opts.push({ a, tg: d.u, sc: 1.5 + pd * .3 }); });
+    op.co.forEach(d => { const pd = (B[d.id].p || 0) + (d.pw || 0); if (pa > pd) opts.push({ a, tg: d.u, sc: 1.5 + pd * .3 });
+      else if (lv >= 3 && pa > 0 && pd >= 3) { const bs = bestSup(a, pd - pa + 1); if (bs && bs.us.length <= 2) opts.push({ a, tg: d.u, sup: bs.us, bn: bs.tot, sc: 1.5 + pd * .3 - bs.cost }); } });   // ยาก: ใช้สามัคคีทุบ Construct ที่แรง
   });
   if (!opts.length) { me.av.forEach(a => T.add('a' + a.u)); return false; }
   if (bt.lv === 4) { opts.forEach(x => { x.sc0 = x.sc; }); chTune(r, k, opts); try { chBPlan(r, k, opts); } catch (e) { console.error('chBPlan', e); } }
@@ -6407,7 +6480,8 @@ function botSel(r, k, a) {
   const cs = a.cards || [], own = u => { const c = cs.find(x => x.u === u); return c ? c.i === k : true; };
   const val = u => { const f = allCards(r, u); if (!f) return 0; return botCv(r, f.c) + (r.bot && r.bot.lv === 4 ? chSelAdj(r, k, f, a.text || '', cost, harm) : 0); };
   const t = a.text || '', n = a.n, min = a.min;
-  const cost = /ฝ่ายเรา|ทิ้ง|ส่ง.*ลงนรก|เซ่นไหว้|เป็น Cost|ให้อีกฝ่าย/.test(t), harm = !cost && /ทำลาย|POWER -|ยึด|ศัตรู|กลับขึ้นมือ/.test(t);
+  const foe = a.opts.length > 0 && a.opts.every(u => !own(u));   // ตัวเลือกเป็นของศัตรูล้วน (เช่น ส่ง Avatar ศัตรูลงนรก) = ทำร้ายศัตรู ไม่ใช่จ่าย Cost
+  const cost = !foe && /ฝ่ายเรา|ทิ้ง|ส่ง.*ลงนรก|เซ่นไหว้|เป็น Cost|ให้อีกฝ่าย/.test(t), harm = !cost && (foe || /ทำลาย|POWER -|ยึด|ศัตรู|กลับขึ้นมือ/.test(t));
   { const sd = a.src && B[a.src.id], dbf = sd && /POWER\s*-|ลด\s*POWER|POWER\s*ลด/.test(sd.e || '');   // สวมใส่อาวุธ/Modification ที่ให้ผลดี → ให้ Avatar ฝ่ายเราเสมอ (ห้ามให้ศัตรู)
     if (/สวมใส่/.test(t) && !dbf && !/^(จุติ|คำสั่งเสีย)/.test(t)) { const mine = a.opts.filter(own); if (mine.length >= Math.max(1, min)) return mine.sort((x, y) => val(y) - val(x)).slice(0, Math.max(min, Math.min(n, 1))); } }
   let pool = a.opts.slice(), cnt;
@@ -6450,7 +6524,7 @@ function botStep(r, k) {
   }
   if (g.phase === 'pick') { if (g.dw === k) botAct(r, k, { t: 'first', v: bt.lv === 1 ? +(Math.random() < .5) : 1 }); return; }
   if (g.phase === 'mull') { if (!me.m && (g.turn === k || r.p[g.turn].m)) botMull(r, k); return; }
-  if (g.turn !== k) return;
+  if (g.turn !== k) { if (bt.lv >= 2 && g.phase !== 'mull' && g.phase !== 'pick') { const W0 = bt.w || CHW0, zb = botZonePick(r, k, W0, Math.min(bt.lv, 3), null, true); if (zb) { bt.tried.add('z' + zb.c.u); botAct(r, k, { t: 'use', u: zb.c.u }); } } return; }   // สกิลบนมือที่ใช้ได้ทุกเวลา (เช่น จ่ามะนาวถูกทำลายแล้วอัญเชิญจากมือ)
   if (g.phase === 'main') return botMain(r, k);
   if (g.phase === 'battle') { if (!botBattle(r, k)) botAct(r, k, { t: 'next' }); return; }
   if (g.phase === 'end') return botEnd(r, k);

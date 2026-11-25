@@ -369,7 +369,7 @@ html:has(#game:not([hidden])){overflow:hidden;overscroll-behavior:none}
 #bw .bwg{display:flex;flex-direction:column;gap:2px}#bw .bwg>b{font-size:1.05em}#bw .bwg>small{opacity:.8}#bw .bwg.blk>b{color:#f87171}#bw .bwg.hard>b{color:#fbbf24}#bw .bwg.ban>b{color:#fb7185}#bw>em{align-self:flex-end;font-size:.72em;opacity:.55;font-style:normal}
 .mis.bn{color:#fb7185;background:#fb718518;border-color:#fb718555}
 .bglow{border-color:#ef4444!important;box-shadow:0 0 10px 2px #ef4444bb,0 0 22px 5px #ef444455!important;animation:bgl 1.4s ease-in-out infinite alternate}@keyframes bgl{from{box-shadow:0 0 6px 1px #ef444488,0 0 12px 2px #ef444433}to{box-shadow:0 0 14px 3px #ef4444dd,0 0 28px 8px #ef444477}}
-#bv{position:fixed;inset:0;z-index:13;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px}#bv[hidden]{display:none}#bv .bvi{background:var(--pn);border:2px solid #fb7185;border-radius:14px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:12px 14px}#bv .bvs{margin:8px 0}#bv h4{margin:6px 0 4px}#bv .bvn{cursor:pointer;display:inline-block;margin:2px;padding:2px 9px;border-radius:999px;background:#8882;border:1px solid #8886;font-size:.9em}#bv .bvn.hit{background:#ef444433;border-color:#ef4444;color:#fecaca;font-weight:700}#bv .bvc{margin:3px 0;font-size:.9em}
+#bv{position:fixed;inset:0;z-index:13;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px}#bv[hidden]{display:none}#bv .bvi{background:var(--pn);border:2px solid #fb7185;border-radius:14px;max-width:680px;width:100%;max-height:88vh;overflow:auto;padding:12px 14px}#bv .bvs{margin:8px 0}#bv h4{margin:6px 0 4px}#bv .bvg{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:7px}#bv .bvt{position:relative;aspect-ratio:5/7;border-radius:7px;border:2px solid #8886;background-color:#222;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center}#bv .bvt span{font-size:10px;line-height:1.25;padding:3px;text-align:center;word-break:break-word;color:#ddd}#bv .bvt.hit{border-color:#ef4444;box-shadow:0 0 10px #ef4444cc}#bv .bvb{position:absolute;right:2px;bottom:2px;background:#000d;color:#fff;border-radius:999px;padding:0 7px;font-size:12px;font-style:normal;font-weight:800;border:1px solid #fb7185}#bv .bvx{position:absolute;left:2px;top:2px;font-size:16px;font-style:normal;text-shadow:0 0 4px #000}#bv .bvp{display:flex;align-items:center;gap:6px;margin:5px 0}#bv .bvp .bvt{width:74px;flex:none}#bv .bvp b{font-size:1.2em;opacity:.8}#bv .bvc{margin:3px 0;font-size:.9em}
 
 .dg .dc>b{font-size:.72em}.dg .dc>small{font-size:.62em}
 .dg .vch{display:flex;flex-wrap:wrap;gap:2px}.dg .vch .chip{padding:1px 6px;font-size:.62em;margin:0}
@@ -1130,15 +1130,16 @@ const bExtra=c=>{const e=c.e||'',k=e.indexOf('#');if(k<0)return'';const m=/น�
 const bNamesOf=c=>{const x=bExtra(c),a=[bnk(c.n)];if(x&&x!==a[0])a.push(x);return a};
 const bLimAny=n=>{if(!bLimAny.m){bLimAny.m={};Object.values(C).forEach(c=>{const k=bnk(c.n),l=LIMN(c);bLimAny.m[k]=Math.min(bLimAny.m[k]||99,l)})}return bLimAny.m[n]||4};
 const nmCnt=(n,o)=>Object.keys(o).reduce((a,i)=>C[i]&&C[i].n==n?a+o[i]:a,0);
-function bvZoom(n){const ids=Object.keys(C).filter(i=>bnk(C[i].n)==bnk(n));if(!ids.length)return;zoom(ids.find(i=>art(i))||ids[0])}
+function bvId(n){const ids=Object.keys(C).filter(i=>bnk(C[i].n)==bnk(n));return ids.find(i=>art(i))||ids[0]||''}
+function bvZoom(n){const id=bvId(n);if(id)zoom(id)}
 function banView(){const BL=ME.ban||{ban:[],lim:{},pairs:[],cond:[]},e=esc;let o=$('bv');if(!o){o=document.createElement('div');o.id='bv';o.onclick=ev=>{if(ev.target===o)o.hidden=true};document.body.append(o)}
 const main=(typeof bd!=='undefined'&&bd&&bd.m)?Object.keys(bd.m).filter(i=>C[i]).flatMap(i=>Array(bd.m[i]).fill(i)):[],hit=new Set(banV(main).flatMap(v=>(v.names||[]).map(bnk))),
-nm=n=>`<span class="bvn${hit.has(bnk(n))?' hit':''}" data-n="${e(bnk(n))}" onclick="bvZoom(this.dataset.n)">${e(bnk(n))}</span>`,sec=(t,b)=>`<div class="bvs"><h4>${t}</h4>${b}</div>`,
-lim=BL.lim||{},gs=[1,2,3].map(k=>{const a=Object.keys(lim).filter(n=>lim[n]==k);return a.length?sec('⚠ จำกัด '+k+' ใบ ('+a.length+')',a.map(nm).join('')):''}).join('');
+nm=(n,bg,mk)=>{const k=bnk(n),id=bvId(k),a=id?art(id):'';return`<div class="bvt${hit.has(k)?' hit':''}" data-n="${e(k)}" title="${e(k)}" onclick="bvZoom(this.dataset.n)" style="${a}">${a?'':'<span>'+e(k)+'</span>'}${mk?'<i class="bvx">'+mk+'</i>':''}${bg?'<i class="bvb">'+bg+'</i>':''}</div>`},grid=(a,bg,mk)=>'<div class="bvg">'+a.map(n=>nm(n,bg,mk)).join('')+'</div>',sec=(t,b)=>`<div class="bvs"><h4>${t}</h4>${b}</div>`,
+lim=BL.lim||{},gs=[1,2,3].map(k=>{const a=Object.keys(lim).filter(n=>lim[n]==k);return a.length?sec('⚠ จำกัด '+k+' ใบ ('+a.length+')',grid(a,'×'+k)):''}).join('');
 o.innerHTML=`<div class="bvi"><div style="display:flex;align-items:center;gap:8px"><b style="flex:1;font-size:1.15em">🚫 แบนลิสต์${BL.asof?' <small style="opacity:.7">('+e(BL.asof)+')</small>':''}</b><button class="xb" onclick="$('bv').hidden=true">✕</button></div>
-<small style="opacity:.75">แตะชื่อการ์ดเพื่อดูรูป · ชื่อสีแดง = มีอยู่ในเด็คที่กำลังจัดและติดแบนลิสต์</small>
-${sec('⛔ การ์ดบาป — ห้ามใส่ ('+(BL.ban||[]).length+')',(BL.ban||[]).map(nm).join('')||'<small>— ไม่มี —</small>')}${gs}
-${(BL.pairs||[]).length?sec('🔀 ใส่ได้อย่างใดอย่างหนึ่ง ('+BL.pairs.length+')',BL.pairs.map(p=>`<div>${nm(p[0])} / ${nm(p[1])}</div>`).join('')):''}
+<small style="opacity:.75">แตะรูปการ์ดเพื่อดูขยาย · กรอบแดง = มีอยู่ในเด็คที่กำลังจัดและติดแบนลิสต์</small>
+${sec('⛔ การ์ดบาป — ห้ามใส่ ('+(BL.ban||[]).length+')',(BL.ban||[]).length?grid(BL.ban,'','🚫'):'<small>— ไม่มี —</small>')}${gs}
+${(BL.pairs||[]).length?sec('🔀 ใส่ได้อย่างใดอย่างหนึ่ง ('+BL.pairs.length+')',BL.pairs.map(p=>`<div class="bvp">${nm(p[0])}<b>/</b>${nm(p[1])}</div>`).join('')):''}
 ${(BL.cond||[]).length?sec('📌 เงื่อนไขพิเศษ ('+BL.cond.length+')',BL.cond.map(c=>`<div class="bvc">• ${e(c.msg)}</div>`).join('')):''}
 <small style="opacity:.65">การ์ดลำเอียงห้ามใช้เสมอ · เด็คที่ติดแบนลิสต์ใช้เล่นได้เฉพาะห้องที่ปิดโหมดแบนลิสต์</small></div>`;o.hidden=false}
 function banV(main){const V=[],BL=ME.ban||{ban:[],lim:{},pairs:[],cond:[]},cnt={};main.forEach(i=>{bNamesOf(C[i]).forEach(n=>{cnt[n]=(cnt[n]||0)+1})});
