@@ -796,6 +796,7 @@ body[data-tm=sk].tm-tx:is(:not(.ing),.tm-in) #tt h1{color:#222;text-shadow:3px 3
 .swps{display:flex;flex-direction:column;gap:3px;max-height:16vh;overflow:auto;font-size:.85em}
 .swp{background:#8882;border-radius:8px;padding:3px 8px}.swp i{opacity:.7;font-style:normal;margin:0 4px}.swp.bad{background:#ef444433;color:#fca5a5}
 .swa{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.swa button{margin:0;min-height:40px;padding:6px 16px}
+.mlb button.big,.mlb button.pri.big,.mlb button.atkb.big{display:block;width:100%;max-width:none;min-width:0;min-height:48px;margin:0;padding:8px 6px;font-size:.95em;font-weight:700;line-height:1.25;border-radius:12px;box-shadow:0 3px 0 #0005;aspect-ratio:auto;overflow:visible;white-space:nowrap;box-sizing:border-box}
 </style>
 <div id="bg"></div><footer>แฟนเมด ไม่เกี่ยวข้องกับ บจก. พสุโลล / ไลอ้อน เฮ้าส์ ลิขสิทธิ์การ์ดเป็นของเจ้าของเดิม</footer>
 <div id="auth" class="scr"><div class="ac"><h2>BOT<small>(FANMADE) CARD</small></h2><label>ชื่อผู้ใช้<input id="aname" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="ชื่อผู้ใช้ (ห้ามซ้ำ)"></label><label>รหัสผ่าน<input id="apass" name="password" type="password" autocomplete="current-password" placeholder="รหัสผ่าน" onkeydown="event.key=='Enter'&&doAuth('login')"></label><div class="ab2"><button class="pri" onclick="doAuth('login')">ล็อกอิน</button><button onclick="doAuth('reg')">สมัครสมาชิก</button></div><button class="ghost" onclick="st()">⚙ ตั้งค่า</button><p>สมัครใหม่รับการ์ด Starter SD01–03 ฟรี</p></div></div>
@@ -1161,7 +1162,7 @@ main.forEach(i=>{bNamesOf(C[i]).forEach(n=>{cnt[n]=(cnt[n]||0)+1})});const mn=ma
 if(mn>50)V.push({k:'hard',t:'m',names:[],msg:'Main เกิน 50 ใบ (ตอนนี้ '+mn+' ใบ)'});
 if(ln>5)V.push({k:'hard',t:'l',names:[],msg:'LIFE เกิน 5 ใบ (ตอนนี้ '+ln+' ใบ)'});
 {const c2={};Object.keys(bd.l).filter(i=>C[i]).forEach(i=>{c2[C[i].n]=(c2[C[i].n]||0)+bd.l[i]});const d=Object.keys(c2).filter(n=>c2[n]>1);if(d.length)V.push({k:'hard',t:'l',names:d,msg:'LIFE ห้ามชื่อซ้ำ: '+d.join(', ')})}
-const ol=[...new Set(main.filter(i=>C[i].o=='Only #1').map(i=>C[i].n))],o1n=main.filter(i=>C[i].o=='Only #1'&&!(C[i].lim>1)).length;
+const ol=[...new Set(main.filter(i=>C[i].o=='Only #1').map(i=>C[i].n))],o1n=main.filter(i=>C[i].o=='Only #1'&&!(C[i].lim>1)).length+(main.some(i=>i=='BT11-056')?1:0);
 if(o1n>1)V.push({k:'hard',t:'m',names:ol,msg:'ใส่ Only #1 ได้แค่ 1 ใบต่อเด็ค (ตอนนี้ '+o1n+' ใบ: '+ol.join(', ')+')'});
 {const seen={};main.forEach(i=>{bNamesOf(C[i]).forEach((n,k)=>{if(seen[n])return;const l=k?bLimAny(n):LIMN(C[i]);if(cnt[n]>l){seen[n]=1;V.push({k:'hard',t:'m',names:[braw(n)],msg:n+' ใส่ได้สูงสุด '+l+' ใบ (นับรวมชื่อหลักที่ 2 ตอนนี้ '+cnt[n]+' ใบ)'})}})})}
 {const o1=main.filter(i=>C[i].o=='Only #1').length,f=main[0],all50=mn==50&&main.every(i=>bnk(C[i].n)==bnk(C[f].n))&&LIMN(C[f])==50;if(mn==50&&!all50&&o1==0)V.push({k:'hard',t:'m',names:[],msg:'ต้องมี Only #1 1 ใบ (การ์ดที่ใส่ได้ 50 ใบ ใส่ครบ 50 ใบแทนได้)'})}
