@@ -15,6 +15,7 @@ const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
   { v: 'v1.10.4', d: '2026-11-25', items: [
+    'แก้บัค ฮิมไลน์ / แอสคาลอน / มาโกะชิลด์: ถ้ามีหน้าต่างเลือกค้างอยู่ตอนถูกทำลาย ระบบข้ามการกันทำลายทำให้ตายทันทีโดยไม่เรียกดาบ — ตอนนี้รอคิวแล้วกันการทำลายตามปกติ',
     'แก้บัค ความกล้าหาญ: การทำลายตอน End Phase ข้ามการกันทำลายทั้งหมด ทำให้ ฮิมไลน์ ตายทั้งที่มีดาบใส่อยู่/มีดาบในนรก — ตอนนี้ผ่านระบบกันการทำลายปกติแล้ว (ฮิมไลน์ แอสคาลอน หมอมาแล้วววว ฯลฯ ทำงานถูกต้อง)',
     'ปรับ น้ำซุปชาบู: Avatar ที่สวมใส่แล้วโจมตี จะนอนตลอดไป ไม่ตื่นอีกเลยไม่ว่าจะด้วยวิธีใด (สกิลตัวเอง สกิลการ์ดอื่น Magic อาวุธ ทอยเต๋า Draw Phase / End Phase) จนกว่าจะออกจากสนาม · ข้อความการ์ดอัปเดตตามแล้ว',
   ] },
@@ -1725,6 +1726,7 @@ const kill = (r, i, u, ns) => {
   if (f0 && f0.z === 'av' && !ns && f0.c.docW) { delete f0.c.docW; vfx(f0.c.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); return log(r, '🩺 หมอมาแล้วววว: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); }
   if (f0 && f0.z === 'av' && !ns && r.g.ask && DRNO !== u && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) { r.g.q.push(() => kill(r, i, u, ns)); return; }   // มีหน้าต่างอื่นเปิดอยู่ → รอถามหมอทีหลัง ไม่ข้ามเงียบๆ
   if (f0 && f0.z === 'av' && f0.c.id === 'BT06-037' && MGX > 0 && !noFx(r, f0.c)) { vfx(f0.c.u, 'aura', '🛡 ไม่ถูกทำลาย', '#64748b'); return log(r, '🛡 สว นาโนแมชชีน: ไม่ถูกทำลายจากความสามารถของ Magic Card'); }
+  if (f0 && f0.z === 'av' && !ns && r.g.ask && b12SaveReady(r, f0)) { r.g.q.push(() => { const x = find(r, u); if (x && x.z === 'av') kill(r, i, u, ns); }); return; }   // ฮิมไลน์ / แอสคาลอน / มาโกะชิลด์: มีหน้าต่างเลือกค้างอยู่ → รอคิวแล้วค่อยกันการทำลาย (ไม่ข้ามเงียบๆ)
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && (bt9Save(r, i, u, f0) || bt10Save(r, i, u, f0) || bt11Save(r, i, u, f0))) return;   // BT09-060 Skill : Second Energy
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && f0.c.id === 'BT06-033' && bt6Sub33(r, f0, () => kill(r, i, u, 1))) return;
   if (f0 && f0.z === 'av' && !ns && f0.c.id !== 'SD06-005' && campTxt(f0.c) && hasCamp(r, f0.i) && !r.g.ask) {
@@ -8327,6 +8329,8 @@ const _co12 = bt8CoP;
 bt8CoP = function (r, i, d) { let v = _co12(r, i, d); if (B[d.id].n.includes('เรือรบโบราณ') && r.p[i].av.some(a => a.id === 'BT12-011' && !noFx(r, a))) v += 1; return v; };
 
 // ---- ป้องกันการถูกทำลาย: 014 / 068 / 070 ----
+function b12SaveReady(r, f0) { const c = f0.c; if (!c || c.tk) return false; const ws = b12Worn(r, f0.i, c); if (ws.some(m => m.id === 'BT12-068' || m.id === 'BT12-070')) return true;
+  return c.id === 'BT12-014' && !noFx(r, c) && !c.s14 && !ws.length && r.p[f0.i].hell.some(m => !m.tk && B[m.id].st === 'Modification' && B[m.id].n.includes('สมบัติศักดิ์สิทธิ์')); }
 const _sv12 = bt11Save;
 bt11Save = function (r, i, u, f0) {
   if (_sv12(r, i, u, f0)) return true; const c = f0.c; if (!c || c.tk) return false; const qi = f0.i, q = r.p[qi], ws = b12Worn(r, qi, c);
