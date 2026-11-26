@@ -886,7 +886,7 @@ function P(r, x) {
 }
 const kick = (r, a) => !noFx(r, a) && (a.kk === r.g.n || (!a.tk && a.hero === r.g.n) || a.k31 === r.g.n || (a.id === 'BT04-032' && r.p.some(q => q.av.includes(a) && q.av.some(x => nmOf(x).includes('พระเจ้านิโคไล')))) || /เตะไข่/.test(a.tk || a.id === 'BT04-032' || B7NK[a.id] ? '' : B[a.id].e) || (a.id === 'BT07-025' && !noFx(r, a) && hasHn(r, r.p.findIndex(q => q.av.includes(a)))) || (a.id === 'BT09-038' && !a.tk && hasKw(r, a, 'เตะไข่')) || r.p.some(q => q.mg.some(m => m.at === a.u && B[m.id].e.includes('เตะไข่') && (m.id !== 'BT08-059' || B[a.id].n.includes('มอเดรด')))));
 const allCards = (r, u) => { for (let i = 0; i < 2; i++) for (const z of [...ZN, 'deck']) { const c = r.p[i][z].find(x => x.u === u); if (c) return { i, z, c }; } return null; };
-function runQ(r) { CR = r; const g = r.g; let n = 0; if (g && g.pendAfter && !g.ask && !g.pend) { const f = g.pendAfter; g.pendAfter = null; try { f(); } catch (e) { console.error('fx', e); } } while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } try { bt6Own(r); bt6Cage(r); } catch (e) { console.error('bt6', e); } try { bt5Sand(r); } catch (e) { console.error('sand', e); } if (g && !g.pend && !g.ask && !g.q.length) r.p.forEach(q => q.av.forEach(a => { if (a.docW) delete a.docW; })); sweep(r); }
+function runQ(r) { CR = r; const g = r.g; let n = 0; if (g && g.pendAfter && !g.ask && !g.pend) { const f = g.pendAfter; g.pendAfter = null; try { f(); } catch (e) { console.error('fx', e); } } while (g && !g.over && !g.ask && !g.pend && g.q.length && n++ < 100) { const f = g.q.shift(); try { f(r); } catch (e) { console.error('fx', e); } } try { bt6Own(r); bt6Cage(r); } catch (e) { console.error('bt6', e); } try { bt5Sand(r); } catch (e) { console.error('sand', e); } if (g && !g.pend && !g.ask && !g.q.length) { g.docPass = null; r.p.forEach(q => q.av.forEach(a => { if (a.docW) delete a.docW; })); } sweep(r); }
 function ask(r, who, o) {
   const opts = (o.yn || o.choices) ? [] : o.opts;
   if (!o.yn && !o.choices && !opts.length) { o.none && o.none(); return false; }
@@ -1724,7 +1724,7 @@ const kill = (r, i, u, ns) => {
   const f0 = find(r, u), nf0 = !!(f0 && f0.z === 'av' && noFx(r, f0.c));
   if (mg016(r, f0)) return mgQ(r, f0);
   if (f0 && f0.z === 'av' && !ns && f0.c.docW) { delete f0.c.docW; vfx(f0.c.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); return log(r, '🩺 หมอมาแล้วววว: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); }
-  if (f0 && f0.z === 'av' && !ns && r.g.ask && DRNO !== u && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) { r.g.q.push(() => kill(r, i, u, ns)); return; }   // มีหน้าต่างอื่นเปิดอยู่ → รอถามหมอทีหลัง ไม่ข้ามเงียบๆ
+  if (f0 && f0.z === 'av' && !ns && r.g.ask && DRNO !== u && r.g.docPass !== f0.i && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) { r.g.q.push(() => kill(r, i, u, ns)); return; }   // มีหน้าต่างอื่นเปิดอยู่ → รอถามหมอทีหลัง ไม่ข้ามเงียบๆ
   if (f0 && f0.z === 'av' && f0.c.id === 'BT06-037' && MGX > 0 && !noFx(r, f0.c)) { vfx(f0.c.u, 'aura', '🛡 ไม่ถูกทำลาย', '#64748b'); return log(r, '🛡 สว นาโนแมชชีน: ไม่ถูกทำลายจากความสามารถของ Magic Card'); }
   if (f0 && f0.z === 'av' && !ns && r.g.ask && b12SaveReady(r, f0)) { r.g.q.push(() => { const x = find(r, u); if (x && x.z === 'av') kill(r, i, u, ns); }); return; }   // ฮิมไลน์ / แอสคาลอน / มาโกะชิลด์: มีหน้าต่างเลือกค้างอยู่ → รอคิวแล้วค่อยกันการทำลาย (ไม่ข้ามเงียบๆ)
   if (f0 && f0.z === 'av' && !ns && !r.g.ask && (bt9Save(r, i, u, f0) || bt10Save(r, i, u, f0) || bt11Save(r, i, u, f0))) return;   // BT09-060 Skill : Second Energy
@@ -1759,9 +1759,11 @@ const kill = (r, i, u, ns) => {
     const g7 = r.p[f0.i].av.find(a => a.id === 'BT03-007' && a.u !== f0.c.u && !noFx(r, a));
     if (g7) { ask(r, f0.i, { yn: true, text: 'อากาศยานผู้กล้า: ทำลาย อากาศยานผู้กล้า แทน ' + nmOf(f0.c) + ' ไหม?', cb: y => { if (!y) return kill(r, i, u, 1); vfx(g7.u, 'burst', 'รับแทน!', '#38bdf8'); log(r, '🛡 อากาศยานผู้กล้า ถูกทำลายแทน ' + nmOf(f0.c)); kill(r, f0.i, g7.u, 1); } }); return; }
   }
-  if (f0 && f0.z === 'av' && !ns && DRNO !== u && !r.g.ask && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) {   // หมอมาแล้วววว (React: Avatar จะถูกทำลาย → ไม่ถูกทำลาย)
+  if (f0 && f0.z === 'av' && !ns && DRNO !== u && r.g.docPass !== f0.i && !r.g.ask && !(r.g.used && r.g.used[f0.i] && r.g.used[f0.i].React) && !(r.g.noReact && r.g.noReact.who === f0.i) && r.p[f0.i].hand.some(isDoc)) {   // หมอมาแล้วววว (React: Avatar จะถูกทำลาย → ไม่ถูกทำลาย)
     const dc = r.p[f0.i].hand.find(isDoc);
-    ask(r, f0.i, { yn: true, text: 'หมอมาแล้วววว: ใช้ React ให้ ' + nmOf(f0.c) + ' ไม่ถูกทำลายไหม?', cb: y => { if (!y) { DRNO = u; try { return kill(r, i, u, ns); } finally { DRNO = 0; } }
+    ask(r, f0.i, { text: 'หมอมาแล้วววว: ' + nmOf(f0.c) + ' จะถูกทำลาย — เลือกการ์ดเพื่อใช้ React หรือกด Pass', opts: [dc.u], n: 1, min: 1, cancel: true, rx: { why: nmOf(f0.c) + ' จะถูกทำลาย' },   // แผง ⚡ ช่วงตอบโต้ เดียวกับหน้าต่างเคาน์เตอร์
+      onCancel: () => { DRNO = u; try { return kill(r, i, u, ns); } finally { DRNO = 0; } },
+      cb: () => {
       const h = fromZone(r, f0.i, 'hand', dc.u); if (!h) return kill(r, i, u, 1); r.p[f0.i].hell.push(h); r.g.used[f0.i].React = 1; ev(r, h.kd || h.id, h.ar);
       kdReactGate(r, f0.i, B[h.id], canc => { if (canc) { DRNO = u; try { return kill(r, i, u, ns); } finally { DRNO = 0; } } vfx(f0.c.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); log(r, '🩺 หมอมาแล้วววว: ' + nmOf(f0.c) + ' ไม่ถูกทำลาย'); }); } });
     return;
@@ -2044,7 +2046,7 @@ function act(r, i, m) {
       const L = me.av.map(a => a.u), du = dc.u;
       const go = tu => { const t = me.av.find(a => a.u === tu), h = me.hand.find(x => x.u === du); if (!t || !h || g.used[i].React) return; take(r, h.u); me.hell.push(h); g.used[i].React = 1; ev(r, h.kd || h.id, h.ar);
         kdReactGate(r, i, B[h.id], canc => { if (canc) return; t.docW = 1; vfx(t.u, 'aura', '🩺 ไม่ถูกทำลาย', '#ef4444'); log(r, '🩺 หมอมาแล้วววว: ' + nmOf(t) + ' ไม่ถูกทำลายในการตอบโต้นี้'); }); };
-      if (L.length === 1) go(L[0]); else ask(r, i, { text: 'หมอมาแล้วววว: เลือก Avatar ที่จะไม่ถูกทำลาย (ในการตอบโต้นี้)', opts: L, cancel: true, cb: us => go(us[0]) });
+      if (L.length === 1) go(L[0]); else if (p0.k === 'atk' && p0.tk === 'av' && L.includes(p0.tg)) go(p0.tg); else ask(r, i, { text: 'หมอมาแล้วววว: เลือก Avatar ที่จะไม่ถูกทำลาย (ในการตอบโต้นี้)', opts: L, cancel: true, cb: us => go(us[0]) });
       break; }
     case 'pass': { if (!g.pend || g.pend.who !== i) E('ไม่มี React'); passReact(r); break; }
     case 'token': case 'move': case 'pw': case 'tire': case 'drawn': E('คำสั่งนี้ถูกปิด'); break;
@@ -2059,7 +2061,7 @@ function act(r, i, m) {
   }
   runQ(r);
 }
-const canReact = (r, w, c) => { const d = B[c.id]; if (d && d.t === 'Magic' && cc2ODLock(r, w)) return false; if (!d || d.t !== 'Magic' || (d.st !== 'React' && !r049(r, w, c))) return false; const def = MG[c.id]; if (!def) return true; try { if (!reactOK(r, w, d, def)) return false; if (def.cond && !def.cond(r, w)) return false; const p = r.g.pend, cx = { ev: p && p.ev, pend: p, pick: {}, card: c }; for (const s of (def.steps || [])) if (s.opts(r, w, cx).length < (s.min == null ? (s.n || 1) : s.min)) return false; } catch (e) { return true; } return true; };
+const canReact = (r, w, c, strict) => { const d = B[c.id]; if (d && d.t === 'Magic' && cc2ODLock(r, w)) return false; if (!d || d.t !== 'Magic' || (d.st !== 'React' && (strict || !r049(r, w, c)))) return false; const def = MG[c.id]; if (!def) return true; try { if (!reactOK(r, w, d, def)) return false; if (def.cond && !def.cond(r, w)) return false; const p = r.g.pend, cx = { ev: p && p.ev, pend: p, pick: {}, card: c }; for (const s of (def.steps || [])) if (s.opts(r, w, cx).length < (s.min == null ? (s.n || 1) : s.min)) return false; } catch (e) { return true; } return true; };
 const atkRespList = (r, w, noSh) => { const p = r.g.pend; if (!p || (p.k !== 'atk' && !(p.k === 'ev' && p.ev && (p.ev.k === 'cast' || p.ev.k === 'use'))) || p.who !== w || r.p[w].bot || (r.g.noReact && r.g.noReact.who === w)) return []; if (p.k !== 'atk') return r.p[w].av.filter(a => bt8KongOK(r, w, a) || bt10GaOK(r, w, a) || bt11NutOK(r, w, a)).map(a => a.u); const d = r.p[w], L = [], gem = d.hand.reduce((a, c) => a + (B[c.id].g || 0), 0);
   d.hand.forEach(c => { if (c.id === 'BT05-023' && canPlaceAv(r, w, c) && gem >= 3) L.push(c.u); });   // ฮอล: อัญเชิญตอบโต้
   d.av.forEach(a => { if (a.id === 'BT05-044' && !noFx(r, a) && a.ou !== r.g.n && p.tg !== a.u) L.push(a.u); });   // อาจารย์หลี: ย้ายเป้า
@@ -2069,7 +2071,7 @@ const atkRespList = (r, w, noSh) => { const p = r.g.pend; if (!p || (p.k !== 'at
   if (!noSh && !p.sd && !r.g.ask) shieldList(r, p).forEach(u => L.push(u));   // โล่มนุษย์ ใช้ได้ในช่วงตอบโต้
   return L; };
 const docWin = (r, w) => { const g = r.g, p = g.pend; if (!p || p.who !== w || g.used[w].React || (g.noReact && g.noReact.who === w) || cc2ODLock(r, w) || r.p[w].bot || !r.p[w].av.length) return null; return r.p[w].hand.find(isDoc) || null; };   // หมอมาแล้วววว ในช่วงตอบโต้
-const reactList = (r, w, noSh) => ((!r.g.pend || (r.g.noReact && r.g.noReact.who === w) || r.g.used[w].React) ? [] : r.p[w].hand.filter(c => canReact(r, w, c)).map(c => c.u)).concat(atkRespList(r, w, noSh), docWin(r, w) ? [docWin(r, w).u] : []);
+const reactList = (r, w, noSh) => ((!r.g.pend || (r.g.noReact && r.g.noReact.who === w) || r.g.used[w].React) ? [] : r.p[w].hand.filter(c => canReact(r, w, c, 1)).map(c => c.u)).concat(atkRespList(r, w, noSh), docWin(r, w) ? [docWin(r, w).u] : []);
 const hasReact = (r, w) => reactList(r, w).length > 0;
 const open = (r, p) => { if (r.g.over) return; p.until = Date.now() + (r.cfg.react || 15) * 1000; r.g.pend = p; };
 const setBt = (r, o) => { r.g.bt = { n: ++BTN, ...o }; };
@@ -2171,7 +2173,7 @@ function resolveAtk(r, p) {
     killSeq(0, []);
   }
 }
-function passReact(r) { CR = r; const p = r.g.pend; r.g.pend = null; if (p && p.k === 'atk') { resolveAtk(r, p); if (r.g.noReact && r.g.noReact.b5) r.g.noReact = null; } runQ(r); }
+function passReact(r) { CR = r; const p = r.g.pend; if (p && docWin(r, p.who)) r.g.docPass = p.who; r.g.pend = null; if (p && p.k === 'atk') { resolveAtk(r, p); if (r.g.noReact && r.g.noReact.b5) r.g.noReact = null; } runQ(r); }
 function begin(r) {
   r.p.forEach(x => { hookHand(x); hookDeck(x); });
   r.p.forEach(x => { draw({ g: {} }, x, 5); x.t = (r.cfg.clock || 0) * 60000; x.rm = 0; x.dc = null; x.m = false; x.fd = 0; x.ban = null; });
