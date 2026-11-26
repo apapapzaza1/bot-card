@@ -1536,13 +1536,13 @@ if(S.over||!p||!p.mine||S.ask||mode=='pay'){e.hidden=true;rxSel=null;return}
 const SH=(p.mine&&p.sh)?p.sh:[],IT=rxItems(p),U=IT.filter(i=>i.ok);
 if(!U.length&&!SH.length){e.hidden=true;rxSel=null;return}
 const k=p.k+'|'+(p.u||'')+'|'+(p.tg||'')+'|'+(p.ev?p.ev.id:'')+'|'+(p.ai==null?'':p.ai);if(k!=rxK){rxK=k;rxMd=null;rxSel=null}
-const hS=SH.length>0,hC=U.length>0;let md=rxMd;if(md=='sh'&&!hS)md=null;if(md=='ct'&&!hC)md=null;if(!md){if(hS&&!hC)md='sh';else if(hC&&!hS)md='ct'}
+const hS=SH.length>0,hC=U.length>0;let md=rxMd;if(md=='sh'&&!hS)md=null;if(md=='ct'&&!hC)md=null;if(!md){if(hS)md='sh';else if(hC)md='ct'}
 if(!U.some(i=>i.x.u==rxSel))rxSel=(md=='ct'&&U.length==1)?U[0].x.u:null;
 let why='';if(p.k=='atk'){const a=find(p.u),t=p.tg=='life'?null:find(p.tg);why=a?esc(info(a.x).n)+' (Power '+(info(a.x).p+(a.x.pw||0))+') โจมตี '+(t?esc(info(t.x).n):'LIFE ของคุณ'):'ศัตรูประกาศโจมตี'}else{const c=C[S.ev&&S.ev.id];why='ศัตรูใช้ '+(c?esc(c.n):'การ์ด')}
-const pass=`<button onclick="send({t:'pass'})">${hC||hS?'ไม่ใช้ (Pass)':'ข้าม (Pass)'}</button>`,back=(hS&&hC)?`<button onclick="rxM(null)">← กลับ</button>`:'';
+const pass=`<button onclick="send({t:'pass'})">${hC||hS?'ไม่ใช้ (Pass)':'ข้าม (Pass)'}</button>`,back=(hS&&hC)?`<button onclick="rxM('sh')">← โล่มนุษย์</button>`:'',nxt=hC?`<button onclick="rxM('ct')">ไม่ใช้โล่ → การ์ดเคาน์เตอร์</button>`:'';
 let body='';
 if(!md)body=`<div class="rb2"><button class="yes" onclick="rxM('sh')">🛡 ใช้โล่มนุษย์</button><button class="yes" onclick="rxM('ct')">⚡ ใช้การ์ดเคาน์เตอร์</button></div><div class="rb2">${pass}</div>`;
-else if(md=='sh')body=`<div class="rb2" style="flex-wrap:wrap">${SH.map(u=>{const f=find(u);return `<button class="yes" onclick="send({t:'shield',u:${u}})">🛡 โล่มนุษย์: ${f?esc(info(f.x).n):''}</button>`}).join('')}</div><div class="rb2">${back}${pass}</div>`;
+else if(md=='sh')body=`<div class="rb2" style="flex-wrap:wrap">${SH.map(u=>{const f=find(u);return `<button class="yes" onclick="send({t:'shield',u:${u}})">🛡 โล่มนุษย์: ${f?esc(info(f.x).n):''}</button>`}).join('')}</div><div class="rb2">${nxt}${pass}</div>`;
 else body=`<div class="rr">${IT.map(i=>`<div class="${i.ok?'':'rxd'}${i.x.u==rxSel?' rxs':''}">${cd(i.x,i.z,0)}${i.z=='av'?'<small class="rxz">🏟 บนสนาม</small>':''}</div>`).join('')}</div><div class="rb2">${back}<button class="yes" ${rxSel?'':'disabled'} onclick="rxGo()">ใช้${rxSel?' '+esc(info(find(rxSel).x).n):''}</button>${pass}</div>`;
 e.innerHTML=`<h4>⚡ ช่วงตอบโต้ (Reaction)${p.until?' <span id="rxt"></span>':''}</h4><div style="text-align:center;font-size:.85em">${why}</div>${body}`;e.hidden=false;rxT()}
 const rxT=()=>{const e=$('rxt');if(e&&S&&S.pend&&S.pend.until)e.textContent=' '+Math.max(0,Math.ceil((S.pend.until-Date.now())/1e3))+'s'};
