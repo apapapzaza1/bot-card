@@ -1548,7 +1548,7 @@ Object.assign(MG, {
   'BT02-042': { run: (r, i) => { r.p[i].av.forEach(a => a.tired = true); const sum = allAv(r).filter(a => a.x.tired).reduce((s, a) => s + P(r, a.x), 0); log(r, '🗳 ประชามติ: Avatar ฝ่ายเราเป็นสภาพนอน ผลรวม POWER นอน = ' + sum); const L = allAv(r).filter(a => P(r, a.x) < sum).map(a => a.x.u); ask(r, i, { text: 'เลือก Avatar ที่ POWER ต่ำกว่า ' + sum + ' ทำลาย', opts: L, cb: us => destroyAv(r, us[0]) }); } },
   'BT02-043': { run: (r, i) => rpsDuel(r, i, w => ask(r, w, { text: 'ชนะเป่ายิ้งฉุบ: เลือก Avatar 1 ใบบนสนาม ทำลาย', opts: allAv(r).map(x => x.x.u), cb: us => destroyAv(r, us[0]) })) },
   'BT02-044': { run: (r, i) => ask(r, i, { text: 'ด่านลอย: เลือกค่า Cost (0-9)', choices: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cb: n => { const op = r.p[1 - i]; if (!op.hand.length) return log(r, 'ศัตรูไม่มีการ์ดบนมือ'); const c = rnd(op.hand); log(r, '🎯 ด่านลอย เลือก Cost ' + n + ' — สุ่มได้ ' + B[c.id].n); if (isAv(c) && B[c.id].c === n) { sendHell(r, c.u); log(r, '💥 ตรงค่า Cost! ส่งลงนรก'); } else log(r, 'ไม่ตรง'); } }) },
-  'BT02-045': { steps: [{ key: 't', text: 'เลือก Avatar ฝ่ายเรา POWER +4 (ถูกทำลายตอน End Phase)', opts: (r, i) => r.p[i].av.map(a => a.u) }], run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t) { addTp(t.c, 4); t.c.endDie = 1; } } },
+  'BT02-045': { steps: [{ key: 't', text: 'เลือก Avatar ฝ่ายเรา POWER +4 (ถูกทำลายตอน End Phase)', opts: (r, i) => r.p[i].av.map(a => a.u) }], run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t) { addPw(t.c, 4); t.c.endDie = 1; } } },
   'BT02-046': pickOp('เลือก Avatar ศัตรู 1 ใบ นำขึ้นมือ', (r, i, t) => bounce(r, t.u)),
   'BT02-047': { steps: [{ key: 'k', text: 'เซ่นไหว้ Avatar {แมลง} ฝ่ายเรา 1 ใบ', opts: (r, i) => r.p[i].av.filter(a => symOf(a) === 'แมลง').map(a => a.u) }], run: (r, i, cx) => { sac(r, cx.pick.k[0]); draw(r, r.p[i], 3); r.g.onlyBug = { n: r.g.n, i }; log(r, '🦟 จั่ว 3 ใบ — เทิร์นนี้โจมตีได้เฉพาะ Avatar {แมลง}'); } },
   'BT02-048': { run: (r, i) => { r.g.nofx = r.g.nofx || [0, 0]; r.g.nofx[1 - i] = r.g.n; fx({ k: 'say', id: 'BT02-048', t: 'ความสามารถ Avatar ศัตรูไร้ผลจนจบเทิร์น' }); log(r, '🚫 ความสามารถของ Avatar ฝ่ายศัตรูไร้ผลจนจบเทิร์น'); } },
@@ -2887,7 +2887,7 @@ Object.assign(MG, {
       if (!L.length) { log(r, '✨ ค้น Deck ไม่พบ Avatar {ผี}'); return shuf(me.deck); }
       ask(r, i, { text: 'เยี่ยวรดศาล: เลือก Avatar {ผี} Cost ≤4 จาก Deck อัญเชิญแบบจุติ', opts: L, cb: us => done(us[0]) }); } },
   'BT03-045': { steps: [{ key: 't', text: 'เลือก Avatar {สัตว์} 1 ใบ POWER +6 (ถูกทำลายตอน End Phase)', opts: (r, i) => allAvT(r, i).filter(u => symOf(find(r, u).c) === 'สัตว์') }],
-    run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t) { addTp(t.c, 6); t.c.endDie = 1; vfx(t.c.u, 'aura', 'POWER +6', '#f97316'); log(r, '🍖 ซุปเปอร์สแน็ค: ' + nmOf(t.c) + ' POWER +6 (ตายตอน End Phase)'); } } },
+    run: (r, i, cx) => { const t = find(r, cx.pick.t[0]); if (t) { addPw(t.c, 6); t.c.endDie = 1; vfx(t.c.u, 'aura', 'POWER +6', '#f97316'); log(r, '🍖 ซุปเปอร์สแน็ค: ' + nmOf(t.c) + ' POWER +6 (ตายตอน End Phase)'); } } },
   'BT03-046': { run: (r, i) => { const back = (w, cb) => { const L = r.p[w].av.map(a => a.u); if (!L.length) return cb();
       ask(r, w, { text: 'จมน้ำ: เลือก Avatar ของเรา 1 ใบ กลับเข้าใต้ Deck', opts: L, cb: us => { const f = take(r, us[0]); fx({ k: 'bounce', u: us[0] }); if (!f.c.tk) { f.c.pw = 0; f.c.tp = 0; f.c.bp = 0; r.p[f.i].deck.unshift(f.c); } log(r, '🌊 จมน้ำ: ' + nmOf(f.c) + ' กลับใต้ Deck'); cb(); } }); };
     back(i, () => back(1 - i, () => { })); } },
