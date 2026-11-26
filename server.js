@@ -15,6 +15,7 @@ const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
   { v: 'v1.10.4', d: '2026-11-25', items: [
+    'แก้บัค ความกล้าหาญ: การทำลายตอน End Phase ข้ามการกันทำลายทั้งหมด ทำให้ ฮิมไลน์ ตายทั้งที่มีดาบใส่อยู่/มีดาบในนรก — ตอนนี้ผ่านระบบกันการทำลายปกติแล้ว (ฮิมไลน์ แอสคาลอน หมอมาแล้วววว ฯลฯ ทำงานถูกต้อง)',
     'ปรับ น้ำซุปชาบู: Avatar ที่สวมใส่แล้วโจมตี จะนอนตลอดไป ไม่ตื่นอีกเลยไม่ว่าจะด้วยวิธีใด (สกิลตัวเอง สกิลการ์ดอื่น Magic อาวุธ ทอยเต๋า Draw Phase / End Phase) จนกว่าจะออกจากสนาม · ข้อความการ์ดอัปเดตตามแล้ว',
   ] },
   { v: 'v1.10.3', d: '2026-11-25', items: [
@@ -1390,12 +1391,13 @@ function shieldStep(r, p) {
     } });
 }
 const shieldThen = shieldStep;
+// ความกล้าหาญ: ถึง End Phase ทำลายผ่าน kill() ปกติ (ไม่ข้ามการกันทำลาย เช่น ฮิมไลน์ / แอสคาลอน / หมอมาแล้ว) และต่อคิวทีละใบ
 function endTurn456(r) {
   const g = r.g, prev = 1 - g.turn; bt4End(r, prev); bt6End(r, prev); bt7EndTurn(r, prev);
   r.p[prev].av.filter(a => a.id === 'BT01-007' && !noFx(r, a)).forEach(a => { const run = () => { a.pw = (a.pw || 0) + 1; a.bc = (a.bc || 0) + 1; fx({ k: 'buff', u: a.u, v: 1 }); log(r, '🐸 แม่กบ POWER +1'); }; if (!autoGuard(r, prev, a, () => true, run)) run(); });
   r.p.forEach((q, qi) => q.av.filter(a => a.ctl != null && a.oo != null && a.oo !== qi).forEach(a => { const o = a.oo; delete a.ctl; delete a.oo; q.av.splice(q.av.indexOf(a), 1); if (canPlaceAv(r, o, a)) { r.p[o].av.push(a); log(r, '↩ ' + nmOf(a) + ' กลับไปฝั่งเจ้าของ'); } else { r.p[o].hell.push(a); log(r, nmOf(a) + ' กลับไม่ได้ (Avatar เต็ม) ลงนรก'); } }));
   r.p[prev].av.filter(a => a.id === 'BT02-017' && !noFx(r, a)).forEach(a => { const run = () => { if (!find(r, a.u)) return; take(r, a.u); r.p[prev].deck.unshift(a); fx({ k: 'say', id: a.id, t: 'กลับใต้ Deck' }); log(r, '📤 แรงงานทาสออฟฟิศ กลับไปใต้ Deck'); }; if (!autoGuard(r, prev, a, () => true, run)) run(); });
-  r.p.forEach(q => q.av.filter(a => a.endDie).forEach(a => { delete a.endDie; log(r, '💥 ความกล้าหาญ: ' + nmOf(a) + ' ถูกทำลาย'); kill(r, 0, a.u, 1); })); r.p.forEach(q => { q.co.forEach(c => { if (c.pb) { c.pw = (c.pw || 0) - c.pb; c.pb = 0; } });
+  r.p.forEach(q => q.av.filter(a => a.endDie).forEach(a => { delete a.endDie; const eu = a.u; log(r, '💥 ความกล้าหาญ: ' + nmOf(a) + ' ถึงเวลาถูกทำลาย'); r.g.q.push(() => { if (find(r, eu)) kill(r, 0, eu); }); })); r.p.forEach(q => { q.co.forEach(c => { if (c.pb) { c.pw = (c.pw || 0) - c.pb; c.pb = 0; } });
     q.av.slice().forEach(a => { if (a.ward && g.n >= a.ward) delete a.ward; if (a.exp && g.n >= a.exp) { log(r, '👻 ' + nmOf(a) + ' กลับลงนรก'); sendHell(r, a.u); } }); });
 }
 const myAvEq = f => (r, i) => r.p[i].av.filter(f).map(a => a.u);
