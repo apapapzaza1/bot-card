@@ -10,10 +10,13 @@ FORCE_LIM && Object.entries(FORCE_LIM).forEach(([id, n]) => { if (B[id]) B[id].l
 let CEDIT = {}, CHOV = null;   // CHOV = รายการอัปเดตที่แอดมินแก้ (sys:changelog) ถ้ามีจะใช้แทนค่าในไฟล์   // แอดมินแก้ข้อมูลการ์ด (เก็บใน sys:cardedit)
 // ระดับการ์ด (C/R/SR/UR/SEC/PR/CBR/USEC) อ่านจาก "ชื่อไฟล์รูป" อัตโนมัติ: ID-ระดับ.webp หรือ .png (ไม่มีคำต่อท้าย = C) — ดู scanArt() ด้านล่าง ไม่ต้องแก้ cards.json / ลิสต์ในโค้ดอีก
 // เวอร์ชันที่แสดงหน้าล็อบบี้ — แก้เลขเวอร์ชันตรงนี้ทุกครั้งที่อัปเดต ; เวลา = BUILD_AT (env, มิลลิวินาที) หรือเวลาแก้ไฟล์ล่าสุดของ server.js/index.html
-const VERSION = process.env.APP_VERSION || 'v1.10.4';
+const VERSION = process.env.APP_VERSION || 'v1.10.5';
 const BUILD_AT = () => +process.env.BUILD_AT || Math.max(...['server.js', 'index.html'].map(n => { try { return fs.statSync(path.join(__dirname, n)).mtimeMs; } catch (e) { return 0; } }));
 // รายการอัปเดต (กดที่แถบเวอร์ชันหน้าล็อบบี้เพื่อดู) — อัปเดตครั้งใหม่ให้เพิ่มรายการไว้ "บนสุด" แล้วแก้ VERSION ด้านบนให้ตรงกัน
 const CHANGELOG = [
+  { v: 'v1.10.5', d: '2026-11-27', items: [
+    'แก้บัค อย่าให้มีครั้งที่ 2 / ชายจากอนาคต: ยกเลิก React Magic ที่ทำงานอัตโนมัติไม่ได้ — เอาไปอยู่ด้วย, ช่างมาแล้ววว, รัททาทุยเกาะหน้า, Skill : Second Energy, ลงกาโพรเทคชั่น, เหตุผลที่ยังหายใจ, มือเปร๊ยะ · ตอนนี้ทุกใบผ่านหน้าต่างตอบโต้เดียวกับ React ใบอื่น (ถ้าถูกยกเลิก ผลไม่เกิด) และ อย่าให้มีครั้งที่ 2 ใช้ยกเลิกกันเองต่อเนื่องได้ตามเดิม',
+  ] },
   { v: 'v1.10.4', d: '2026-11-25', items: [
     'แก้บัค ฮิมไลน์ / แอสคาลอน / มาโกะชิลด์: ถ้ามีหน้าต่างเลือกค้างอยู่ตอนถูกทำลาย ระบบข้ามการกันทำลายทำให้ตายทันทีโดยไม่เรียกดาบ — ตอนนี้รอคิวแล้วกันการทำลายตามปกติ',
     'แก้บัค ความกล้าหาญ: การทำลายตอน End Phase ข้ามการกันทำลายทั้งหมด ทำให้ ฮิมไลน์ ตายทั้งที่มีดาบใส่อยู่/มีดาบในนรก — ตอนนี้ผ่านระบบกันการทำลายปกติแล้ว (ฮิมไลน์ แอสคาลอน หมอมาแล้วววว ฯลฯ ทำงานถูกต้อง)',
@@ -3486,7 +3489,8 @@ function bt4Death(r, f) {   // คำสั่งเสีย BT04 + 049
     if (h && !r.g.used[f.i].React) r.g.q.unshift(() => { if (!p.hand.includes(h) || r.g.used[f.i].React) return;
       ask(r, f.i, { yn: true, text: 'Avatar {ผี} ถูกทำลายโดยฝ่ายตรงข้าม — ใช้ React เอาไปอยู่ด้วย: ทำลาย Avatar ฝ่ายตรงข้าม 1 ใบ?', cb: y => { if (!y) return; const T = foeAvT(r, f.i); if (!T.length) return log(r, 'ไม่มี Avatar ฝ่ายตรงข้ามให้ทำลาย');
         p.hand.splice(p.hand.indexOf(h), 1); p.hell.push(h); r.g.used[f.i].React = 1; ev(r, h.kd || h.id, h.ar); log(r, p.name + ' ใช้ React: เอาไปอยู่ด้วย');
-        ask(r, f.i, { text: 'เลือก Avatar ฝ่ายตรงข้าม 1 ใบ ทำลาย', opts: T, cb: us => { vfx(us[0], 'burst', 'เอาไปอยู่ด้วย!', '#a855f7'); destroyAv(r, us[0]); } }); } }); });
+        kdReactGate(r, f.i, B[h.id], canc => { if (canc) return;   // อย่าให้มีครั้งที่ 2 / ชายจากอนาคต ยกเลิกได้
+        ask(r, f.i, { text: 'เลือก Avatar ฝ่ายตรงข้าม 1 ใบ ทำลาย', opts: T, cb: us => { vfx(us[0], 'burst', 'เอาไปอยู่ด้วย!', '#a855f7'); destroyAv(r, us[0]); } }); }); } }); });
   }
   if (c.id === 'BT04-034') r.g.q.push(() => {   // อนงค์: อัญเชิญ หมา/แมว {สัตว์} Cost ≤ 3 จากนรก
     const L = p.hell.filter(h => isPet(h) && B[h.id].c <= 3).map(h => h.u); if (!L.length) return log(r, 'คำสั่งเสีย อนงค์: ไม่มี หมา/แมว Cost ≤ 3 ในนรก');
@@ -4041,7 +4045,7 @@ function bt6ConGuard(r, i, d, destroyFn) {   // BT06-050 ช่างมาแ�
   const g = r.g, p = r.p[i], m = p.hand.find(c => c.id === 'BT06-050');
   if (!m || (g.noReact && g.noReact.who === i) || (g.used && g.used[i] && g.used[i].React) || p.bot) return false;
   ask(r, i, { yn: true, text: 'ช่างมาแล้ววว: ' + B[d.id].n + ' จะถูกทำลาย — ใช้ React ให้ไม่ถูกทำลายไหม?', cb: y => {
-    if (y && p.hand.includes(m)) { take(r, m.u); p.hell.push(m); g.used[i].React = 1; vfx(d.u, 'aura', '🏗 ช่างมาแล้ว!', '#f59e0b'); log(r, '🏗 ' + p.name + ' ใช้ ช่างมาแล้ววว: ' + B[d.id].n + ' ไม่ถูกทำลาย'); }
+    if (y && p.hand.includes(m)) { take(r, m.u); p.hell.push(m); g.used[i].React = 1; kdReactGate(r, i, B[m.id], canc => { if (canc) return destroyFn(); vfx(d.u, 'aura', '🏗 ช่างมาแล้ว!', '#f59e0b'); log(r, '🏗 ' + p.name + ' ใช้ ช่างมาแล้ววว: ' + B[d.id].n + ' ไม่ถูกทำลาย'); }); }
     else destroyFn(); } });
   return true;
 }
@@ -4890,9 +4894,10 @@ function bt8Rat(r, f) {   // รัททาทุยเกาะหน้า (R
   const O = () => r.p[1 - i].av.filter(a => B[a.id].c <= 5 && !protectedFrom(r, i, a, 1)).map(a => a.u); if (!O().length) return;
   r.g.q.push(() => ask(r, i, { yn: true, text: 'รัททาทุยเกาะหน้า: ' + nmOf(c) + ' ถูกทำลาย — ใช้ Magic นี้ทำลาย Avatar ฝ่ายตรงข้าม Cost ≤5 แล้วอัญเชิญ {รัททาทุย} Cost1 Gem1 POWER1 จาก Deck ไหม?', cb: y => { if (!y || !p.hand.includes(m)) return;
     sendHell(r, m.u); log(r, '🐀 ' + p.name + ' ใช้ รัททาทุยเกาะหน้า');
+    kdReactGate(r, i, B[m.id], canc => { if (canc) return;   // อย่าให้มีครั้งที่ 2 / ชายจากอนาคต ยกเลิกได้
     ask(r, i, { text: 'เลือก Avatar ฝ่ายตรงข้าม Cost ≤5 เพื่อทำลาย', opts: O(), cb: us => { vfx(us[0], 'burst', '🐀 ทำลาย', '#ef4444'); destroyAv(r, us[0]);
       r.g.q.push(() => { const L = p.deck.filter(d => isAv(d) && B[d.id].s === 'รัททาทุย' && B[d.id].c === 1 && B[d.id].g === 1 && B[d.id].p === 1 && canPlaceAv(r, i, d)).map(d => d.u); if (!L.length) { shuf(p.deck); return log(r, 'รัททาทุยเกาะหน้า: ไม่พบ Avatar {รัททาทุย} Cost1 Gem1 POWER1'); }
-        ask(r, i, { text: 'เลือก Avatar {รัททาทุย} Cost1 Gem1 POWER1 จาก Deck อัญเชิญลงสนาม', opts: L, cb: u2 => { if (summonAny(r, i, u2[0], 'deck')) vfx(u2[0], 'burst', '🐀 อัญเชิญ', '#38bdf8'); shuf(p.deck); } }); }); } }); } }));
+        ask(r, i, { text: 'เลือก Avatar {รัททาทุย} Cost1 Gem1 POWER1 จาก Deck อัญเชิญลงสนาม', opts: L, cb: u2 => { if (summonAny(r, i, u2[0], 'deck')) vfx(u2[0], 'burst', '🐀 อัญเชิญ', '#38bdf8'); shuf(p.deck); } }); }); } }); }); } }));
 }
 function bt8Spell(r, i, c) {   // โรงเรียนเวทย์มนต์: เมื่อมีการใช้ "คาถา" → นำ Magic จากนรกมาวางคว่ำบน Magic Zone
   if (!isSpell(c) || !landOf(r, 'BT08-064', r.g.land && r.g.land.o)) return; const o = r.g.land.o, p = r.p[o];
@@ -5394,8 +5399,10 @@ const bt9Save = (r, i, u, f0) => {   // 060 Skill : Second Energy — Avatar "�
   const me = r.p[f0.i], k = hand9(r, f0.i, 'BT09-060'); if (!k || r.g.turn === f0.i || f0.c.tk || !nmOf(f0.c).includes('เรื่องราว') || r.g.used[f0.i].React) return false;
   const G = me.hand.filter(h => h !== k && (B[h.id].g || 0) >= 1).map(h => h.u); if (!G.length) return false;
   ask(r, f0.i, { yn: true, text: 'Skill : Second Energy: ' + nmOf(f0.c) + ' จะออกจากสนาม — ทิ้งการ์ดบนมือ 1 ใบ (GEM ≥ 1) เป็น Cost เพื่อไม่ให้ออกจากสนามไหม?', cb: y => { if (!y) return kill(r, i, u, 1);
-    ask(r, f0.i, { text: 'เลือกการ์ดบนมือที่จะทิ้งเป็น Cost', opts: G, cancel: true, onCancel: () => kill(r, i, u, 1), cb: us => { sendHell(r, us[0]); sendHell(r, k.u); r.g.used[f0.i].React = 1; vfx(f0.c.u, 'aura', '⚡ ไม่ออกจากสนาม', '#38bdf8'); log(r, '⚡ Second Energy: ' + nmOf(f0.c) + ' ไม่ออกจากสนาม');
-      if (me.hell.filter(isMagic9).length >= 8) { const op = r.p[1 - f0.i]; r.g.q.push(() => ask(r, 1 - f0.i, { text: 'Second Energy: เลือกการ์ดในนรกของตนเอง 1 ใบ เนรเทศ', opts: op.hell.map(c => c.u), cb: u2 => { const c = fromZone(r, 1 - f0.i, 'hell', u2[0]); if (c) { op.dk.push(c); log(r, '🌀 ' + op.name + ' เนรเทศ ' + B[c.id].n + ' จากนรก'); } } })); } } }); } });
+    ask(r, f0.i, { text: 'เลือกการ์ดบนมือที่จะทิ้งเป็น Cost', opts: G, cancel: true, onCancel: () => kill(r, i, u, 1), cb: us => { sendHell(r, us[0]); sendHell(r, k.u); r.g.used[f0.i].React = 1;
+      kdReactGate(r, f0.i, B[k.id], canc => { if (canc) return kill(r, i, u, 1);   // อย่าให้มีครั้งที่ 2 / ชายจากอนาคต ยกเลิกได้ → Avatar ออกจากสนามตามปกติ
+      vfx(f0.c.u, 'aura', '⚡ ไม่ออกจากสนาม', '#38bdf8'); log(r, '⚡ Second Energy: ' + nmOf(f0.c) + ' ไม่ออกจากสนาม');
+      if (me.hell.filter(isMagic9).length >= 8) { const op = r.p[1 - f0.i]; r.g.q.push(() => ask(r, 1 - f0.i, { text: 'Second Energy: เลือกการ์ดในนรกของตนเอง 1 ใบ เนรเทศ', opts: op.hell.map(c => c.u), cb: u2 => { const c = fromZone(r, 1 - f0.i, 'hell', u2[0]); if (c) { op.dk.push(c); log(r, '🌀 ' + op.name + ' เนรเทศ ' + B[c.id].n + ' จากนรก'); } } })); } }); } }); } });
   return true;
 };
 const runMg9 = (r, i, card, def, done) => {   // ใช้ความสามารถของ Magic โดยไม่ต้องร่าย (031)
@@ -5544,7 +5551,7 @@ fxAtk = function (r, i, a, tg, tk) {
   const O = me.av.filter(x => x.u !== a.u && !x.tired && symOf(x) === 'ยักษ์'); if (!O.length || !me.hand.some(h => h !== k && (B[h.id].g || 0) > 0)) return;
   r.g.q.unshift(() => ask(r, i, { yn: true, text: 'ลงกาโพรเทคชั่น: ' + nmOf(a) + ' โจมตี — ทิ้งการ์ดให้ GEM รวม 2 แล้วให้ยักษ์ตื่น 1 ใบ เปลี่ยนเป็นนอน และนำ POWER มาเพิ่มให้ผู้ต่อสู้ไหม?', cb: y => { if (!y) return;
     ask(r, i, { text: 'เลือก Avatar {ยักษ์} ที่ไม่ได้ต่อสู้และอยู่ในสภาพตื่น', opts: O.map(x => x.u), cancel: true, cb: us => { const t = find(r, us[0]); if (!t || !me.hand.includes(k)) return;
-      payGem9(r, i, 2, k, () => { const v = P(r, t.c); t.c.tired = true; a.bp = (a.bp || 0) + v; sendHell(r, k.u); r.g.used[i].React = 1; vfx(t.c.u, 'aura', '😴 นอน', '#94a3b8'); vfx(a.u, 'aura', '🗿 POWER +' + v, '#ef4444'); log(r, '🗿 ลงกาโพรเทคชั่น: ' + nmOf(t.c) + ' นอน — ' + nmOf(a) + ' POWER +' + v + ' จนจบการต่อสู้'); }, () => log(r, 'ลงกาโพรเทคชั่น: จ่าย Cost ไม่ได้ — ยกเลิก')); } }); } }));
+      payGem9(r, i, 2, k, () => { const v = P(r, t.c); sendHell(r, k.u); r.g.used[i].React = 1; kdReactGate(r, i, B[k.id], canc => { if (canc) return; t.c.tired = true; a.bp = (a.bp || 0) + v; vfx(t.c.u, 'aura', '😴 นอน', '#94a3b8'); vfx(a.u, 'aura', '🗿 POWER +' + v, '#ef4444'); log(r, '🗿 ลงกาโพรเทคชั่น: ' + nmOf(t.c) + ' นอน — ' + nmOf(a) + ' POWER +' + v + ' จนจบการต่อสู้'); }); }, () => log(r, 'ลงกาโพรเทคชั่น: จ่าย Cost ไม่ได้ — ยกเลิก')); } }); } }));
 };
 
 /* ---------- 066: ถูกธรณีสูบลงนรก → สวมใส่ให้ เทพธิดาแห่งวัลฮัลลา ---------- */
@@ -7722,7 +7729,8 @@ function b11Reason(r, i, h) {   // 062 เหตุผลที่ยังห�
   const p = r.p[i]; if (!p.hand.includes(h) || !p.av.length || p.hell.filter(c => c !== h).length < 1) return;
   ask(r, i, { yn: true, text: 'เหตุผลที่ยังหายใจ: Avatar ใบที่ 2 ถูกทำลายในเทิร์นนี้ — ใช้ React เนรเทศการ์ดในนรก 1 ใบ เพื่อให้ Avatar 1 ใบ POWER +8 ไหม?', cb: y => { if (!y || !p.hand.includes(h)) return;
     ask(r, i, { text: 'เลือกการ์ดในนรกเรา 1 ใบ เพื่อเนรเทศ', opts: p.hell.map(c => c.u), cancel: true, cb: us => { const c = p.hell.find(x => x.u === us[0]); if (!c || !p.hand.includes(h)) return; sendHell(r, h.u); r.g.used[i].React = 1; ev(r, h.kd || h.id, h.ar); b11Exile(r, i, c, 'hell'); log(r, p.name + ' ใช้ React: เหตุผลที่ยังหายใจ');
-      ask(r, i, { text: 'เลือก Avatar บน Avatar Zone เรา 1 ใบ POWER +8 จนจบเทิร์น', opts: p.av.map(a => a.u), cb: u2 => { const t = find(r, u2[0]); if (t) { addTp(t.c, 8); vfx(t.c.u, 'burst', '💪 POWER +8', '#facc15'); } } }); } }); } });
+      kdReactGate(r, i, B[h.id], canc => { if (canc) return;   // อย่าให้มีครั้งที่ 2 / ชายจากอนาคต ยกเลิกได้
+      ask(r, i, { text: 'เลือก Avatar บน Avatar Zone เรา 1 ใบ POWER +8 จนจบเทิร์น', opts: p.av.map(a => a.u), cb: u2 => { const t = find(r, u2[0]); if (t) { addTp(t.c, 8); vfx(t.c.u, 'burst', '💪 POWER +8', '#facc15'); } } }); }); } }); } });
 }
 // ---- End Phase ----
 function bt11End(r) {
@@ -8431,7 +8439,9 @@ function b12NoAtk(r, c) { if (c && !c.tk && c.id === 'BT12-042' && !noFx(r, c)) 
 function b12Hook67(r, i, c) { const o = 1 - i, m = r.p[o].hand.find(x => x.id === 'BT12-067'); if (!m || (r.g.noReact && r.g.noReact.who === o) || r.g.over) return;
   r.g.q.unshift(() => { if (!r.p[o].hand.includes(m) || !r.p[i].hand.length) return;
     ask(r, o, { yn: true, text: 'มือเปร๊ยะ (React): ' + r.p[i].name + ' นำการ์ดจาก Deck ขึ้นมือ — ใช้ สุ่มเนรเทศการ์ดบนมือเขา 1 ใบ ไหม?', cb: y => { if (!y) return; const k = r.p[o].hand.indexOf(m), h = r.p[i].hand; if (k < 0 || !h.length) return;
-      r.p[o].hand.splice(k, 1); r.p[o].hell.push(m); const x = h[Math.floor(Math.random() * h.length)]; vfx(m.u, 'burst', 'มือเปร๊ยะ!', '#a855f7'); fx({ k: 'say', id: 'BT12-067', t: 'ใช้ React' }); log(r, '✋ มือเปร๊ยะ: สุ่มเนรเทศการ์ดบนมือ ' + r.p[i].name); b11Exile(r, i, x, 'hand'); } }); }); }
+      r.p[o].hand.splice(k, 1); r.p[o].hell.push(m);
+      kdReactGate(r, o, B[m.id], canc => { if (canc) return; const h2 = r.p[i].hand; if (!h2.length) return;   // อย่าให้มีครั้งที่ 2 / ชายจากอนาคต ยกเลิกได้
+      const x = h2[Math.floor(Math.random() * h2.length)]; vfx(m.u, 'burst', 'มือเปร๊ยะ!', '#a855f7'); fx({ k: 'say', id: 'BT12-067', t: 'ใช้ React' }); log(r, '✋ มือเปร๊ยะ: สุ่มเนรเทศการ์ดบนมือ ' + r.p[i].name); b11Exile(r, i, x, 'hand'); }); } }); }); }
 HAND_HOOKS.push((r, i, c, info) => { if (info.fromDeck) b12Hook67(r, i, c); });
 function b12Drew(r, p, c) { const i = r.p.indexOf(p); if (i >= 0) b12Hook67(r, i, c); }
 
